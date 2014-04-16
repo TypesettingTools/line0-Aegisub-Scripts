@@ -3,7 +3,6 @@ for (var i=0; i<sel.length; i++) {
 	if(sel[i].typename == "CompoundPathItem") {
 		pathItems = sel[i].pathItems;
 		for(var j=0; j<pathItems.length; j++)  {
-			alert(pathItems.length);
 			if (removeUnpaintedPath(pathItems[j])) {j--}
 		}
 	} else { removeUnpaintedPath(sel[i]); }

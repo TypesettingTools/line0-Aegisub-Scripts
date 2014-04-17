@@ -1,8 +1,7 @@
 ﻿var sel = app.activeDocument.selection;
 for (var i=0; i<sel.length; i++) {
-	if (processPageItem(sel[i])) {i--}
+	processPageItem(sel[i]);
 }
-
 
 function removeUnpaintedPath(pathItem)
 {

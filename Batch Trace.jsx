@@ -33,7 +33,7 @@ if (!Array.prototype.indexOf) {
     };
 }
 
-//app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS
+app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS
 app.documents.length > 0 ? main() : alert("Please create an empty document before running this script.");
 
 function main() {
@@ -51,12 +51,9 @@ function main() {
         }, \
         sti: Group { orientation: row,\
             settings: Panel {orientation: 'column', alignment:['left', 'fill'], alignChildren: ['left','fill'], text: 'Settings', \
-                preset: Group {orientation: 'row', \
-                    st: StaticText {text: 'Tracing Preset'}, \
-                    drpd: DropDownList {characters: 50} \
-                }, \
-                imgPos: Group {orientation: 'row', \
-                    st1: StaticText {text: 'Image Position'}, \
+                preset: DropDownList {characters: 50, title: 'Tracing Preset:'}, \
+                imgPos: Group {orientation: 'row', spacing: 5, \
+                    st1: StaticText {text: 'Image Position:'}, \
                     x: EditText {text: '0', characters: 5}, \
                     st2: StaticText {text: 'x'}, \
                     y: EditText {text: '0', characters: 5}, \
@@ -64,27 +61,27 @@ function main() {
                 }, \
                 intersect: Checkbox{text:'Intersect with predefined Path', enabled: false}, \
             }, \
-            info: Panel {orientation: 'column', text: 'Information', alignment:['right', 'fill'], \
-                imgFolder: Group {orientation: 'row', \
+            info: Panel {orientation: 'column', text: 'Information', alignment:['right', 'fill'], alignChildren: ['left','fill'], \
+                imgFolder: Group {orientation: 'row', spacing: 5, \
                     st1: StaticText {text: 'Image Count: '}, \
-                    cnt: StaticText {text: 'No Folder', characters: 10}, \
+                    cnt: StaticText {text: 'No Folder', characters: 9}, \
                 }, \
-                bgFolder: Group {orientation: 'row', \
-                    st1: StaticText {text: 'Image Count: '}, \
-                    cnt: StaticText {text: 'No Folder', characters: 10}, \
+                bgFolder: Group {orientation: 'row', spacing: 5,\
+                    st1: StaticText {text: 'Background Image Count: '}, \
+                    cnt: StaticText {text: 'No Folder', characters: 9}, \
                 }, \
-            progress: Progressbar {value: 0, size: [200,25]}, \
+            progress: Progressbar {value: 0, size: [250,25]}\
             }, \
       }, \
       trace: Button {text: 'Trace', enabled: false, alignment: ['fill', 'fill']}, \
     }"
 
-    var dlg = new Window("dialog", "Batch Trace", void 0, {resizeable: true})
+    var dlg = new Window("dialog", "Batch Trace", void 0, {resizeable: true, independent: true})
     dlg.traceDlg = dlg.add(traceDlgRes);
 
     // populate tracing presets list
-    for (i=0; i<app.tracingPresetsList.length; i++) { dlg.traceDlg.sti.settings.preset.drpd.add("item", app.tracingPresetsList[i]) }
-    dlg.traceDlg.sti.settings.preset.drpd.selection = app.tracingPresetsList.indexOf("_autoTrace") >= 0 ? app.tracingPresetsList.indexOf("_autoTrace") : app.tracingPresetsList.indexOf("[Default]") 
+    for (i=0; i<app.tracingPresetsList.length; i++) { dlg.traceDlg.sti.settings.preset.add("item", app.tracingPresetsList[i]) }
+    dlg.traceDlg.sti.settings.preset.selection = app.tracingPresetsList.indexOf("_autoTrace") >= 0 ? app.tracingPresetsList.indexOf("_autoTrace") : app.tracingPresetsList.indexOf("[Default]") 
     
     // properly handle resizing
     dlg.layout.layout(true);
@@ -175,6 +172,9 @@ function pickFolder(folder, showPicker, prompt)
      }
     function doTrace()
     {
+        dlg.traceDlg.trace.enabled = false
+        dlg.traceDlg.trace.text = "Tracing..."
+        
         var images = getImageFiles (folders["imgFolder"])
         var bgimages = getImageFiles (folders["bgFolder"])
         var intersectPath = dlg.traceDlg.sti.settings.intersect.enabled ? doc.pageItems[0] : null
@@ -192,14 +192,14 @@ function pickFolder(folder, showPicker, prompt)
             pimg = placeImg(images[i], layer)
             
             var t = pimg.trace()
-            t.tracing.tracingOptions.loadFromPreset(dlg.traceDlg.sti.settings.preset.drpd.selection.text)
+            t.tracing.tracingOptions.loadFromPreset(dlg.traceDlg.sti.settings.preset.selection.text)
             app.redraw()
             traceGrp = t.tracing.expandTracing()
             if(intersectPath)
             {
                     intersectPathTmp = intersectPath.duplicate(layer, ElementPlacement.PLACEATBEGINNING)
                     intersectPathTmp.filled = true
-                    intersectPathTmp.stroked = false
+                    intersectPathTmp.stroked = false    
                     cmpPath = layer.compoundPathItems.add()
                     
                     movePathsToCompound (traceGrp, cmpPath)
@@ -212,6 +212,7 @@ function pickFolder(folder, showPicker, prompt)
             }
             layer.visible = (i==images.length -1) ? true : false
             dlg.traceDlg.sti.info.progress.value = ((i+1)/images.length) * 100
+            dlg.update()
         }
         dlg.close()
     }

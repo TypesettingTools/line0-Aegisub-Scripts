@@ -138,6 +138,7 @@ function pickFolder(folder, showPicker, prompt)
                     i--
                 }
             }
+            files.reverse()
             return files
         } else return false
     }

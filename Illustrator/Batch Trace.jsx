@@ -1,46 +1,16 @@
 ﻿#target illustrator
 #targetengine main
+#include "./lib/polyfills.jsxinc"
 
-// Polyfill for indexOf pasted from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/indexOf
-if (!Array.prototype.indexOf) {
-    Array.prototype.indexOf = function (searchElement, fromIndex) {
-      if ( this === undefined || this === null ) {
-        throw new TypeError( '"this" is null or not defined' );
-      }
+app.documents.length > 0 ? l0_batchTrace() : alert("Please create an empty document before running this script.");
 
-      var length = this.length >>> 0; // Hack to convert object.length to a UInt32
-
-      fromIndex = +fromIndex || 0;
-
-      if (Math.abs(fromIndex) === Infinity) {
-        fromIndex = 0;
-      }
-
-      if (fromIndex < 0) {
-        fromIndex += length;
-        if (fromIndex < 0) {
-          fromIndex = 0;
-        }
-      }
-
-      for (;fromIndex < length; fromIndex++) {
-        if (this[fromIndex] === searchElement) {
-          return fromIndex;
-        }
-      }
-
-      return -1;
-    };
-}
-
-app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS
-app.documents.length > 0 ? main() : alert("Please create an empty document before running this script.");
-
-function main() {
+function l0_batchTrace() {
+     app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS
+     
     var folders = []
     var doc = app.activeDocument
 
-    var traceDlgRes ="Group { orientation:'column', alignment:['fill', 'fill'], alignChildren:['fill', 'fill'], \
+    var traceDlgRes ="Group { orientation:'column', alignment:['fill', 'fill'],  \
         imgFolder: Panel { orientation:'row', text: 'Image Folder', \
             edit: EditText {text: ' [Pick a folder of images to batch trace]', characters: 50}\
             btn: Button { text:'...' , preferredSize: [30,24]} ,\
@@ -49,8 +19,8 @@ function main() {
             edit: EditText {text: ' [none]', characters: 50}, \
             btn: Button { text:'...', preferredSize: [30,24] } \
         }, \
-        sti: Group { orientation: row,\
-            settings: Panel {orientation: 'column', alignment:['left', 'fill'], alignChildren: ['left','fill'], text: 'Settings', \
+        sti: Group { orientation: 'row', alignChildren: ['fill', 'fill']\
+            settings: Panel {orientation: 'column', alignChildren: ['left','fill'], text: 'Settings', \
                 preset: DropDownList {characters: 50, title: 'Tracing Preset:'}, \
                 imgPos: Group {orientation: 'row', spacing: 5, \
                     st1: StaticText {text: 'Image Position:'}, \
@@ -61,7 +31,7 @@ function main() {
                 }, \
                 intersect: Checkbox{text:'Intersect with predefined Path', enabled: false}, \
             }, \
-            info: Panel {orientation: 'column', text: 'Information', alignment:['right', 'fill'], alignChildren: ['left','fill'], \
+            info: Panel {orientation: 'column', text: 'Information', alignChildren: ['left','fill'], \
                 imgFolder: Group {orientation: 'row', spacing: 5, \
                     st1: StaticText {text: 'Image Count: '}, \
                     cnt: StaticText {text: 'No Folder', characters: 9}, \
@@ -76,7 +46,7 @@ function main() {
       trace: Button {text: 'Trace', enabled: false, alignment: ['fill', 'fill']}, \
     }"
 
-    var dlg = new Window("dialog", "Batch Trace", void 0, {resizeable: true, independent: true})
+    var dlg = new Window("dialog", "Batch Trace", void 0, {resizeable: true, independent: false})
     dlg.traceDlg = dlg.add(traceDlgRes);
 
     // populate tracing presets list

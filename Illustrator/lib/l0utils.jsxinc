@@ -1,0 +1,60 @@
+﻿#include "./lodash.jsxinc"
+
+var l0 = {
+        getAllPaths : function(container, allowCompound, containerProps, layerProps, notMatchContainerProps, notMatchLayerProps)
+        {       
+            // Don't use this on selections, needs some more insanities to work!
+            // Defaults:
+            allowCompound = this.setDefault(allowCompound, false)
+            notMatchContainerProps = this.setDefault(notMatchContainerProps, false)
+            notMatchLayerProps = this.setDefault(notMatchLayerProps, false)
+
+            var allPaths = []
+            var pathItemTypes = ["PathItem"]
+            var containerTypes = ["GroupItem", "Layer"] // coming across a layer shouldn't happen, but it's adobe, who knows?
+            allowCompound ? pathItemTypes.push("CompoundPathItem") : containerTypes.push("CompoundPathItem")
+            
+            getAllPaths_process(container, 0)
+            return allPaths
+            
+            function getAllPaths_process(container, depth)
+            {
+                    
+                if((l0.hasProps(container, containerProps) != notMatchContainerProps) ) {
+                    var pageItems = (container.typename == "CompoundPathItem") ? container.pathItems : container.pageItems
+                    _.chain(pageItems).filter(function(pageItem) {
+                            var isLevelNItem = l0.isLevel0PageItem(pageItem) || container == l0.getParentEx(pageItem)
+                            return isLevelNItem && (l0.hasProps(pageItem.layer, layerProps)  != notMatchLayerProps)
+                    }).forEach(function(pageItem) 
+                    {
+                        if(_.contains(pathItemTypes, pageItem.typename)) {allPaths.push(pageItem)}
+                        else if(_.contains(containerTypes, pageItem.typename)) {getAllPaths_process(pageItem, depth+1)}
+                    })
+                }
+                depth--
+            }
+        }, 
+        hasProps : function(object, props)
+        {
+            return !props || ( object && _.where([object], props).length > 0)
+        },
+        getParentEx : function(object) {
+            if(object.typename == "PathItem")
+            {
+                    var cmpPath = _.find(object.parent.compoundPathItems, function(cmp) {
+                        return _.indexOf(cmp.pathItems,object)>= 0;
+                    })
+            }
+            return cmpPath ? cmpPath : object.parent
+        }, 
+        isLevel0PageItem : function(pageItem)
+        {
+            var parent = pageItem.parent
+            return parent.typename == "Layer" && parent.parent.typename == "Document"
+        },
+        setDefault : function(v, def)
+        {
+            return typeof v !== 'undefined' ? v : def
+        }
+}
+

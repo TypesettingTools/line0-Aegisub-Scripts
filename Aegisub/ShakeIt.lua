@@ -170,25 +170,25 @@ if pcall(require,"lib-lyger") and chkver("1.1") then
 
 			local err = {"The following errors occured: "}
 			
-			if res["xOffMax"] < res["xOffMin"] then
-				err[#err+1] = "Mininum x offset ("..res["xOffMin"]..") must not be bigger than maximum x offset ("..res["xOffMax"]..")."
+			if res.xOffMax < res.xOffMin then
+				err[#err+1] = "Mininum x offset ("..res.xOffMin..") must not be bigger than maximum x offset ("..res.xOffMax..")."
 			end
-			if res["yOffMax"] < res["yOffMin"] then
-				err[#err+1] = "Mininum y offset ("..res["yOffMin"]..") must not be bigger than maximum y offset ("..res["yOffMax"]..")."
+			if res.yOffMax < res.yOffMin then
+				err[#err+1] = "Mininum y offset ("..res.yOffMin..") must not be bigger than maximum y offset ("..res.yOffMax..")."
 			end
-			if res["angleMax"] < res["angleMin"] then
-				err[#err+1] = "Mininum angle ("..res["angleMin"]..") must not be bigger than maximum angle ("..res["angleMax"]..")."
+			if res.angleMax < res.angleMin then
+				err[#err+1] = "Mininum angle ("..res.angleMin..") must not be bigger than maximum angle ("..res.angleMax..")."
 			end
-			if  res["fSignInvX"] and not res["fSignInvXN"] 
-			and res["fSignInvY"] and not res["fSignInvYN"] and res["angleMax"] < 90 then
+			if  res.fSignInvX and not res.fSignInvXN 
+			and res.fSignInvY and not res.fSignInvYN and res.angleMax < 90 then
 				err[#err+1] = "Forced sign inversion for x and y require an angle of at least 90°."
-			elseif res["fSignInvX"] and res["fSignInvXN"] 
-			and     res["fSignInvY"] and res["fSignInvYN"] and res["angleMin"] > 90 then
+			elseif res.fSignInvX and res.fSignInvXN 
+			and     res.fSignInvY and res.fSignInvYN and res.angleMin > 90 then
 				err[#err+1] = "No sign inversion for x and y requires an angle of at most 90°."
 			end
-			if res["fSignInvYN"] and res["fSignInvXN"] and res["fSignInvEither"] then
+			if res.fSignInvYN and res.fSignInvXN and res.fSignInvEither then
 				err[#err+1] = "Can't change signs of either X or Y offsets because no sign changes are allowed."
-			elseif res["fSignInvX"] and res["fSignInvY"] and res["fSignInvNotBoth"] then
+			elseif res.fSignInvX and res.fSignInvY and res.fSignInvNotBoth then
 				err[#err+1] = "Can't change signs of only X or Y offsets because sign changes are enforced for both."
 			end
 
@@ -198,9 +198,9 @@ if pcall(require,"lib-lyger") and chkver("1.1") then
 	end
 
 	function shakeItProc(sub, sel, res)
-		math.randomseed(res["seed"])
-		local fSignInvX, fSignInvY = res["fSignInvXN"] and -1 or res["fSignInvX"] and 1 or 0, res["fSignInvYN"] and -1 or res["fSignInvY"] and 1 or 0
-		local a = distance(0, 0, res["xOffMax"], res["yOffMax"]) -- max circle radius
+		math.randomseed(res.seed)
+		local fSignInvX, fSignInvY = res.fSignInvXN and -1 or res.fSignInvX and 1 or 0, res.fSignInvYN and -1 or res.fSignInvY and 1 or 0
+		local a = distance(0, 0, res.xOffMax, res.yOffMax) -- max circle radius
 		local xOffPrev, yOffPrev = tinyPos, tinyPos
 
 		aegisub.progress.task("Shaking...")
@@ -213,13 +213,13 @@ if pcall(require,"lib-lyger") and chkver("1.1") then
 
 			-- aegisub.log("i: " .. i .. " x: " .. x .. " y: " .. y .. "\n")
 			local angle, isFirstLine, maxRolls = -1, false, 10000
-			while not isFirstLine and (angle < res["angleMin"] or angle > res["angleMax"]) do 
-				local xSign = res["fSignInvEither"] and res["fSignInvYN"] and -xOffPrev or ((xOffPrev+tinyPos)*-fSignInvX)
-				xNew, xOff = randomOffset(x,res["xOffMin"],res["xOffMax"], res["fSignInvNotBoth"] and res["fSignInvY"] and xOffPrev or xSign)
+			while not isFirstLine and (angle < res.angleMin or angle > res.angleMax) do 
+				local xSign = res.fSignInvEither and res.fSignInvYN and -xOffPrev or ((xOffPrev+tinyPos)*-fSignInvX)
+				xNew, xOff = randomOffset(x,res.xOffMin,res.xOffMax, res.fSignInvNotBoth and res.fSignInvY and xOffPrev or xSign)
 
 				local xSignChng = xOff*xOffPrev < 0
-				local ySign = res["fSignInvEither"] and not xSignChng and -yOffPrev or ((yOffPrev+tinyPos)*-fSignInvY)
-				yNew, yOff = randomOffset(y,res["yOffMin"],res["yOffMax"], res["fSignInvNotBoth"] and xSignChng and yOffPrev or ySign)
+				local ySign = res.fSignInvEither and not xSignChng and -yOffPrev or ((yOffPrev+tinyPos)*-fSignInvY)
+				yNew, yOff = randomOffset(y,res.yOffMin,res.yOffMax, res.fSignInvNotBoth and xSignChng and yOffPrev or ySign)
 
 				--aegisub.log("xNew: " .. xNew .. " yNew: " .. yNew .. " xOff: " .. xOff .. " yOff: " .. yOff .. "\n")
 
@@ -233,7 +233,7 @@ if pcall(require,"lib-lyger") and chkver("1.1") then
 
 				maxRolls = maxRolls - 1
 				if maxRolls == 0 then error("ERROR: Couldn't find offset that satifies chosen angle constraints (Min: " .. 
-											res["angleMin"] .. "°, Max: " .. res["angleMax"] .. "° for line #" .. i .. ". Aborting.") end
+											res.angleMin .. "°, Max: " .. res.angleMax .. "° for line #" .. i .. ". Aborting.") end
 			end
 
 			line.text=line_exclude(line.text,{"pos"})

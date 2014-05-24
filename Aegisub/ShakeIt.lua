@@ -1,20 +1,20 @@
 script_name="Shake It"
 script_description="Lets you add a shaking effect to fbf typesets with configurable constraints."
-script_version="0.0.1"
+script_version="0.0.2"
 script_author="line0"
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.1 OR HIGHER]]--
 if pcall(require,"lib-lyger") and chkver("1.1") then
 	local tinyPos = 0.0001
 	
-	function randomOffset(n,offMin,offMax,sign)
+	function randomOffset(offMin,offMax,sign)
 		if not sign or sign==0 then 
 			sign = math.random(0,1) == 0 and -1 or 1 
 		else sign = sign/math.abs(sign)
 		end
 
 		local off = math.random(offMin*sign,offMax*sign)
-		return n+off, off
+		return off
 	end
 
 	function distance(x1, y1, x2, y2)
@@ -28,6 +28,17 @@ if pcall(require,"lib-lyger") and chkver("1.1") then
 		return x*norm, y*norm
 	end
 
+	function findInTable(table,prop,val,retIndex)
+		for i=1,#table,1 do
+			for p,v in pairs(table[i]) do
+				if p==prop and v==val then
+					return retIndex and i or true
+				end
+			end
+		end
+		return retIndex and 0 or false
+	end
+
 	function shakeIt(sub, sel)
 		local dlg = {
 			{
@@ -37,7 +48,7 @@ if pcall(require,"lib-lyger") and chkver("1.1") then
 			},
 			{
 				class="floatedit",
-				name="xOffMin",
+				name="offXMin",
 				x=0, y=1, width=3, height=1,
 				value=0, min=0, max=99999, step=1
 			},
@@ -48,13 +59,13 @@ if pcall(require,"lib-lyger") and chkver("1.1") then
 			},
 			{
 				class="floatedit",
-				name="xOffMax",
+				name="offXMax",
 				x=6, y=1, width=4, height=1,
 				value=10, min=0, max=99999, step=1
 			},
 			{
 				class="floatedit",
-				name="yOffMin",
+				name="offYMin",
 				x=0, y=2, width=3, height=1,
 				value=0, min=0, max=99999, step=1
 			},
@@ -65,7 +76,7 @@ if pcall(require,"lib-lyger") and chkver("1.1") then
 			},
 			{
 				class="floatedit",
-				name="yOffMax",
+				name="offYMax",
 				x=6, y=2, width=4, height=1,
 				value=10, min=0, max=999999, step=1
 			},
@@ -170,11 +181,11 @@ if pcall(require,"lib-lyger") and chkver("1.1") then
 
 			local err = {"The following errors occured: "}
 			
-			if res.xOffMax < res.xOffMin then
-				err[#err+1] = "Mininum x offset ("..res.xOffMin..") must not be bigger than maximum x offset ("..res.xOffMax..")."
+			if res.offXMax < res.offXMin then
+				err[#err+1] = "Mininum x offset ("..res.offXMin..") must not be bigger than maximum x offset ("..res.offXMax..")."
 			end
-			if res.yOffMax < res.yOffMin then
-				err[#err+1] = "Mininum y offset ("..res.yOffMin..") must not be bigger than maximum y offset ("..res.yOffMax..")."
+			if res.offYMax < res.offYMin then
+				err[#err+1] = "Mininum y offset ("..res.offYMin..") must not be bigger than maximum y offset ("..res.offYMax..")."
 			end
 			if res.angleMax < res.angleMin then
 				err[#err+1] = "Mininum angle ("..res.angleMin..") must not be bigger than maximum angle ("..res.angleMax..")."
@@ -193,39 +204,70 @@ if pcall(require,"lib-lyger") and chkver("1.1") then
 			end
 
 			if err[2] then aegisub.log(table.concat(err,"\n"))
+			--else shakeItProc(sub, sel, res) end
 			else shakeItProc(sub, sel, res) end
 		end
 	end
 
-	function shakeItProc(sub, sel, res)
-		math.randomseed(res.seed)
-		local fSignInvX, fSignInvY = res.fSignInvXN and -1 or res.fSignInvX and 1 or 0, res.fSignInvYN and -1 or res.fSignInvY and 1 or 0
-		local a = distance(0, 0, res.xOffMax, res.yOffMax) -- max circle radius
-		local xOffPrev, yOffPrev = tinyPos, tinyPos
-
-		aegisub.progress.task("Shaking...")
-
+	function test(sub, sel, res)
+		local inspect = require("inspect")
+		local startTimes = {}
 		for i=1,#sel,1 do
 			local line=sub[sel[i]]
-			local x,y = get_pos(line)
+			if not startTimes[line.start_time] then startTimes[line.start_time] = {lines={i}}
+			else table.insert(startTimes[line.start_time].lines,i) end
+		end
+		aegisub.log(inspect(startTimes))
+	end
 
-			aegisub.progress.set(100*i/#sel)
+	function shakeItApply(sub, startTimes)
+		aegisub.progress.task("Shaking...")
+		for j,startTime in ipairs(startTimes) do
+			aegisub.progress.set(50+50*j/#startTimes)
+			for i=1,#startTime.lines,1 do
+				local line=sub[startTime.lines[i]]
+				local x,y = get_pos(line)
+				-- aegisub.log("Line: " .. startTime.lines[i] .. " x: " .. x .. " y: " .. y .. "Offset x: " .. startTime.offX .. " y: " .. startTime.offY .."\n")
+				line.text=line_exclude(line.text,{"pos"})
+				line.text=line.text:gsub("^{", "{\\pos(".. float2str(x+startTime.offX)..",".. float2str(y+startTime.offY)..")")
+				sub[startTime.lines[i]] = line
+			end
+		end
+	end
 
-			-- aegisub.log("i: " .. i .. " x: " .. x .. " y: " .. y .. "\n")
+	function shakeItProc(sub, sel, res)
+		local startTimes = {}
+		for i=1,#sel,1 do
+			local line=sub[sel[i]]
+			idx = findInTable(startTimes,"startTime", line.start_time,true)
+			if idx==0 then table.insert(startTimes, {startTime=line.start_time, lines={sel[i]}})
+			else table.insert(startTimes[idx].lines,sel[i]) end
+		end
+		table.sort(startTimes, function(a,b) return a.startTime<b.startTime end)
+
+		math.randomseed(res.seed)
+		local fSignInvX, fSignInvY = res.fSignInvXN and -1 or res.fSignInvX and 1 or 0, res.fSignInvYN and -1 or res.fSignInvY and 1 or 0
+		local a = distance(0, 0, res.offXMax, res.offYMax) -- max circle radius
+		local offXPrev, offYPrev = tinyPos, tinyPos
+
+		aegisub.progress.task("Rolling...")
+		for i=1,#startTimes,1 do
+			aegisub.progress.set(50*i/#sel)
+			
 			local angle, isFirstLine, maxRolls = -1, false, 10000
 			while not isFirstLine and (angle < res.angleMin or angle > res.angleMax) do 
-				local xSign = res.fSignInvEither and res.fSignInvYN and -xOffPrev or ((xOffPrev+tinyPos)*-fSignInvX)
-				xNew, xOff = randomOffset(x,res.xOffMin,res.xOffMax, res.fSignInvNotBoth and res.fSignInvY and xOffPrev or xSign)
+				local xSign = res.fSignInvEither and res.fSignInvYN and -offXPrev or ((offXPrev+tinyPos)*-fSignInvX)
+				offX = randomOffset(res.offXMin,res.offXMax, res.fSignInvNotBoth and res.fSignInvY and offXPrev or xSign)
 
-				local xSignChng = xOff*xOffPrev < 0
-				local ySign = res.fSignInvEither and not xSignChng and -yOffPrev or ((yOffPrev+tinyPos)*-fSignInvY)
-				yNew, yOff = randomOffset(y,res.yOffMin,res.yOffMax, res.fSignInvNotBoth and xSignChng and yOffPrev or ySign)
+				local xSignChng = offX*offXPrev < 0
+				local ySign = res.fSignInvEither and not xSignChng and -offYPrev or ((offYPrev+tinyPos)*-fSignInvY)
+				offY = randomOffset(res.offYMin,res.offYMax, res.fSignInvNotBoth and xSignChng and offYPrev or ySign)
 
-				--aegisub.log("xNew: " .. xNew .. " yNew: " .. yNew .. " xOff: " .. xOff .. " yOff: " .. yOff .. "\n")
+				--aegisub.log("offX: " .. offX .. " offY: " .. offY .. "\n")
 
-				local xOffNorm, yOffNorm = normLength(xOff, yOff, a)
-				local xOffPrevNorm, yOffPrevNorm = normLength(xOffPrev, yOffPrev,a)
-				local d = distance(xOffPrevNorm, yOffPrevNorm, normLength(xOff, yOff, a))
+				local offXNorm, offYNorm = normLength(offX, offY, a)
+				local offXPrevNorm, offYPrevNorm = normLength(offXPrev, offYPrev,a)
+				local d = distance(offXPrevNorm, offYPrevNorm, normLength(offX, offY, a))
 
 				angle=math.acos((2*a^2-math.abs(d)^2)/2/a^2)*180/math.pi
 				--aegisub.log("Angle: " .. angle .. "\n")
@@ -233,15 +275,13 @@ if pcall(require,"lib-lyger") and chkver("1.1") then
 
 				maxRolls = maxRolls - 1
 				if maxRolls == 0 then error("ERROR: Couldn't find offset that satifies chosen angle constraints (Min: " .. 
-											res.angleMin .. "°, Max: " .. res.angleMax .. "° for line #" .. i .. ". Aborting.") end
+											res.angleMin .. "°, Max: " .. res.angleMax .. "° for line" .. startTimes[i].lines[1] .. ". Aborting.") end
 			end
 
-			line.text=line_exclude(line.text,{"pos"})
-			line.text=line.text:gsub("^{", "{\\pos(".. float2str(xNew)..",".. float2str(yNew)..")")
-			sub[sel[i]] = line
-
-			xOffPrev, yOffPrev = xOff, yOff
+			startTimes[i].offX, startTimes[i].offY = offX, offY
+			offXPrev, offYPrev = offX, offY
 		end
+		shakeItApply(sub, startTimes)
 	end
 
 	aegisub.register_macro(script_name, script_description, shakeIt)

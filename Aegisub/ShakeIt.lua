@@ -204,20 +204,8 @@ if pcall(require,"lib-lyger") and chkver("1.1") then
 			end
 
 			if err[2] then aegisub.log(table.concat(err,"\n"))
-			--else shakeItProc(sub, sel, res) end
 			else shakeItProc(sub, sel, res) end
 		end
-	end
-
-	function test(sub, sel, res)
-		local inspect = require("inspect")
-		local startTimes = {}
-		for i=1,#sel,1 do
-			local line=sub[sel[i]]
-			if not startTimes[line.start_time] then startTimes[line.start_time] = {lines={i}}
-			else table.insert(startTimes[line.start_time].lines,i) end
-		end
-		aegisub.log(inspect(startTimes))
 	end
 
 	function shakeItApply(sub, startTimes)

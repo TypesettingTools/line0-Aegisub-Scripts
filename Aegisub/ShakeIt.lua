@@ -1,6 +1,6 @@
 script_name="Shake It"
 script_description="Lets you add a shaking effect to fbf typesets with configurable constraints."
-script_version="0.0.2"
+script_version="0.0.3"
 script_author="line0"
 
 --[[REQUIRE lib-lyger.lua OF VERSION 1.1 OR HIGHER]]--
@@ -12,8 +12,7 @@ if pcall(require,"lib-lyger") and chkver("1.1") then
 			sign = math.random(0,1) == 0 and -1 or 1 
 		else sign = sign/math.abs(sign)
 		end
-
-		local off = math.random(offMin*sign,offMax*sign)
+		local off = sign*(offMin + math.random()*(offMax-offMin))
 		return off
 	end
 

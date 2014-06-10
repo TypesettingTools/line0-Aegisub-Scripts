@@ -213,6 +213,10 @@ if pcall(require,"lib-lyger") and chkver("1.1") then
 			aegisub.progress.set(50+50*j/#startTimes)
 			for i=1,#startTime.lines,1 do
 				local line=sub[startTime.lines[i]]
+				
+				--karaskel shenanigans
+				local meta,styles = karaskel.collect_head(sub, false)
+				karaskel.preproc_line(sub,meta,styles,line)
 				local x,y = get_pos(line)
 				-- aegisub.log("Line: " .. startTime.lines[i] .. " x: " .. x .. " y: " .. y .. "Offset x: " .. startTime.offX .. " y: " .. startTime.offY .."\n")
 				line.text=line_exclude(line.text,{"pos"})

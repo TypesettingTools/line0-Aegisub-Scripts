@@ -1,18 +1,18 @@
 ﻿#include "./lodash.jsxinc"
 
 var l0 = {
-        getAllPaths : function(container, allowCompound, containerProps, layerProps, notMatchContainerProps, notMatchLayerProps)
+        getAllPaths : function(container, pathItemTypes, containerProps, layerProps, notMatchContainerProps, notMatchLayerProps)
         {       
             // Don't use this on selections, needs some more insanities to work!
             // Defaults:
             allowCompound = this.setDefault(allowCompound, false)
             notMatchContainerProps = this.setDefault(notMatchContainerProps, false)
             notMatchLayerProps = this.setDefault(notMatchLayerProps, false)
+            pathItemTypes = this.setDefault(pathItemTypes,  ["PathItem"])
 
             var allPaths = []
-            var pathItemTypes = ["PathItem"]
             var containerTypes = ["GroupItem", "Layer"] // coming across a layer shouldn't happen, but it's adobe, who knows?
-            allowCompound ? pathItemTypes.push("CompoundPathItem") : containerTypes.push("CompoundPathItem")
+            if (_.indexOf(pathItemTypes, "CompoundPathItem") == -1) { containerTypes.push("CompoundPathItem") }
             
             getAllPaths_process(container, 0)
             return allPaths
@@ -55,6 +55,34 @@ var l0 = {
         setDefault : function(v, def)
         {
             return typeof v !== 'undefined' ? v : def
+        },
+        movePathsToCompound : function(container, cmpnd)
+        {
+               while(container.pathItems.length > 0) {
+                    container.pathItems[0].move(cmpnd, ElementPlacement.PLACEATEND)
+               } 
+               if(container.compoundPathItems) {
+                    while(container.compoundPathItems.length > 0) { 
+                         l0.movePathsToCompound(container.compoundPathItems[0], cmpnd)
+                          container.compoundPathItems[0].remove()
+                    }
+               }
+         },
+        genGUIDs: function(container)
+        {
+            container = this.setDefault(container,  app.activeDocument)
+            _.chain(container.pageItems).filter(function(pI) { return !pI.guid }).forEach(function(pI) {
+                // http://stackoverflow.com/a/2117523
+                pI.guid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+                    return v.toString(16);
+                });
+           })
+       },
+       reorderPageItem: function(pageItem, count) 
+       {
+            for(var i=0; i<Math.abs(count); i++) {
+                count < 0 ? pageItem.zOrder(ZOrderMethod.BRINGFORWARD) : pageItem.zOrder(ZOrderMethod.SENDBACKWARD)
+            }
         }
 }
-

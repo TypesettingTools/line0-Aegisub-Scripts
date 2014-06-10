@@ -68,16 +68,25 @@ var l0 = {
                     }
                }
          },
-        genGUIDs: function(container)
+        genNewGUID: function(obj)
         {
-            container = this.setDefault(container,  app.activeDocument)
-            _.chain(container.pageItems).filter(function(pI) { return !pI.guid }).forEach(function(pI) {
-                // http://stackoverflow.com/a/2117523
-                pI.guid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                    var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
-                    return v.toString(16);
-                });
-           })
+            // http://stackoverflow.com/a/2117523
+            obj.note = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random()*16|0, v = c == 'x' ? r : (r&0x3|0x8);
+                return v.toString(16);
+             })
+            return obj.note
+        },
+        genGUIDs: function(obj, containerOnly)
+        {
+            obj = this.setDefault(obj,  app.activeDocument)
+            objs = containerOnly  || !obj.pageItems ? [obj] : [obj].concat(_.toArray(obj.pageItems))
+            _.chain(objs).filter(function(pI) { return !pI.guid }).forEach(function(pI) { this.genNewGUID(pI) },this)
+       },
+       getGUID: function(obj)
+       {
+          mPos = obj.note.search(/[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}/i)
+          return mPos >= 0 ? obj.note.substr(mPos, 36) : this.genNewGUID(obj)
        },
        reorderPageItem: function(pageItem, count) 
        {

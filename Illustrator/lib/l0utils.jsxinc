@@ -5,7 +5,6 @@ var l0 = {
         {       
             // Don't use this on selections, needs some more insanities to work!
             // Defaults:
-            allowCompound = this.setDefault(allowCompound, false)
             notMatchContainerProps = this.setDefault(notMatchContainerProps, false)
             notMatchLayerProps = this.setDefault(notMatchLayerProps, false)
             pathItemTypes = this.setDefault(pathItemTypes,  ["PathItem"])

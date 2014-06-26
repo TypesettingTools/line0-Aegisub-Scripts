@@ -7,7 +7,11 @@ var clipGroups = _.where(doc.groupItems, {'clipped' : true})
 
 _(clipGroups).forEach(function(clipGroup)
 {
-    var clipPath = _.where(clipGroup.pageItems, {'clipping' : true})[0]
+    
+    var clipPath = _.filter(clipGroup.pageItems, function(pI){
+        // return pI.clipping || pI.typename=="CompoundPathItem" && pI.pathItems[0].clipping})[0]
+        // apparently compound clipping paths always return 0 pathItems which leaves me with no way to determine wether a compound path is a clipping path. bug?
+        return pI.clipping || pI.typename=="CompoundPathItem"})[0]
     
     _.chain(l0.getAllPaths(clipGroup)).reject({'clipping' : true}).forEach(function(path)
     {

@@ -20,7 +20,8 @@ var l0 = {
             {
                     
                 if((l0.hasProps(container, containerProps) != notMatchContainerProps) ) {
-                    var pageItems = (container.typename == "CompoundPathItem") ? container.pathItems : container.pageItems
+                    var pageItems = container.length >= 0 ? container : 
+                                              (container.typename == "CompoundPathItem" ? container.pathItems : container.pageItems)
                     _.chain(pageItems).filter(function(pageItem) {
                             var isLevelNItem = l0.isLevel0PageItem(pageItem) || container == l0.getParentEx(pageItem)
                             return isLevelNItem && (l0.hasProps(pageItem.layer, layerProps)  != notMatchLayerProps)

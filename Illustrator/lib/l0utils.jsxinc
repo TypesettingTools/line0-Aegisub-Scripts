@@ -1,34 +1,44 @@
 ﻿#include "./lodash.jsxinc"
 
 var l0 = {
-        getAllPaths : function(container, pathItemTypes, containerProps, layerProps, notMatchContainerProps, notMatchLayerProps)
+        getPaths : function(container, pathItemTypes, pathProps, containerProps, layerProps, matchPathProps, matchContainerProps, matchLayerProps)
         {       
-            // Don't use this on selections, needs some more insanities to work!
             // Defaults:
-            notMatchContainerProps = this.setDefault(notMatchContainerProps, false)
-            notMatchLayerProps = this.setDefault(notMatchLayerProps, false)
+            matchPathProps = this.setDefault(matchPathProps, true)
+            matchContainerProps = this.setDefault(matchContainerProps, true)
+            matchLayerProps = this.setDefault(matchLayerProps, true)
             pathItemTypes = this.setDefault(pathItemTypes,  ["PathItem"])
-
+           
+            var isSelection = container.length >= 0
             var allPaths = []
             var containerTypes = ["GroupItem", "Layer"] // coming across a layer shouldn't happen, but it's adobe, who knows?
             if (_.indexOf(pathItemTypes, "CompoundPathItem") == -1) { containerTypes.push("CompoundPathItem") }
             
-            getAllPaths_process(container, 0)
+            getPaths_process(container, 0)
             return allPaths
             
-            function getAllPaths_process(container, depth)
+            function getPaths_process(container, depth)
             {
-                    
-                if((l0.hasProps(container, containerProps) != notMatchContainerProps) ) {
-                    var pageItems = container.length >= 0 ? container : 
-                                              (container.typename == "CompoundPathItem" ? container.pathItems : container.pageItems)
-                    _.chain(pageItems).filter(function(pageItem) {
-                            var isLevelNItem = l0.isLevel0PageItem(pageItem) || container == l0.getParentEx(pageItem)
-                            return isLevelNItem && (l0.hasProps(pageItem.layer, layerProps)  != notMatchLayerProps)
-                    }).forEach(function(pageItem) 
+                if((l0.hasProps(container, containerProps) == matchContainerProps) ) {
+                    var pIs = isSelection && depth == 0 ? container : (container.typename == "CompoundPathItem" ? container.pathItems : container.pageItems)                                      
+                    _.chain(pIs).filter(function(pI) {
+                            var isLevelNItem = l0.isLevel0PageItem(pI) || container == l0.getParentEx(pI) // make sure all pageItems are direct children of the parent
+                            return (isLevelNItem || (isSelection && depth == 0)) && l0.hasProps(pI.layer, layerProps)  == matchLayerProps
+                    }).forEach(function(pI) 
                     {
-                        if(_.contains(pathItemTypes, pageItem.typename)) {allPaths.push(pageItem)}
-                        else if(_.contains(containerTypes, pageItem.typename)) {getAllPaths_process(pageItem, depth+1)}
+                        if(_.contains(pathItemTypes, pI.typename) &&  l0.hasProps(pI, pathProps)  == matchPathProps) {
+                            allPaths.push(pI)
+                        }
+                        else if(_.contains(containerTypes, pI.typename)) {
+                            // handle cases where compound paths contain groups, hiding the paths contained within
+                            if(pI.typename == "CompoundPathItem" && pI.pathItems.length == 0 && !_.contains(pathItemTypes, pI.typename)) {
+                                _.chain(doc.pageItems).where({'parent': pI}).forEach(function(cpiChild) {
+                                    cpiChild.typename == "PathItem" && l0.hasProps(cpiChild, pathProps) == matchLayerProps ? allPaths.push(cpiChild) 
+                                                                                                                                                                            :  getPaths_process (cpiChild, depth+1)
+                                })
+                            }
+                            else getPaths_process(pI, depth+1)
+                        }
                     })
                 }
                 depth--

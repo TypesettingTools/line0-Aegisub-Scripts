@@ -51,8 +51,8 @@ function l0_extendPaths() {
         dlg.extDlg.extend.enabled = false
         dlg.extDlg.extend.text = "Extending..."
         
-        _(l0.getAllPaths(doc.selection, ["PathItem","CompoundPathItem"])).filter(function(pI){
-            return pI.width > 0 && pI.height >0 && (dlg.extDlg.clip.value ? true : !pI.clipping)
+        _(l0.getPaths(doc.selection, ["PathItem","CompoundPathItem"], dlg.extDlg.clip.value ? {} :  {'clipping' : false} )).filter(function(pI){
+            return pI.width > 0 && pI.height >0
         }).forEach(function(pI,i,pIs)
         {
             pI.left = pI.left - parseFloat(dlg.extDlg.left.val.text)
@@ -64,5 +64,4 @@ function l0_extendPaths() {
         })
         dlg.close()
     }
-
 }

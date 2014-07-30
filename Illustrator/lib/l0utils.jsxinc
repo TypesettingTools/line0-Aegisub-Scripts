@@ -133,5 +133,43 @@ var l0 = {
                     parent = parent.parent
                 }
             })
+       },
+       progressBar: function(activity, callback, windowProps)
+       {
+            function progress(activity, callback, windowProps) {
+                this.activity = activity
+                windowProps = l0.setDefault(windowProps, {resizeable: false, independent: false, borderless: true})
+                
+                var extDlgRes ="Group { orientation: 'column', alignment:['fill', 'fill'], alignChildren: 'center', \
+                activity: StaticText {text: '" + this.activity +"'},\
+                progress: Progressbar {value: 0, size: [200,25]},\
+                status: StaticText {text: '',  preferredSize: [200,-1], justify: 'center'},\
+                }"
+                
+                dlg = new Window("dialog", this.activity, void 0, windowProps)
+                dlg.prog = dlg.add(extDlgRes)
+                
+                dlg.onActivate = function() {  
+                    dlg.onActivate = undefined
+                    callback()
+                }
+                this.dlg = dlg
+            }
+            progress.prototype.start = function() {
+                this.dlg.show()
+            }
+            progress.prototype.setProgress = function(progress) {
+                this.dlg.prog.progress.value = progress * 100
+                this.dlg.update()
+            }
+            progress.prototype.setStatus = function(status) {
+                this.dlg.prog.status.text = status
+                this.dlg.update()
+            }
+            progress.prototype.close = function() {
+                this.dlg.close()
+                delete this
+            }
+            return new progress(activity, callback, windowProps)
        }
 }

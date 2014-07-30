@@ -8,11 +8,19 @@ var l0 = {
             matchContainerProps = this.setDefault(matchContainerProps, true)
             matchLayerProps = this.setDefault(matchLayerProps, true)
             pathItemTypes = this.setDefault(pathItemTypes,  ["PathItem"])
+            pathProps = this.setDefault(pathProps,  {})
+            containerProps = this.setDefault(containerProps,  {})
+            layerProps = this.setDefault(layerProps,  {})
            
             var isSelection = container.length >= 0
             var allPaths = []
             var containerTypes = ["GroupItem", "Layer"] // coming across a layer shouldn't happen, but it's adobe, who knows?
-            if (_.indexOf(pathItemTypes, "CompoundPathItem") == -1) { containerTypes.push("CompoundPathItem") }
+            var cmpPathIsContainer = _.indexOf(pathItemTypes, "CompoundPathItem") == -1
+            if (cmpPathIsContainer) { containerTypes.push("CompoundPathItem") }
+            
+            if(this.hasProps(pathProps, ["clipping"], true) || (this.hasProps(containerProps, ["clipping"], true) && cmpPathIsContainer)) { 
+                this.setCompoundPathClipping(doc)
+            }
             
             getPaths_process(container, 0)
             return allPaths
@@ -44,9 +52,17 @@ var l0 = {
                 depth--
             }
         }, 
-        hasProps : function(object, props)
+        hasProps : function(obj, props, anyVal)
         {
-            return !props || ( object && _.where([object], props).length > 0)
+            if (!props || _.keys(props).length == 0) { return true }
+            else if (anyVal) {
+                var hasAllProps=true
+                _.chain(props).keys().forEach(function(prop) {
+                    hasAllProps = hasAllProps && prop in obj
+                })
+                return hasAllProps
+            }
+            else return obj && _.where([obj], props).length > 0
         },
         getParentEx : function(object) {
             if(object.typename == "PathItem")
@@ -103,5 +119,19 @@ var l0 = {
             for(var i=0; i<Math.abs(count); i++) {
                 count < 0 ? pageItem.zOrder(ZOrderMethod.BRINGFORWARD) : pageItem.zOrder(ZOrderMethod.SENDBACKWARD)
             }
-        }
+        },
+       setCompoundPathClipping: function(doc)
+       { 
+            _.chain(doc.pathItems).forEach(function(pI)
+            {
+                var parent = pI.parent
+                while(_.indexOf(["CompoundPathItem","GroupItem"], parent.typename) != -1)
+                {
+                    if(parent.typename == "CompoundPathItem") {
+                        parent.clipping = pI.clipping
+                    }
+                    parent = parent.parent
+                }
+            })
+       }
 }

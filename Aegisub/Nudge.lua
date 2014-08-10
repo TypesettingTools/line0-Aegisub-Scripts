@@ -13,6 +13,16 @@ math.isInt = function(var)
     return type(var) == "number" and a%1==0
 end
 
+math.toString = function(string, precision)
+    -- stolen from liblyger
+    precision = precision or 3
+    return string.format("%."..tostring(precision).."f",string):gsub("%.(%d-)0+$","%.%1"):gsub("%.$","") end
+
+math.round = function(num,idp)
+  local mult = 10^(idp or 0)
+  return math.floor(num * mult + 0.5) / mult
+end
+
 table.isArray = function(tbl)
     local i = 0
     for _,_ in ipairs(tbl) do i=i+1 end
@@ -30,6 +40,134 @@ table.filter = function(tbl, callback)
     end
     return fltTbl
 end
+
+table.concatArray = function(tbl1,tbl2)
+    local tbl = {}
+    for _,val in ipairs(tbl1) do table.insert(tbl,val) end
+    for _,val in ipairs(tbl2) do table.insert(tbl,val) end
+    return tbl
+end
+
+------ Tag Classes ---------------------
+
+function createClass()
+  local cls = {}
+  cls.__index = cls
+  cls.instanceOf = {[cls] = true}
+  setmetatable(cls, {
+    __call = function (cls, ...)
+    return cls.new(...)
+  end})
+  return cls
+end
+
+ASSNumber = createClass()
+function ASSNumber.new(num, constraints)
+    local self = setmetatable({}, ASSNumber)
+    self.value = tonumber(num) or 0
+    self.constraints = constraints or {}
+    return self
+end
+
+function ASSNumber:get(precision, coerceType)
+    local val = math.round(tonumber(self.value),3)
+    if coerceType then
+        return self.constraints.positive and math.min(val,0) or val
+    elseif type(self.value) ~= "number" then
+        error("Error: ASSNumber must be a number, got " .. type(self.value) .. ".\n")
+    elseif self.constraints.positive and self.value < 0 then
+        error("Error: ASSNumber constraints do not permit numbers < 0.")
+    else return val end
+end
+
+function ASSNumber:add(num)
+    self.value = self.value + num
+end
+
+------ Extend Line Object --------------
+
+local meta = getmetatable(Line)
+meta.__index.tagMap = {
+    xscl = {friendlyName="\\fscx", type="ASSNumber", pattern="\\fscx([%d%.]+)", format="\\fscx%.3f"},
+    yscl = {friendlyName="\\fscy", type="ASSNumber", pattern="\\fscy([%d%.]+)", format="\\fscy%.3f"},
+    ali = {friendlyName="\\an", type="ASSAlign", pattern="\\an([1-9])"},
+    zrot = {friendlyName="\\frz", type="ASSNumber", pattern="\\frz?([%-%d%.]+)"}, 
+    yrot = {friendlyName="\\fry", type="ASSNumber", pattern="\\fry([%-%d%.]+)"}, 
+    xrot = {friendlyName="\\frx", type="ASSNumber", pattern="\\frx([%-%d%.]+)"}, 
+    bord = {friendlyName="\\bord", type="ASSNumber", constraints={positive=true}, pattern="\\bord([%d%.]+)", format="\\bord%.2f"}, 
+    xbord = {friendlyName="\\xbord", type="ASSNumber", constraints={positive=true}, pattern="\\xbord([%d%.]+)", format="\\xbord%.2f"}, 
+    ybord = {friendlyName="\\ybord", type="ASSNumber",constraints={positive=true}, pattern="\\ybord([%d%.]+)", format="\\ybord%.2f"}, 
+    shad = {friendlyName="\\shad", type="ASSNumber", pattern="\\shad([%-%d%.]+)", format="\\shad%.2f"}, 
+    xshad = {friendlyName="\\xshad", type="ASSNumber", pattern="\\xshad([%-%d%.]+)", format="\\xshad%.2f"}, 
+    yshad = {friendlyName="\\yshad", type="ASSNumber", pattern="\\yshad([%-%d%.]+)", format="\\yshad%.2f"}, 
+    reset = {friendlyName="\\r", type="ASSReset", pattern="\\r([^\\}]*)", format="\\r"}, 
+    alpha = {friendlyName="\\alpha", type="ASSAlpha", pattern="\\alpha&H(%x%x)&"}, 
+    l1a = {friendlyName="\\1a", type="ASSAlpha", pattern="\\1a&H(%x%x)&"}, 
+    l2a = {friendlyName="\\2a", type="ASSAlpha", pattern="\\2a&H(%x%x)&"}, 
+    l3a = {friendlyName="\\3a", type="ASSAlpha", pattern="\\3a&H(%x%x)&"}, 
+    l4a = {friendlyName="\\4a", type="ASSAlpha", pattern="\\4a&H(%x%x)&"}, 
+    l1c = {friendlyName="\\1c", type="ASSColor", pattern="\\1?c&H(%x+)&"}, 
+    l2c = {friendlyName="\\2c", type="ASSColor", pattern="\\2c&H(%x+)&"}, 
+    l3c = {friendlyName="\\3c", type="ASSColor", pattern="\\3c&H(%x+)&"}, 
+    l4c = {friendlyName="\\4c", type="ASSColor", pattern="\\4c&H(%x+)&"}, 
+    clip = {friendlyName="\\clip", type="ASSClip", pattern="\\clip%((.-)%)"}, 
+    iclip = {friendlyName="\\iclip", type="ASSClip", pattern="\\iclip%((.-)%)"}, 
+    be = {friendlyName="\\be", type="ASSNumber", constraints={positive=true}, pattern="\\be([%d%.]+)", format="\\be%.2f"}, 
+    blur = {friendlyName="\\blur", type="ASSNumber", constraints={positive=true}, pattern="\\blur([%d%.]+)", format="\\blur%.2f"}, 
+    fax = {friendlyName="\\fax", type="ASSNumber", pattern="\\fax([%-%d%.]+)", format="\\fax%.2f"}, 
+    fay = {friendlyName="\\fay", type="ASSNumber", pattern="\\fay([%-%d%.]+)", format="\\fay%.2f"}, 
+    bold = {friendlyName="\\b", type="ASSWeight", pattern="\\b(%d+)"}, 
+    italic = {friendlyName="\\i", type="ASSToggle", pattern="\\i([10])"}, 
+    underline = {friendlyName="\\u", type="ASSToggle", pattern="\\u([10])"},
+    fsp = {friendlyName="\\fsp", type="ASSNumber", pattern="\\fsp([%-%d%.]+)", format="\\fsp%.2f"},
+    kfill = {friendlyName="\\k", type="ASSDuration", pattern="\\k([%-%d]+)"},
+    ksweep = {friendlyName="\\kf", type="ASSDuration", pattern="\\kf([%-%d]+)"},   -- because fuck \K and lua patterns
+    kbord = {friendlyName="\\ko", type="ASSDuration", pattern="\\ko([%-%d]+)"},
+    pos = {friendlyName="\\pos", type="ASSDuration", pattern="\\pos([%-%d%.]+,[%-%d%.]+)"},
+    move = {friendlyName="\\move", type="ASSMove", pattern="\\move([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+)"},
+    org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)"},
+    wrap = {friendlyName="\\q", type="ASSWrapStyle", pattern="\\q(%d)"},
+    fade = {friendlyName="\\fad", type="ASSFade", pattern="\\fade?%((.-)%)"},
+    transform = {friendlyName="\\t", type="ASSTransform", pattern="\\t%((.-)%)"},
+}
+
+
+meta.__index.getDefaults = function()
+    -- returns a table with Default values for the line (based on style, etc)
+end
+
+meta.__index.addDefault = function(tagName)
+    -- adds override tag from Defaults to start of line if not present
+end
+
+meta.__index.getTagString = function(self,tagName,val)
+    if type(val) == "table" then
+        return self.tagMap[tagName].format:format(val:get())
+    else
+        return self.tagMap[tagName].format:gsub("%%.-%a","%%s"):format(tostring(val))
+    end
+end
+
+meta.__index.getTagVal = function(self,tagName,string)
+    return _G[self.tagMap[tagName].type](string)
+end
+
+meta.__index.modTag = function(self, tagName, callback)
+    local tags, tagsOrg = {},{} 
+    for tag in self.text:gmatch("{.-" .. self.tagMap[tagName].pattern .. ".-}") do
+        tags[#tags+1] = self:getTagVal(tagName, tag)
+        tagsOrg[#tagsOrg+1] = tag
+    end
+
+    for i,tag in pairs(callback(tags)) do
+        aegisub.log("Changed Tag: " .. self:getTagString(tagName, tagsOrg[i]) .. "to: " .. self:getTagString(tagName,tags[i]).. "\n")
+        self.text = self.text:gsub(self:getTagString(tagName, tagsOrg[i]), self:getTagString(tagName,tags[i]), 1)
+    end
+
+    return #tags>0
+end
+
+setmetatable(Line, meta)
 
 --------  Nudger Class -------------------
 local Nudger = {}
@@ -66,7 +204,14 @@ end
 function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,{},sel)
     lines:runCallback(function(lines, line)
-        aegisub.log(line.text) --here be nudge code
+        aegisub.log("BEFORE: " .. line.text .. "\n")
+        line:modTag("xscl", function(tags) -- hardcoded for my convenience
+            for i=1,#tags,1 do
+                tags[i]:add(self.value)
+            end
+            return tags
+        end)
+        aegisub.log("AFTER: " .. line.text .. "\n")
     end)
 end
 -------Dialog Resource Name Encoding---------
@@ -138,11 +283,6 @@ function Configuration:getDialog()
         return tbl1
     end
 
-    function concatArr(tbl1,tbl2)
-        for _,val in ipairs(tbl2) do table.insert(tbl1,val) end
-        return tbl1
-    end
-
     local dialog = {
         {class="label", label="Macro Name", x=0, y=0, width=1, height=1},
         {class="label", label="Override Tag", x=1, y=0, width=1, height=1},
@@ -152,7 +292,7 @@ function Configuration:getDialog()
     }
 
     for i,nu in ipairs(self.nudgers) do
-        dialog = concatArr(dialog, {
+        dialog = table.concatArray(dialog, {
             {class="edit", name=uName.encode(nu.id,"name"), value=nu.name, x=0, y=i, width=1, height=1},
             {class="dropdown", name=uName.encode(nu.id,"tag"), items= {"posx","posy"}, value=nu.tag, x=1, y=i, width=1, height=1},
             {class="dropdown", name=uName.encode(nu.id,"action"), items= {"add","multiply"}, value=nu.action, x=2, y=i, width=1, height=1},

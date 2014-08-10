@@ -4,6 +4,7 @@ script_version="0.0.1"
 script_author="line0"
 
 json = require("json")
+re = require("aegisub.re")
 Line = require("a-mo.Line")
 LineCollection = require("a-mo.LineCollection")
 
@@ -13,14 +14,34 @@ math.isInt = function(var)
     return type(var) == "number" and a%1==0
 end
 
-math.toString = function(string, precision)
-    -- stolen from liblyger
+math.toPrettyString = function(string, precision)
+    -- stolen from liblyger, TODO: actually use it
     precision = precision or 3
     return string.format("%."..tostring(precision).."f",string):gsub("%.(%d-)0+$","%.%1"):gsub("%.$","") end
+
+math.toStrings = function(...)
+    strings={}
+    for _,num in ipairs(table.pack(...)) do
+        strings[#strings+1] = tostring(num)
+    end
+    return unpack(strings)
+end
 
 math.round = function(num,idp)
   local mult = 10^(idp or 0)
   return math.floor(num * mult + 0.5) / mult
+end
+
+string.patternEscape = function(str)
+    return str:gsub("([%%%(%)%[%]%.%*%-%+%?%$%^])","%%%1")
+end
+
+string.toNumbers = function(...)
+    numbers={}
+    for _,string in ipairs(table.pack(...)) do
+        numbers[#numbers+1] = tonumber(string)
+    end
+    return unpack(numbers)
 end
 
 table.isArray = function(tbl)
@@ -50,10 +71,14 @@ end
 
 ------ Tag Classes ---------------------
 
-function createClass()
+function createClass(typeName)
   local cls = {}
   cls.__index = cls
   cls.instanceOf = {[cls] = true}
+  cls.typeName = typeName
+  cls.checkType = function(val, vType)
+        if type(val) ~= vType then error("Error: " .. cls.typeName .. " must be a number, got " .. type(val) .. ".\n") end
+  end
   setmetatable(cls, {
     __call = function (cls, ...)
     return cls.new(...)
@@ -61,16 +86,16 @@ function createClass()
   return cls
 end
 
-ASSNumber = createClass()
-function ASSNumber.new(num, constraints)
+ASSNumber = createClass("ASSNumber")
+function ASSNumber.new(val, constraints)
     local self = setmetatable({}, ASSNumber)
-    self.value = tonumber(num) or 0
+    self.value = tonumber(val) or 0
     self.constraints = constraints or {}
     return self
 end
 
 function ASSNumber:get(precision, coerceType)
-    local val = math.round(tonumber(self.value),3)
+    local val = math.round(tonumber(self.value),precision or 3)
     if coerceType then
         return self.constraints.positive and math.min(val,0) or val
     elseif type(self.value) ~= "number" then
@@ -84,6 +109,42 @@ function ASSNumber:add(num)
     self.value = self.value + num
 end
 
+function ASSNumber:multiply(num)
+    self.value = self.value * num
+end
+
+ASSPosition = createClass("ASSPosition")
+function ASSPosition.new(valx, valy)
+    local self = setmetatable({}, ASSPosition)
+    if type(valx) == "string" then
+        self.x, self.y = string.toNumbers(valx:match("([%-%d%.]+),([%-%d%.]+)"))
+    else
+        self.x = tonumber(valx) or 0
+        self.y = tonumber(valy) or 0
+    end 
+    return self
+end
+
+function ASSPosition:add(x,y)
+    self.x = x and (self.x + x) or self.x 
+    self.y = y and (self.y + y) or self.y 
+end
+
+function ASSPosition:multiply(x,y)
+    self.x = x and (self.x * x) or self.x 
+    self.y = y and (self.y * y) or self.y 
+end
+
+function ASSPosition:get(precision, coerceType)
+    precision = precision or 3
+    local x = math.round(tonumber(self.x),precision)
+    local y = math.round(tonumber(self.y),precision)
+    if not coerceType then 
+        self.checkType(self.x,"number")
+        self.checkType(self.y,"number")
+    end
+    return x,y
+end
 ------ Extend Line Object --------------
 
 local meta = getmetatable(Line)
@@ -123,7 +184,7 @@ meta.__index.tagMap = {
     kfill = {friendlyName="\\k", type="ASSDuration", pattern="\\k([%-%d]+)"},
     ksweep = {friendlyName="\\kf", type="ASSDuration", pattern="\\kf([%-%d]+)"},   -- because fuck \K and lua patterns
     kbord = {friendlyName="\\ko", type="ASSDuration", pattern="\\ko([%-%d]+)"},
-    pos = {friendlyName="\\pos", type="ASSDuration", pattern="\\pos([%-%d%.]+,[%-%d%.]+)"},
+    pos = {friendlyName="\\pos", type="ASSPosition", pattern="\\pos%(([%-%d%.]+,[%-%d%.]+)%)", format="\\pos(%.2f,%.2f)"},
     move = {friendlyName="\\move", type="ASSMove", pattern="\\move([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+)"},
     org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)"},
     wrap = {friendlyName="\\q", type="ASSWrapStyle", pattern="\\q(%d)"},
@@ -141,10 +202,10 @@ meta.__index.addDefault = function(tagName)
 end
 
 meta.__index.getTagString = function(self,tagName,val)
-    if type(val) == "table" then
+    if type(val) == "table" then -- TODO: better check
         return self.tagMap[tagName].format:format(val:get())
     else
-        return self.tagMap[tagName].format:gsub("%%.-%a","%%s"):format(tostring(val))
+        return re.sub(self.tagMap[tagName].format,"(%.*?[A-Za-z],?)+","%s"):format(tostring(val))
     end
 end
 
@@ -160,8 +221,8 @@ meta.__index.modTag = function(self, tagName, callback)
     end
 
     for i,tag in pairs(callback(tags)) do
-        aegisub.log("Changed Tag: " .. self:getTagString(tagName, tagsOrg[i]) .. "to: " .. self:getTagString(tagName,tags[i]).. "\n")
-        self.text = self.text:gsub(self:getTagString(tagName, tagsOrg[i]), self:getTagString(tagName,tags[i]), 1)
+        aegisub.log("Changed Tag: " .. self:getTagString(tagName, tagsOrg[i]) .. " to: " .. self:getTagString(tagName,tags[i]).. "\n")
+        self.text = self.text:gsub(string.patternEscape(self:getTagString(tagName, tagsOrg[i])), self:getTagString(tagName,tags[i]), 1)
     end
 
     return #tags>0
@@ -205,7 +266,7 @@ function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,{},sel)
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        line:modTag("xscl", function(tags) -- hardcoded for my convenience
+        line:modTag("pos", function(tags) -- hardcoded for my convenience
             for i=1,#tags,1 do
                 tags[i]:add(self.value)
             end

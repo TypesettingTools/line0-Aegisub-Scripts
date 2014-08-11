@@ -105,7 +105,9 @@ end
 
 ASSNumber = createClass("ASSNumber")
 function ASSNumber:new(val, constraints)
-    self.value = tonumber(val) or 0
+    if type(val) == "string" then
+        self.value = tonumber(val) or 0
+    else self.value = val or 0 
     self.constraints = table.merge(self.constraints,constraints)
     return self
 end
@@ -134,8 +136,8 @@ function ASSPosition:new(valx, valy)
     if type(valx) == "string" then
         self.x, self.y = string.toNumbers(valx:match("([%-%d%.]+),([%-%d%.]+)"))
     else
-        self.x = tonumber(valx) or 0
-        self.y = tonumber(valy) or 0
+        self.x = valx or 0
+        self.y = valy or 0
     end 
     return self
 end
@@ -165,7 +167,7 @@ ASSTime = createClass("ASSTime")
 function ASSTime:new(duration, constraints)
     self.constraints = table.merge(self.constraints,constraints)
     self.constraints.scale = self.constraints.scale or 1
-    if type(start) == "string" then
+    if type(duration) == "string" then
         self.value = tonumber(duration)*self.constraints.scale or 0
     else self.value = duration end  
     return self
@@ -187,7 +189,7 @@ function ASSTime:get(coerceType, precision)
         precision = math.min(precision,0)
         val = self.constraints.positive and math.max(val,0)
     else
-        if precison > 0 then error("Error: " .. self.typeName .." doesn't support floating point precision.") end
+        if precision > 0 then error("Error: " .. self.typeName .." doesn't support floating point precision.") end
         self.checkType(self.value,"number")
         if self.constraints.positive then self.checkPositive(self.value) end
     end
@@ -195,6 +197,8 @@ function ASSTime:get(coerceType, precision)
 end
 
 ASSDuration = createClass("ASSDuration", ASSTime, {positive=true})
+
+ASSAlpha = createClass("ASSAlpha")
 ------ Extend Line Object --------------
 
 local meta = getmetatable(Line)

@@ -69,40 +69,56 @@ table.concatArray = function(tbl1,tbl2)
     return tbl
 end
 
+table.merge = function(tbl1,tbl2)
+    local tbl = {}
+    for key,val in pairs(tbl1) do tbl[key] = val end
+    for key,val in pairs(tbl2) do tbl[key] = val end
+    return tbl
+end
+
 ------ Tag Classes ---------------------
 
-function createClass(typeName)
-  local cls = {}
+function createClass(typeName,baseClass,constraints)
+  local cls, baseClass = {}, baseClass or {}
+  for key, val in pairs(baseClass) do
+    cls[key] = val
+  end
+
   cls.__index = cls
   cls.instanceOf = {[cls] = true}
   cls.typeName = typeName
+  cls.constraints = constraints or {}
   cls.checkType = function(val, vType)
-        if type(val) ~= vType then error("Error: " .. cls.typeName .. " must be a number, got " .. type(val) .. ".\n") end
+        if type(val) ~= vType then error("Error: " .. cls.typeName .. " must be a " .. vType .. ", got " .. type(val) .. ".\n") end  
+  end
+  cls.checkPositive = function(val)
+        if val < 0 then error("Error: " .. cls.typeName .. " constraints do not permit numbers < 0.\n") end  
   end
   setmetatable(cls, {
     __call = function (cls, ...)
-    return cls.new(...)
+    local self = setmetatable({}, cls)
+    self:new(...)
+    return self
   end})
   return cls
 end
 
 ASSNumber = createClass("ASSNumber")
-function ASSNumber.new(val, constraints)
-    local self = setmetatable({}, ASSNumber)
+function ASSNumber:new(val, constraints)
     self.value = tonumber(val) or 0
-    self.constraints = constraints or {}
+    self.constraints = table.merge(self.constraints,constraints)
     return self
 end
 
-function ASSNumber:get(precision, coerceType)
+function ASSNumber:get(coerceType, precision)
     local val = math.round(tonumber(self.value),precision or 3)
     if coerceType then
-        return self.constraints.positive and math.min(val,0) or val
-    elseif type(self.value) ~= "number" then
-        error("Error: ASSNumber must be a number, got " .. type(self.value) .. ".\n")
-    elseif self.constraints.positive and self.value < 0 then
-        error("Error: ASSNumber constraints do not permit numbers < 0.")
-    else return val end
+        return self.constraints.positive and math.max(val,0) or val
+    else
+        self.checkType(self.value,"number")
+        if self.constraints.positive then self.checkPositive(self.value) end
+        return val
+    end
 end
 
 function ASSNumber:add(num)
@@ -114,8 +130,7 @@ function ASSNumber:multiply(num)
 end
 
 ASSPosition = createClass("ASSPosition")
-function ASSPosition.new(valx, valy)
-    local self = setmetatable({}, ASSPosition)
+function ASSPosition:new(valx, valy)
     if type(valx) == "string" then
         self.x, self.y = string.toNumbers(valx:match("([%-%d%.]+),([%-%d%.]+)"))
     else
@@ -135,7 +150,7 @@ function ASSPosition:multiply(x,y)
     self.y = y and (self.y * y) or self.y 
 end
 
-function ASSPosition:get(precision, coerceType)
+function ASSPosition:get(coerceType, precision)
     precision = precision or 3
     local x = math.round(tonumber(self.x),precision)
     local y = math.round(tonumber(self.y),precision)
@@ -145,6 +160,41 @@ function ASSPosition:get(precision, coerceType)
     end
     return x,y
 end
+
+ASSTime = createClass("ASSTime")
+function ASSTime:new(duration, constraints)
+    self.constraints = table.merge(self.constraints,constraints)
+    self.constraints.scale = self.constraints.scale or 1
+    if type(start) == "string" then
+        self.value = tonumber(duration)*self.constraints.scale or 0
+    else self.value = duration end  
+    return self
+end
+
+function ASSTime:add(num,isFrameCount)
+    self.value = self.value + num
+    -- TODO: implement adding by framecount
+end
+
+function ASSTime:multiply(num)
+    self.value = self.value * num
+end
+
+function ASSTime:get(coerceType, precision)
+    local val = tonumber(self.value)/self.constraints.scale
+    precision = precision or 0
+    if coerceType then
+        precision = math.min(precision,0)
+        val = self.constraints.positive and math.max(val,0)
+    else
+        if precison > 0 then error("Error: " .. self.typeName .." doesn't support floating point precision.") end
+        self.checkType(self.value,"number")
+        if self.constraints.positive then self.checkPositive(self.value) end
+    end
+    return math.round(val,precision)
+end
+
+ASSDuration = createClass("ASSDuration", ASSTime, {positive=true})
 ------ Extend Line Object --------------
 
 local meta = getmetatable(Line)
@@ -181,9 +231,9 @@ meta.__index.tagMap = {
     italic = {friendlyName="\\i", type="ASSToggle", pattern="\\i([10])"}, 
     underline = {friendlyName="\\u", type="ASSToggle", pattern="\\u([10])"},
     fsp = {friendlyName="\\fsp", type="ASSNumber", pattern="\\fsp([%-%d%.]+)", format="\\fsp%.2f"},
-    kfill = {friendlyName="\\k", type="ASSDuration", pattern="\\k([%-%d]+)"},
-    ksweep = {friendlyName="\\kf", type="ASSDuration", pattern="\\kf([%-%d]+)"},   -- because fuck \K and lua patterns
-    kbord = {friendlyName="\\ko", type="ASSDuration", pattern="\\ko([%-%d]+)"},
+    kfill = {friendlyName="\\k", type="ASSDuration", constraints={scale=10}, pattern="\\k([%d]+)", format="\\k%d"},
+    ksweep = {friendlyName="\\kf", type="ASSDuration", constraints={scale=10}, pattern="\\kf([%d]+)", format="\\kf%d"},   -- because fuck \K and lua patterns
+    kbord = {friendlyName="\\ko", type="ASSDuration", constraints={scale=10}, pattern="\\ko([%d]+)", format="\\ko%d"},
     pos = {friendlyName="\\pos", type="ASSPosition", pattern="\\pos%(([%-%d%.]+,[%-%d%.]+)%)", format="\\pos(%.2f,%.2f)"},
     move = {friendlyName="\\move", type="ASSMove", pattern="\\move([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+)"},
     org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)"},
@@ -193,12 +243,13 @@ meta.__index.tagMap = {
 }
 
 
-meta.__index.getDefaults = function()
-    -- returns a table with Default values for the line (based on style, etc)
+meta.__index.getDefault = function(self,tag)
+    -- returns an object with the default values for a tag in this line
 end
 
-meta.__index.addDefault = function(tagName)
+meta.__index.addTag = function(self, tagName, val, pos)
     -- adds override tag from Defaults to start of line if not present
+    -- pos: +n:n-th override tag; 0:first override tag and after resets -n: position in line
 end
 
 meta.__index.getTagString = function(self,tagName,val)
@@ -210,7 +261,7 @@ meta.__index.getTagString = function(self,tagName,val)
 end
 
 meta.__index.getTagVal = function(self,tagName,string)
-    return _G[self.tagMap[tagName].type](string)
+    return _G[self.tagMap[tagName].type](string,self.tagMap[tagName].constraints)
 end
 
 meta.__index.modTag = function(self, tagName, callback)
@@ -266,7 +317,7 @@ function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,{},sel)
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        line:modTag("pos", function(tags) -- hardcoded for my convenience
+        line:modTag("kfill", function(tags) -- hardcoded for my convenience
             for i=1,#tags,1 do
                 tags[i]:add(self.value)
             end
@@ -339,11 +390,6 @@ function Configuration:getNudger(uuid)
 end
 
 function Configuration:getDialog()
-    function mergeTable(tbl1,tbl2)
-        for key,val in pairs(tbl2) do tbl1[key] = val end
-        return tbl1
-    end
-
     local dialog = {
         {class="label", label="Macro Name", x=0, y=0, width=1, height=1},
         {class="label", label="Override Tag", x=1, y=0, width=1, height=1},

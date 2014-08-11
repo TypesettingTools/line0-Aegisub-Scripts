@@ -41,10 +41,10 @@ string.patternEscape = function(str)
     return str:gsub("([%%%(%)%[%]%.%*%-%+%?%$%^])","%%%1")
 end
 
-string.toNumbers = function(...)
+string.toNumbers = function(base, ...)
     numbers={}
     for _,string in ipairs(table.pack(...)) do
-        numbers[#numbers+1] = tonumber(string)
+        numbers[#numbers+1] = tonumber(string, base)
     end
     return unpack(numbers)
 end
@@ -146,7 +146,7 @@ ASSPosition = createClass("ASSPosition")
 function ASSPosition:new(valx, valy, constraints)
     if type(valx) == "string" then
         constraints = valy or {}
-        self.x, self.y = string.toNumbers(valx:match("([%-%d%.]+),([%-%d%.]+)"))
+        self.x, self.y = string.toNumbers(10,valx:match("([%-%d%.]+),([%-%d%.]+)"))
     else
         self.x, self.y = valx or 0, valy or 0
     end 
@@ -156,6 +156,9 @@ function ASSPosition:new(valx, valy, constraints)
 end
 
 function ASSPosition:add(x,y)
+    if type(x)=="table" and x.instanceOf(ASSPosition) then
+        y,x = x.y, x.x 
+    end
     self.x = x and (self.x + x) or self.x 
     self.y = y and (self.y + y) or self.y 
 end
@@ -233,6 +236,38 @@ function ASSHex:get(coerceType)
     return math.clamp(math.round(tonumber(self.value),0),0,255)
 end
 
+ASSColor = createClass("ASSColor")
+function ASSColor:new(r,g,b, constraints)
+    if type(r) == "string" then
+        constraints = g
+        r,g,b = string.toNumbers(16, r:match("(%x%x)(%x%x)(%x%x)"))    
+    end 
+    self.constraints = table.merge(self.constraints,constraints or {})
+    self.r, self.g, self.b = ASSHex(r), ASSHex(g), ASSHex(b)
+    return self
+end
+
+function ASSColor:modRGB(callback)
+    local r,g,b = callback(self.r.value, self.g.value, self.b.value)
+    self.r.value, self.g.value, self.b.value = r or self.r.value, g or self.g.value, b or self.b.value
+end
+
+function ASSColor:addRGB(rnum,gnum,bnum)
+    self:modRGB(function(r,g,b)
+        return r+(rnum or 0), g+(gnum or 0), b+(bnum or 0) end
+    )
+end
+
+function ASSColor:multiplyRGB(rnum,gnum,bnum)
+    self:modRGB(function(r,g,b)
+        return r*(rnum or 1), g*(gnum or 1), b*(bnum or 1) end
+    )
+end
+
+function ASSColor:get(coerceType)
+    return self.b:get(coerceType), self.g:get(coerceType), self.r:get(coerceType)
+end
+
 ------ Extend Line Object --------------
 
 local meta = getmetatable(Line)
@@ -255,10 +290,10 @@ meta.__index.tagMap = {
     l2a = {friendlyName="\\2a", type="ASSHex", pattern="\\2a&H(%x%x)&", format="\\alpha&H%02X&"}, 
     l3a = {friendlyName="\\3a", type="ASSHex", pattern="\\3a&H(%x%x)&", format="\\alpha&H%02X&"}, 
     l4a = {friendlyName="\\4a", type="ASSHex", pattern="\\4a&H(%x%x)&", format="\\alpha&H%02X&"}, 
-    l1c = {friendlyName="\\1c", type="ASSColor", pattern="\\1?c&H(%x+)&"}, 
-    l2c = {friendlyName="\\2c", type="ASSColor", pattern="\\2c&H(%x+)&"}, 
-    l3c = {friendlyName="\\3c", type="ASSColor", pattern="\\3c&H(%x+)&"}, 
-    l4c = {friendlyName="\\4c", type="ASSColor", pattern="\\4c&H(%x+)&"}, 
+    l1c = {friendlyName="\\1c", type="ASSColor", pattern="\\1?c&H(%x+)&", format="\\1c&H%02X%02X%02X&"}, 
+    l2c = {friendlyName="\\2c", type="ASSColor", pattern="\\2c&H(%x+)&", format="\\2c&H%02X%02X%02X&"}, 
+    l3c = {friendlyName="\\3c", type="ASSColor", pattern="\\3c&H(%x+)&", format="\\3c&H%02X%02X%02X&"}, 
+    l4c = {friendlyName="\\4c", type="ASSColor", pattern="\\4c&H(%x+)&", format="\\4c&H%02X%02X%02X&"}, 
     clip = {friendlyName="\\clip", type="ASSClip", pattern="\\clip%((.-)%)"}, 
     iclip = {friendlyName="\\iclip", type="ASSClip", pattern="\\iclip%((.-)%)"}, 
     be = {friendlyName="\\be", type="ASSNumber", constraints={positive=true}, pattern="\\be([%d%.]+)", format="\\be%.2f"}, 
@@ -355,9 +390,9 @@ function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,{},sel)
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        line:modTag("alpha", function(tags) -- hardcoded for my convenience
+        line:modTag("l1c", function(tags) -- hardcoded for my convenience
             for i=1,#tags,1 do
-                tags[i]:add(self.value)
+                tags[i]:addRGB(self.value)
             end
             return tags
         end)

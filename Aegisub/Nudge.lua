@@ -10,6 +10,11 @@ LineCollection = require("a-mo.LineCollection")
 
 ------ Why does lua suck so much? --------
 
+math.clamp = function(var,min,max)
+    assert(max>min, "Math.clamp: min must not be greater than max, got " .. tostring(min) .. "<" .. tostring(max) ..".\n")
+    return math.min(math.max(var,max),min)
+end
+
 math.isInt = function(var)
     return type(var) == "number" and a%1==0
 end
@@ -89,10 +94,16 @@ function createClass(typeName,baseClass,constraints)
   cls.typeName = typeName
   cls.constraints = constraints or {}
   cls.checkType = function(val, vType)
-        if type(val) ~= vType then error("Error: " .. cls.typeName .. " must be a " .. vType .. ", got " .. type(val) .. ".\n") end  
+        result = (vType=="integer" and math.isInt(val)) or type(val)==vType
+        assert(result, "Error: " .. cls.typeName .. " must be a " .. vType .. ", got " .. type(val) .. ".\n")
   end
   cls.checkPositive = function(val)
-        if val < 0 then error("Error: " .. cls.typeName .. " constraints do not permit numbers < 0.\n") end  
+        cls.checkType(val,"number")
+        assert(val >= 0, "Error: " .. cls.typeName .. " constraints do not permit numbers < 0, got " ..  tostring(val) .. ".\n")
+  end
+  cls.checkRange = function(val,min,max)
+        cls.checkType(val,"number")
+        assert(val >= min and val <= max, "Error: " .. cls.typeName .. " must be a in range " .. min .. "-" .. max .. ", got " .. tostring(val) .. ".\n")
   end
   setmetatable(cls, {
     __call = function (cls, ...)
@@ -105,10 +116,10 @@ end
 
 ASSNumber = createClass("ASSNumber")
 function ASSNumber:new(val, constraints)
-    if type(val) == "string" then
-        self.value = tonumber(val) or 0
-    else self.value = val or 0 
-    self.constraints = table.merge(self.constraints,constraints)
+    self.constraints = table.merge(self.constraints,constraints or {})
+    val = val or 0
+    self.value = type(val)=="string" and tonumber(val) or val
+    self.checkType(self.value, "number")
     return self
 end
 
@@ -132,13 +143,15 @@ function ASSNumber:multiply(num)
 end
 
 ASSPosition = createClass("ASSPosition")
-function ASSPosition:new(valx, valy)
+function ASSPosition:new(valx, valy, constraints)
     if type(valx) == "string" then
+        constraints = valy or {}
         self.x, self.y = string.toNumbers(valx:match("([%-%d%.]+),([%-%d%.]+)"))
     else
-        self.x = valx or 0
-        self.y = valy or 0
+        self.x, self.y = valx or 0, valy or 0
     end 
+    self.checkType(self.x, "integer")
+    self.checkType(self.y, "integer")
     return self
 end
 
@@ -164,12 +177,13 @@ function ASSPosition:get(coerceType, precision)
 end
 
 ASSTime = createClass("ASSTime")
-function ASSTime:new(duration, constraints)
+function ASSTime:new(val, constraints)
     self.constraints = table.merge(self.constraints,constraints)
     self.constraints.scale = self.constraints.scale or 1
-    if type(duration) == "string" then
-        self.value = tonumber(duration)*self.constraints.scale or 0
-    else self.value = duration end  
+    val = val or 0
+    self.value = type(val) == "string" and tonumber(val) or val
+    self.checkType(self.value,"number")   -- not sure if it's better to check for integer instead
+    self.value = self.value*self.constraints.scale 
     return self
 end
 
@@ -189,7 +203,7 @@ function ASSTime:get(coerceType, precision)
         precision = math.min(precision,0)
         val = self.constraints.positive and math.max(val,0)
     else
-        if precision > 0 then error("Error: " .. self.typeName .." doesn't support floating point precision.") end
+        assert(precision <= 0, "Error: " .. self.typeName .." doesn't support floating point precision")
         self.checkType(self.value,"number")
         if self.constraints.positive then self.checkPositive(self.value) end
     end
@@ -198,7 +212,27 @@ end
 
 ASSDuration = createClass("ASSDuration", ASSTime, {positive=true})
 
-ASSAlpha = createClass("ASSAlpha")
+ASSHex = createClass("ASSHex")
+function ASSHex:new(val, constraints)
+    self.constraints = table.merge(self.constraints,constraints or {})
+    self.value = type(val) == "string" and tonumber(val,16) or val
+    self.checkRange(self.value,0,255)
+    return self
+end
+
+function ASSHex:add(num)
+    self.value = self.value + num
+end
+
+function ASSHex:multiply(num)
+    self.value = self.value * num
+end
+
+function ASSHex:get(coerceType)
+    if not coerceType then self.checkRange(self.value,0,255) end
+    return math.clamp(math.round(tonumber(self.value),0),0,255)
+end
+
 ------ Extend Line Object --------------
 
 local meta = getmetatable(Line)
@@ -216,11 +250,11 @@ meta.__index.tagMap = {
     xshad = {friendlyName="\\xshad", type="ASSNumber", pattern="\\xshad([%-%d%.]+)", format="\\xshad%.2f"}, 
     yshad = {friendlyName="\\yshad", type="ASSNumber", pattern="\\yshad([%-%d%.]+)", format="\\yshad%.2f"}, 
     reset = {friendlyName="\\r", type="ASSReset", pattern="\\r([^\\}]*)", format="\\r"}, 
-    alpha = {friendlyName="\\alpha", type="ASSAlpha", pattern="\\alpha&H(%x%x)&"}, 
-    l1a = {friendlyName="\\1a", type="ASSAlpha", pattern="\\1a&H(%x%x)&"}, 
-    l2a = {friendlyName="\\2a", type="ASSAlpha", pattern="\\2a&H(%x%x)&"}, 
-    l3a = {friendlyName="\\3a", type="ASSAlpha", pattern="\\3a&H(%x%x)&"}, 
-    l4a = {friendlyName="\\4a", type="ASSAlpha", pattern="\\4a&H(%x%x)&"}, 
+    alpha = {friendlyName="\\alpha", type="ASSHex", pattern="\\alpha&H(%x%x)&", format="\\alpha&H%02X&"}, 
+    l1a = {friendlyName="\\1a", type="ASSHex", pattern="\\1a&H(%x%x)&", format="\\alpha&H%02X&"}, 
+    l2a = {friendlyName="\\2a", type="ASSHex", pattern="\\2a&H(%x%x)&", format="\\alpha&H%02X&"}, 
+    l3a = {friendlyName="\\3a", type="ASSHex", pattern="\\3a&H(%x%x)&", format="\\alpha&H%02X&"}, 
+    l4a = {friendlyName="\\4a", type="ASSHex", pattern="\\4a&H(%x%x)&", format="\\alpha&H%02X&"}, 
     l1c = {friendlyName="\\1c", type="ASSColor", pattern="\\1?c&H(%x+)&"}, 
     l2c = {friendlyName="\\2c", type="ASSColor", pattern="\\2c&H(%x+)&"}, 
     l3c = {friendlyName="\\3c", type="ASSColor", pattern="\\3c&H(%x+)&"}, 
@@ -321,7 +355,7 @@ function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,{},sel)
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        line:modTag("kfill", function(tags) -- hardcoded for my convenience
+        line:modTag("alpha", function(tags) -- hardcoded for my convenience
             for i=1,#tags,1 do
                 tags[i]:add(self.value)
             end

@@ -5,18 +5,14 @@ script_author="line0"
 
 json = require("json")
 re = require("aegisub.re")
+util = require("aegisub.util")
 Line = require("a-mo.Line")
 LineCollection = require("a-mo.LineCollection")
 
 ------ Why does lua suck so much? --------
 
-math.clamp = function(var,min,max)
-    assert(max>min, "Math.clamp: min must not be greater than max, got " .. tostring(min) .. "<" .. tostring(max) ..".\n")
-    return math.min(math.max(var,max),min)
-end
-
-math.isInt = function(var)
-    return type(var) == "number" and a%1==0
+math.isInt = function(val)
+    return type(val) == "number" and val%1==0
 end
 
 math.toPrettyString = function(string, precision)
@@ -94,17 +90,34 @@ function createClass(typeName,baseClass,constraints)
   cls.typeName = typeName
   cls.constraints = constraints or {}
   cls.checkType = function(val, vType)
-        result = (vType=="integer" and math.isInt(val)) or type(val)==vType
-        assert(result, "Error: " .. cls.typeName .. " must be a " .. vType .. ", got " .. type(val) .. ".\n")
+    result = (vType=="integer" and math.isInt(val)) or type(val)==vType
+    assert(result, "Error: " .. cls.typeName .. " must be a " .. vType .. ", got " .. type(val) .. ".\n")
   end
   cls.checkPositive = function(val)
-        cls.checkType(val,"number")
-        assert(val >= 0, "Error: " .. cls.typeName .. " constraints do not permit numbers < 0, got " ..  tostring(val) .. ".\n")
+    cls.checkType(val,"number")
+    assert(val >= 0, "Error: " .. cls.typeName .. " constraints do not permit numbers < 0, got " ..  tostring(val) .. ".\n")
   end
   cls.checkRange = function(val,min,max)
-        cls.checkType(val,"number")
-        assert(val >= min and val <= max, "Error: " .. cls.typeName .. " must be a in range " .. min .. "-" .. max .. ", got " .. tostring(val) .. ".\n")
+    cls.checkType(val,"number")
+    assert(val >= min and val <= max, "Error: " .. cls.typeName .. " must be a in range " .. min .. "-" .. max .. ", got " .. tostring(val) .. ".\n")
   end
+  cls.getArgs = function(self, args, ...)
+
+    assert(type(args)=="table", "Error: first argument to getArgs must be a table of packed arguments, got " .. type(args) ..".\n")
+    if #args == 1 and type(args[1]) == "table" and args[1].typeName then
+        local res = false
+        for _,class in ipairs(table.concatArray(table.pack(...),{cls})) do
+            res = args[1].instanceOf[class] and true or res
+        end
+        args = assert(res, self.typeName .. " does not accept instances of class " .. args[1].typeName .. " as argument.") and args[1].__values__
+    end
+    for i,arg in ipairs(args) do
+        assert(type(arg)==type(self.__values__[i]) or type(arg)=="nil", 
+               "Error: bad type for argument" .. tostring(i) .. ". Expected " .. type(self.__values__[i]) .. ", got " .. type(arg) .. ".\n") 
+    end
+    return unpack(args)
+  end
+
   setmetatable(cls, {
     __call = function (cls, ...)
     local self = setmetatable({}, cls)
@@ -120,6 +133,7 @@ function ASSNumber:new(val, constraints)
     val = val or 0
     self.value = type(val)=="string" and tonumber(val) or val
     self.checkType(self.value, "number")
+    self.__values__ = {self.value}
     return self
 end
 
@@ -134,12 +148,12 @@ function ASSNumber:get(coerceType, precision)
     end
 end
 
-function ASSNumber:add(num)
-    self.value = self.value + num
+function ASSNumber:add(...)
+    self.value = self.value + self:getArgs({...})
 end
 
-function ASSNumber:multiply(num)
-    self.value = self.value * num
+function ASSNumber:multiply(...)
+    self.value = self.value * self:getArgs({...})
 end
 
 ASSPosition = createClass("ASSPosition")
@@ -152,13 +166,12 @@ function ASSPosition:new(valx, valy, constraints)
     end 
     self.checkType(self.x, "integer")
     self.checkType(self.y, "integer")
+    self.__values__ = {self.x, self.y}
     return self
 end
 
-function ASSPosition:add(x,y)
-    if type(x)=="table" and x.instanceOf(ASSPosition) then
-        y,x = x.y, x.x 
-    end
+function ASSPosition:add(...)
+    x,y = self:getArgs({...})
     self.x = x and (self.x + x) or self.x 
     self.y = y and (self.y + y) or self.y 
 end
@@ -181,12 +194,13 @@ end
 
 ASSTime = createClass("ASSTime")
 function ASSTime:new(val, constraints)
-    self.constraints = table.merge(self.constraints,constraints)
+    self.constraints = table.merge(self.constraints,constraints or {})
     self.constraints.scale = self.constraints.scale or 1
     val = val or 0
     self.value = type(val) == "string" and tonumber(val) or val
     self.checkType(self.value,"number")   -- not sure if it's better to check for integer instead
-    self.value = self.value*self.constraints.scale 
+    self.value = self.value*self.constraints.scale
+    self.__values__ = {self.value}
     return self
 end
 
@@ -220,6 +234,7 @@ function ASSHex:new(val, constraints)
     self.constraints = table.merge(self.constraints,constraints or {})
     self.value = type(val) == "string" and tonumber(val,16) or val
     self.checkRange(self.value,0,255)
+    self.__values__ = {self.value}
     return self
 end
 
@@ -233,7 +248,7 @@ end
 
 function ASSHex:get(coerceType)
     if not coerceType then self.checkRange(self.value,0,255) end
-    return math.clamp(math.round(tonumber(self.value),0),0,255)
+    return util.clamp(math.round(tonumber(self.value),0),0,255)
 end
 
 ASSColor = createClass("ASSColor")
@@ -244,6 +259,7 @@ function ASSColor:new(r,g,b, constraints)
     end 
     self.constraints = table.merge(self.constraints,constraints or {})
     self.r, self.g, self.b = ASSHex(r), ASSHex(g), ASSHex(b)
+    self.__values__ ={self.r, self.b, self.g}
     return self
 end
 
@@ -267,6 +283,36 @@ end
 function ASSColor:get(coerceType)
     return self.b:get(coerceType), self.g:get(coerceType), self.r:get(coerceType)
 end
+
+ASSFade = createClass("ASSFade")
+function ASSFade:new(startDuration,endDuration,startTime,endTime,startAlpha,midAlpha,endAlpha,constraints)
+    if type(startDuration) == "string" then
+        constraints = endDuration or {}
+        prms={}
+        for prm in startDuration:gmatch("([^,]+)") do
+            prms[#prms+1] = tonumber(prm)
+        end
+        if #prms == 2 then 
+            startDuration, endDuration = unpack(prms)
+            constraints.simple = true
+        elseif #prms == 7 then
+            startDuration, endDuration, startTime, endTime = prms[5]-prms[4], prms[7]-prms[6], prms[4], prms[7] 
+        end
+    end 
+    self.constraints = table.merge(self.constraints,constraints or {})
+    self.startDuration, self.endDuration = ASSDuration(startDuration), ASSDuration(endDuration)
+    if self.constraints.simple then
+        self.startTime, self.endTime = ASSTime(0), nil
+        self.startAlpha, self.midAlpha, self.endAlpha = ASSHex(0), ASSHex(255), ASSHex(0)
+    else
+        self.startTime, self.endTime = ASSTime(startTime), ASSTime(endTime)
+        self.startAlpha, self.midAlpha, self.endAlpha = ASSHex(startAlpha), ASSHex(midAlpha), ASSHex(endAlpha)
+    end
+    self.__values__ = {self.startDuration, self.endDuration, self.startTime, self.endTime, self.startAlpha, self.midAlpha, self.endAlpha}
+    return self
+end
+-- only creating from string will set simple flag; otherwise type is dynamically determined from endTime.
+-- when endtime set but constraints.simple then throw error, unless type coersion is true
 
 ------ Extend Line Object --------------
 
@@ -311,7 +357,8 @@ meta.__index.tagMap = {
     move = {friendlyName="\\move", type="ASSMove", pattern="\\move([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+)"},
     org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)"},
     wrap = {friendlyName="\\q", type="ASSWrapStyle", pattern="\\q(%d)"},
-    fade = {friendlyName="\\fad", type="ASSFade", pattern="\\fade?%((.-)%)"},
+    smplfade = {friendlyName="\\fad", type="ASSFade", constraints={simple=true}, pattern="\\fad%((%d+,%d+)%)"},
+    fade = {friendlyName="\\fade", type="ASSFade", pattern="\\fade?%((.-)%)"},
     transform = {friendlyName="\\t", type="ASSTransform", pattern="\\t%((.-)%)"},
 }
 
@@ -390,9 +437,10 @@ function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,{},sel)
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        line:modTag("l1c", function(tags) -- hardcoded for my convenience
+        line:modTag("pos", function(tags) -- hardcoded for my convenience
             for i=1,#tags,1 do
-                tags[i]:addRGB(self.value)
+                --tags[i]:add(self.value,10)
+                tags[i]:add(ASSPosition(self.value,10))
             end
             return tags
         end)

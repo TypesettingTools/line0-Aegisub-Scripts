@@ -45,7 +45,7 @@ string.toNumbers = function(base, ...)
     return unpack(numbers)
 end
 
-table.length = function(tbl)
+table.length = function(tbl) -- currently unused
     local res=0
     for _,_ in pairs(tbl) do res=res+1 end
     return res
@@ -91,7 +91,7 @@ end
 
 ------ Tag Classes ---------------------
 
-function createClass(typeName,baseClass,constraints)
+function createClass(typeName,baseClass,props)
   local cls, baseClass = {}, baseClass or {}
   for key, val in pairs(baseClass) do
     cls[key] = val
@@ -100,7 +100,7 @@ function createClass(typeName,baseClass,constraints)
   cls.__index = cls
   cls.instanceOf = {[cls] = true}
   cls.typeName = typeName
-  cls.constraints = constraints or {}
+  cls.props = props or {}
 
   setmetatable(cls, {
     __call = function (cls, ...)
@@ -119,7 +119,7 @@ end
 
 function ASSBase:checkPositive(val)
     self:checkType(val,"number")
-    assert(val >= 0, "Error: " .. self.typeName .. " constraints do not permit numbers < 0, got " ..  tostring(val) .. ".\n")
+    assert(val >= 0, "Error: " .. self.typeName .. " props do not permit numbers < 0, got " ..  tostring(val) .. ".\n")
 end
 
 function ASSBase:checkRange(val,min,max)
@@ -137,13 +137,11 @@ function ASSBase:getArgs(args, default, ...)
         args = assert(res, self.typeName .. " does not accept instances of class " .. args[1].typeName .. " as argument.") and args[1].__values__
     end
 
-    assert(table.length(self.__values__) >= #args, "Error: too many arguments. Expected " .. tostring(table.length(self.__values__)) .. ", got " .. tostring(#args) .. ".\n")
-    local i=1
-    for key,val in pairs(self.__values__) do
+    assert(#self.__values__.__order__ >= #args, "Error: too many arguments. Expected " .. tostring(#self.__values__.__order__) .. ", got " .. tostring(#args) .. ".\n")
+    for i,val in ipairs(self.__values__.__order__) do
         args[i] = type(args[i])=="nil" and default or args[i]
-        assert(type(args[i])==type(val) or type(args[i])=="nil" or type(val)=="nil", 
-               "Error: bad type for argument" .. tostring(i) .. " (" .. key .. "). Expected " .. type(val) .. ", got " .. type(args[i]) .. ".\n") 
-        i=i+1
+        assert(type(args[i])==type(self.__values__[val]) or type(args[i])=="nil" or type(self.__values__[val])=="nil", 
+               "Error: bad type for argument" .. tostring(i) .. " (" .. val .. "). Expected " .. type(self.__values__[val]) .. ", got " .. type(args[i]) .. ".\n") 
     end
     return unpack(args)
 end
@@ -160,14 +158,15 @@ function ASSBase:get()
 end
 
 function ASSBase:commonOp(method, callback, default, ...)
-    local args = {self:getArgs({...}), default}
-    local j=1
-    for key,val in pairs(self.__values__) do
-        if type(val)=="table" and val.typeOf then
-            val[method](self,table.sliceArray(args,j,j+table.length(val.__values__)))
-            j=j+table.length(val.__values__)
+    local args = {self:getArgs({...}, default)}
+    local j,vals = 1, self.__values__
+    for _,val in ipairs(vals.__order__) do
+        if type(self.__values__[val])=="table" and vals[val].typeOf then
+            subCnt = #vals[val].__values__.__order__
+            vals[val][method](self,table.sliceArray(args,j,j+subCnt))
+            j=j+subCnt
         else 
-            self.__values__[key]=callback(val,args[j])
+            vals[val]=callback(vals[val],args[j])
             j=j+1
         end
     end
@@ -193,13 +192,21 @@ function ASSBase:mod(callback, ...)
     self:set(callback(self:get(...)))
 end
 
+function ASSBase:readProps(props)
+    for key, val in pairs(props or {}) do
+        self[key] = val
+    end
+end
+
+
 ASSNumber = createClass("ASSNumber", ASSBase)
-function ASSNumber:new(val, constraints)
-    self.constraints = table.merge(self.constraints,constraints or {})
+function ASSNumber:new(val, props)
+    self:readProps(props)
     self.__values__ = {
-        value = type(val)=="string" and tonumber(val) or val or 0
+        value = type(val)=="string" and tonumber(val) or val or 0,
+        __order__ = {"value"}
     }
-    setmetatable(getmetatable(self),{__index=self.__values__})
+    setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
     self:checkType(self.value, "number")    
     return self
 end
@@ -207,28 +214,30 @@ end
 function ASSNumber:getTag(coerceType, precision)
     local val = math.round(tonumber(self.value),precision or 3)
     if coerceType then
-        return self.constraints.positive and math.max(val,0) or val
+        return self.props.positive and math.max(val,0) or val
     else
         self:checkType(self.value,"number")
-        if self.constraints.positive then self:checkPositive(self.value) end
+        if self.props.positive then self:checkPositive(self.value) end
         return val
     end
 end
 
 
 ASSPosition = createClass("ASSPosition", ASSBase)
-function ASSPosition:new(valx, valy, constraints)
+function ASSPosition:new(valx, valy, props)
     if type(valx) == "string" then
-        constraints = valy or {}
+        props = valy
         valx, valy = string.toNumbers(10,valx:match("([%-%d%.]+),([%-%d%.]+)"))
     end
+    self:readProps(props)
     self.__values__ = {
         x = valx or 0,
-        y = valy or 0
+        y = valy or 0,
+        __order__ = {"x","y"}
     }
-    setmetatable(getmetatable(self),{__index=self.__values__})
-    self:checkType(self.x, "integer")
-    self:checkType(self.y, "integer")
+    setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
+    self:checkType(self.x, "number")
+    self:checkType(self.y, "number")
     return self
 end
 
@@ -245,29 +254,30 @@ function ASSPosition:getTag(coerceType, precision)
 end
 
 ASSTime = createClass("ASSTime", ASSBase)
-function ASSTime:new(val, constraints)
-    self.constraints = table.merge(self.constraints,constraints or {})
-    self.constraints.scale = self.constraints.scale or 1
+function ASSTime:new(val, props)
+    self:readProps(props)
+    self.scale = self.scale or 1
     self.__values__ = {
-        value = type(val) == "string" and tonumber(val) or val or 0
+        value = type(val) == "string" and tonumber(val) or val or 0,
+        __order__ = {"value"}
     }
-    setmetatable(getmetatable(self),{__index=self.__values__})
+    setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
     self:checkType(self.value,"number")   -- not sure if it's better to check for integer instead
-    self.value = self.value*self.constraints.scale
+    self.value = self.value*self.scale
     return self
      -- TODO: implement adding by framecount
 end
 
 function ASSTime:getTag(coerceType, precision)
-    local val = tonumber(self.value)/self.constraints.scale
+    local val = tonumber(self.value)/self.scale
     precision = precision or 0
     if coerceType then
         precision = math.min(precision,0)
-        val = self.constraints.positive and math.max(val,0)
+        val = self.positive and math.max(val,0)
     else
         assert(precision <= 0, "Error: " .. self.typeName .." doesn't support floating point precision")
         self:checkType(self.value,"number")
-        if self.constraints.positive then self:checkPositive(self.value) end
+        if self.positive then self:checkPositive(self.value) end
     end
     return math.round(val,precision)
 end
@@ -275,12 +285,13 @@ end
 ASSDuration = createClass("ASSDuration", ASSTime, {positive=true})
 
 ASSHex = createClass("ASSHex", ASSBase)
-function ASSHex:new(val, constraints)
-    self.constraints = table.merge(self.constraints,constraints or {})
+function ASSHex:new(val, props)
+    self:readProps(props)
     self.__values__ = {
-        value = type(val) == "string" and tonumber(val,16) or val
+        value = type(val) == "string" and tonumber(val,16) or val,
+        __order__ = {"value"}
     }
-    setmetatable(getmetatable(self),{__index=self.__values__})
+    setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
     self:checkRange(self.value,0,255)
     return self
 end
@@ -291,18 +302,19 @@ function ASSHex:getTag(coerceType)
 end
 
 ASSColor = createClass("ASSColor", ASSBase)
-function ASSColor:new(r,g,b, constraints)
+function ASSColor:new(r,g,b, props)
     if type(r) == "string" then
-        constraints = g
+        props = g
         r,g,b = string.toNumbers(16, r:match("(%x%x)(%x%x)(%x%x)"))    
     end 
-    self.constraints = table.merge(self.constraints,constraints or {})
+    self:readProps(props)
     self.__values__ = {
         r = ASSHex(r),
         g = ASSHex(g),
         b = ASSHex(b),
+        __order__ = {"r","g","b"}
     }
-    setmetatable(getmetatable(self),{__index=self.__values__})
+    setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
     return self
 end
 
@@ -311,34 +323,36 @@ function ASSColor:getTag(coerceType)
 end
 
 ASSFade = createClass("ASSFade", ASSBase)
-function ASSFade:new(startDuration,endDuration,startTime,endTime,startAlpha,midAlpha,endAlpha,constraints)
+function ASSFade:new(startDuration,endDuration,startTime,endTime,startAlpha,midAlpha,endAlpha,props)
     if type(startDuration) == "string" then
-        constraints = endDuration or {}
+        props = endDuration or {}
         prms={}
         for prm in startDuration:gmatch("([^,]+)") do
             prms[#prms+1] = tonumber(prm)
         end
         if #prms == 2 then 
             startDuration, endDuration = unpack(prms)
-            constraints.simple = true
+            props.simple = true
         elseif #prms == 7 then
             startDuration, endDuration, startTime, endTime = prms[5]-prms[4], prms[7]-prms[6], prms[4], prms[7] 
         end
     end 
-    self.constraints = table.merge(self.constraints,constraints or {})
+    self:readProps(props)
     self.__values__ = {
         startDuration = ASSDuration(startDuration), endDuration = ASSDuration(endDuration),
-        startTime = self.constraints.simple and ASSTime(0) or ASSTime(startTime),
-        endTime = self.constraints.simple and nil or ASSTime(endTime),
-        startAlpha = self.constraints.simple and 0 or ASSHex(startAlpha),
-        midAlpha = self.constraints.simple and 255 or ASSHex(midAlpha),
-        endAlpha = self.constraints.simple and 0 or ASSHex(endAlpha),
+        startTime = self.simple and ASSTime(0) or ASSTime(startTime),
+        endTime = self.simple and nil or ASSTime(endTime),
+        startAlpha = self.simple and 0 or ASSHex(startAlpha),
+        midAlpha = self.simple and 255 or ASSHex(midAlpha),
+        endAlpha = self.simple and 0 or ASSHex(endAlpha),
+        __order__ = {"startDuration", "endDuration", "startTime", "endTime", "startAlpha", "midAlpha", "endAlpha"}
     }
-    setmetatable(getmetatable(self),{__index=self.__values__})
+    setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
     return self
 end
 -- only creating from string will set simple flag; otherwise type is dynamically determined from endTime.
--- when endtime set but constraints.simple then throw error, unless type coersion is true
+-- when endtime set but props.simple then throw error, unless type coersion is true
+
 
 ------ Extend Line Object --------------
 
@@ -350,9 +364,9 @@ meta.__index.tagMap = {
     zrot = {friendlyName="\\frz", type="ASSNumber", pattern="\\frz?([%-%d%.]+)"}, 
     yrot = {friendlyName="\\fry", type="ASSNumber", pattern="\\fry([%-%d%.]+)"}, 
     xrot = {friendlyName="\\frx", type="ASSNumber", pattern="\\frx([%-%d%.]+)"}, 
-    bord = {friendlyName="\\bord", type="ASSNumber", constraints={positive=true}, pattern="\\bord([%d%.]+)", format="\\bord%.2f"}, 
-    xbord = {friendlyName="\\xbord", type="ASSNumber", constraints={positive=true}, pattern="\\xbord([%d%.]+)", format="\\xbord%.2f"}, 
-    ybord = {friendlyName="\\ybord", type="ASSNumber",constraints={positive=true}, pattern="\\ybord([%d%.]+)", format="\\ybord%.2f"}, 
+    bord = {friendlyName="\\bord", type="ASSNumber", props={positive=true}, pattern="\\bord([%d%.]+)", format="\\bord%.2f"}, 
+    xbord = {friendlyName="\\xbord", type="ASSNumber", props={positive=true}, pattern="\\xbord([%d%.]+)", format="\\xbord%.2f"}, 
+    ybord = {friendlyName="\\ybord", type="ASSNumber",props={positive=true}, pattern="\\ybord([%d%.]+)", format="\\ybord%.2f"}, 
     shad = {friendlyName="\\shad", type="ASSNumber", pattern="\\shad([%-%d%.]+)", format="\\shad%.2f"}, 
     xshad = {friendlyName="\\xshad", type="ASSNumber", pattern="\\xshad([%-%d%.]+)", format="\\xshad%.2f"}, 
     yshad = {friendlyName="\\yshad", type="ASSNumber", pattern="\\yshad([%-%d%.]+)", format="\\yshad%.2f"}, 
@@ -368,23 +382,23 @@ meta.__index.tagMap = {
     l4c = {friendlyName="\\4c", type="ASSColor", pattern="\\4c&H(%x+)&", format="\\4c&H%02X%02X%02X&"}, 
     clip = {friendlyName="\\clip", type="ASSClip", pattern="\\clip%((.-)%)"}, 
     iclip = {friendlyName="\\iclip", type="ASSClip", pattern="\\iclip%((.-)%)"}, 
-    be = {friendlyName="\\be", type="ASSNumber", constraints={positive=true}, pattern="\\be([%d%.]+)", format="\\be%.2f"}, 
-    blur = {friendlyName="\\blur", type="ASSNumber", constraints={positive=true}, pattern="\\blur([%d%.]+)", format="\\blur%.2f"}, 
+    be = {friendlyName="\\be", type="ASSNumber", props={positive=true}, pattern="\\be([%d%.]+)", format="\\be%.2f"}, 
+    blur = {friendlyName="\\blur", type="ASSNumber", props={positive=true}, pattern="\\blur([%d%.]+)", format="\\blur%.2f"}, 
     fax = {friendlyName="\\fax", type="ASSNumber", pattern="\\fax([%-%d%.]+)", format="\\fax%.2f"}, 
     fay = {friendlyName="\\fay", type="ASSNumber", pattern="\\fay([%-%d%.]+)", format="\\fay%.2f"}, 
     bold = {friendlyName="\\b", type="ASSWeight", pattern="\\b(%d+)"}, 
     italic = {friendlyName="\\i", type="ASSToggle", pattern="\\i([10])"}, 
     underline = {friendlyName="\\u", type="ASSToggle", pattern="\\u([10])"},
     fsp = {friendlyName="\\fsp", type="ASSNumber", pattern="\\fsp([%-%d%.]+)", format="\\fsp%.2f"},
-    fs = {friendlyName="\\fs", type="ASSNumber", constraints={positive=true}, pattern="\\fs([%d%.]+)", format="\\fsp%.2f"},
-    kfill = {friendlyName="\\k", type="ASSDuration", constraints={scale=10}, pattern="\\k([%d]+)", format="\\k%d"},
-    ksweep = {friendlyName="\\kf", type="ASSDuration", constraints={scale=10}, pattern="\\kf([%d]+)", format="\\kf%d"},   -- because fuck \K and lua patterns
-    kbord = {friendlyName="\\ko", type="ASSDuration", constraints={scale=10}, pattern="\\ko([%d]+)", format="\\ko%d"},
+    fs = {friendlyName="\\fs", type="ASSNumber", props={positive=true}, pattern="\\fs([%d%.]+)", format="\\fsp%.2f"},
+    kfill = {friendlyName="\\k", type="ASSDuration", props={scale=10}, pattern="\\k([%d]+)", format="\\k%d"},
+    ksweep = {friendlyName="\\kf", type="ASSDuration", props={scale=10}, pattern="\\kf([%d]+)", format="\\kf%d"},   -- because fuck \K and lua patterns
+    kbord = {friendlyName="\\ko", type="ASSDuration", props={scale=10}, pattern="\\ko([%d]+)", format="\\ko%d"},
     pos = {friendlyName="\\pos", type="ASSPosition", pattern="\\pos%(([%-%d%.]+,[%-%d%.]+)%)", format="\\pos(%.2f,%.2f)"},
     move = {friendlyName="\\move", type="ASSMove", pattern="\\move([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+)"},
     org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)"},
     wrap = {friendlyName="\\q", type="ASSWrapStyle", pattern="\\q(%d)"},
-    smplfade = {friendlyName="\\fad", type="ASSFade", constraints={simple=true}, pattern="\\fad%((%d+,%d+)%)"},
+    smplfade = {friendlyName="\\fad", type="ASSFade", props={simple=true}, pattern="\\fad%((%d+,%d+)%)"},
     fade = {friendlyName="\\fade", type="ASSFade", pattern="\\fade?%((.-)%)"},
     transform = {friendlyName="\\t", type="ASSTransform", pattern="\\t%((.-)%)"},
 }
@@ -408,7 +422,7 @@ meta.__index.getTagString = function(self,tagName,val)
 end
 
 meta.__index.getTagVal = function(self,tagName,string)
-    return _G[self.tagMap[tagName].type](string,self.tagMap[tagName].constraints)
+    return _G[self.tagMap[tagName].type](string,self.tagMap[tagName].props)
 end
 
 meta.__index.modTag = function(self, tagName, callback)
@@ -464,10 +478,10 @@ function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,{},sel)
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        line:modTag("alpha", function(tags) -- hardcoded for my convenience
+        line:modTag("pos", function(tags) -- hardcoded for my convenience
             for i=1,#tags,1 do
                 --tags[i]:add(self.value,10)
-                tags[i]:add(self.value)
+                tags[i]:add(10,20)
                 --tags[i]:mul(self.value,5)
             end
             return tags

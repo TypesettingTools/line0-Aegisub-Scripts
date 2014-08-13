@@ -45,6 +45,12 @@ string.toNumbers = function(base, ...)
     return unpack(numbers)
 end
 
+table.length = function(tbl)
+    local res=0
+    for _,_ in pairs(tbl) do res=res+1 end
+    return res
+end
+
 table.isArray = function(tbl)
     local i = 0
     for _,_ in ipairs(tbl) do i=i+1 end
@@ -77,6 +83,12 @@ table.merge = function(tbl1,tbl2)
     return tbl
 end
 
+table.sliceArray = function(tbl, istart, iend)
+    local arr={}
+    for i=istart,iend,1 do arr[#arr+1]=tbl[i] end
+    return arr
+end
+
 ------ Tag Classes ---------------------
 
 function createClass(typeName,baseClass,constraints)
@@ -89,20 +101,33 @@ function createClass(typeName,baseClass,constraints)
   cls.instanceOf = {[cls] = true}
   cls.typeName = typeName
   cls.constraints = constraints or {}
-  cls.checkType = function(val, vType)
-    result = (vType=="integer" and math.isInt(val)) or type(val)==vType
-    assert(result, "Error: " .. cls.typeName .. " must be a " .. vType .. ", got " .. type(val) .. ".\n")
-  end
-  cls.checkPositive = function(val)
-    cls.checkType(val,"number")
-    assert(val >= 0, "Error: " .. cls.typeName .. " constraints do not permit numbers < 0, got " ..  tostring(val) .. ".\n")
-  end
-  cls.checkRange = function(val,min,max)
-    cls.checkType(val,"number")
-    assert(val >= min and val <= max, "Error: " .. cls.typeName .. " must be a in range " .. min .. "-" .. max .. ", got " .. tostring(val) .. ".\n")
-  end
-  cls.getArgs = function(self, args, ...)
 
+  setmetatable(cls, {
+    __call = function (cls, ...)
+        local self = setmetatable({}, cls)
+        self:new(...)
+        return self
+    end})
+  return cls
+end
+
+ASSBase = createClass("ASSBase")
+function ASSBase:checkType(val, type_)
+    result = (type_=="integer" and math.isInt(val)) or type(val)==type_
+    assert(result, "Error: " .. self.typeName .. " must be a " .. type_ .. ", got " .. type(val) .. ".\n")
+end
+
+function ASSBase:checkPositive(val)
+    self:checkType(val,"number")
+    assert(val >= 0, "Error: " .. self.typeName .. " constraints do not permit numbers < 0, got " ..  tostring(val) .. ".\n")
+end
+
+function ASSBase:checkRange(val,min,max)
+    self:checkType(val,"number")
+    assert(val >= min and val <= max, "Error: " .. self.typeName .. " must be a in range " .. min .. "-" .. max .. ", got " .. tostring(val) .. ".\n")
+end
+
+function ASSBase:getArgs(args, default, ...)
     assert(type(args)=="table", "Error: first argument to getArgs must be a table of packed arguments, got " .. type(args) ..".\n")
     if #args == 1 and type(args[1]) == "table" and args[1].typeName then
         local res = false
@@ -111,109 +136,129 @@ function createClass(typeName,baseClass,constraints)
         end
         args = assert(res, self.typeName .. " does not accept instances of class " .. args[1].typeName .. " as argument.") and args[1].__values__
     end
-    for i,arg in ipairs(args) do
-        assert(type(arg)==type(self.__values__[i]) or type(arg)=="nil", 
-               "Error: bad type for argument" .. tostring(i) .. ". Expected " .. type(self.__values__[i]) .. ", got " .. type(arg) .. ".\n") 
+
+    assert(table.length(self.__values__) >= #args, "Error: too many arguments. Expected " .. tostring(table.length(self.__values__)) .. ", got " .. tostring(#args) .. ".\n")
+    local i=1
+    for key,val in pairs(self.__values__) do
+        args[i] = type(args[i])=="nil" and default or args[i]
+        assert(type(args[i])==type(val) or type(args[i])=="nil" or type(val)=="nil", 
+               "Error: bad type for argument" .. tostring(i) .. " (" .. key .. "). Expected " .. type(val) .. ", got " .. type(args[i]) .. ".\n") 
+        i=i+1
     end
     return unpack(args)
-  end
-
-  setmetatable(cls, {
-    __call = function (cls, ...)
-    local self = setmetatable({}, cls)
-    self:new(...)
-    return self
-  end})
-  return cls
 end
 
-ASSNumber = createClass("ASSNumber")
+function ASSBase:get()
+    local vals = {}
+    for _,val in pairs(self.__values__) do
+        if type(val)=="table" and val.typeOf then
+            for _,cval in pairs({val:get()}) do vals[#vals+1]=cval end
+        else 
+            vals[#vals+1] = val
+        end
+    end
+end
+
+function ASSBase:commonOp(method, callback, default, ...)
+    local args = {self:getArgs({...}), default}
+    local j=1
+    for key,val in pairs(self.__values__) do
+        if type(val)=="table" and val.typeOf then
+            val[method](self,table.sliceArray(args,j,j+table.length(val.__values__)))
+            j=j+table.length(val.__values__)
+        else 
+            self.__values__[key]=callback(val,args[j])
+            j=j+1
+        end
+    end
+end
+
+function ASSBase:add(...)
+    self:commonOp("add", function(a,b) return a+b end, 0, ...)
+end
+
+function ASSBase:mul(...)
+    self:commonOp("mul", function(a,b) return a*b end, 1, ...)
+end
+
+function ASSBase:pow(...)
+    self:commonOp("pow", function(a,b) return a^b end, 1, ...)
+end
+
+function ASSBase:set(...)
+    self:commonOp("set", function(a,b) return b end, nil, ...)
+end
+
+function ASSBase:mod(callback, ...)
+    self:set(callback(self:get(...)))
+end
+
+ASSNumber = createClass("ASSNumber", ASSBase)
 function ASSNumber:new(val, constraints)
     self.constraints = table.merge(self.constraints,constraints or {})
-    val = val or 0
-    self.value = type(val)=="string" and tonumber(val) or val
-    self.checkType(self.value, "number")
-    self.__values__ = {self.value}
+    self.__values__ = {
+        value = type(val)=="string" and tonumber(val) or val or 0
+    }
+    setmetatable(getmetatable(self),{__index=self.__values__})
+    self:checkType(self.value, "number")    
     return self
 end
 
-function ASSNumber:get(coerceType, precision)
+function ASSNumber:getTag(coerceType, precision)
     local val = math.round(tonumber(self.value),precision or 3)
     if coerceType then
         return self.constraints.positive and math.max(val,0) or val
     else
-        self.checkType(self.value,"number")
-        if self.constraints.positive then self.checkPositive(self.value) end
+        self:checkType(self.value,"number")
+        if self.constraints.positive then self:checkPositive(self.value) end
         return val
     end
 end
 
-function ASSNumber:add(...)
-    self.value = self.value + self:getArgs({...})
-end
 
-function ASSNumber:multiply(...)
-    self.value = self.value * self:getArgs({...})
-end
-
-ASSPosition = createClass("ASSPosition")
+ASSPosition = createClass("ASSPosition", ASSBase)
 function ASSPosition:new(valx, valy, constraints)
     if type(valx) == "string" then
         constraints = valy or {}
-        self.x, self.y = string.toNumbers(10,valx:match("([%-%d%.]+),([%-%d%.]+)"))
-    else
-        self.x, self.y = valx or 0, valy or 0
-    end 
-    self.checkType(self.x, "integer")
-    self.checkType(self.y, "integer")
-    self.__values__ = {self.x, self.y}
+        valx, valy = string.toNumbers(10,valx:match("([%-%d%.]+),([%-%d%.]+)"))
+    end
+    self.__values__ = {
+        x = valx or 0,
+        y = valy or 0
+    }
+    setmetatable(getmetatable(self),{__index=self.__values__})
+    self:checkType(self.x, "integer")
+    self:checkType(self.y, "integer")
     return self
 end
 
-function ASSPosition:add(...)
-    x,y = self:getArgs({...})
-    self.x = x and (self.x + x) or self.x 
-    self.y = y and (self.y + y) or self.y 
-end
 
-function ASSPosition:multiply(x,y)
-    self.x = x and (self.x * x) or self.x 
-    self.y = y and (self.y * y) or self.y 
-end
-
-function ASSPosition:get(coerceType, precision)
+function ASSPosition:getTag(coerceType, precision)
     precision = precision or 3
     local x = math.round(tonumber(self.x),precision)
     local y = math.round(tonumber(self.y),precision)
     if not coerceType then 
-        self.checkType(self.x,"number")
-        self.checkType(self.y,"number")
+        self:checkType(self.x,"number")
+        self:checkType(self.y,"number")
     end
     return x,y
 end
 
-ASSTime = createClass("ASSTime")
+ASSTime = createClass("ASSTime", ASSBase)
 function ASSTime:new(val, constraints)
     self.constraints = table.merge(self.constraints,constraints or {})
     self.constraints.scale = self.constraints.scale or 1
-    val = val or 0
-    self.value = type(val) == "string" and tonumber(val) or val
-    self.checkType(self.value,"number")   -- not sure if it's better to check for integer instead
+    self.__values__ = {
+        value = type(val) == "string" and tonumber(val) or val or 0
+    }
+    setmetatable(getmetatable(self),{__index=self.__values__})
+    self:checkType(self.value,"number")   -- not sure if it's better to check for integer instead
     self.value = self.value*self.constraints.scale
-    self.__values__ = {self.value}
     return self
+     -- TODO: implement adding by framecount
 end
 
-function ASSTime:add(num,isFrameCount)
-    self.value = self.value + num
-    -- TODO: implement adding by framecount
-end
-
-function ASSTime:multiply(num)
-    self.value = self.value * num
-end
-
-function ASSTime:get(coerceType, precision)
+function ASSTime:getTag(coerceType, precision)
     local val = tonumber(self.value)/self.constraints.scale
     precision = precision or 0
     if coerceType then
@@ -221,70 +266,51 @@ function ASSTime:get(coerceType, precision)
         val = self.constraints.positive and math.max(val,0)
     else
         assert(precision <= 0, "Error: " .. self.typeName .." doesn't support floating point precision")
-        self.checkType(self.value,"number")
-        if self.constraints.positive then self.checkPositive(self.value) end
+        self:checkType(self.value,"number")
+        if self.constraints.positive then self:checkPositive(self.value) end
     end
     return math.round(val,precision)
 end
 
 ASSDuration = createClass("ASSDuration", ASSTime, {positive=true})
 
-ASSHex = createClass("ASSHex")
+ASSHex = createClass("ASSHex", ASSBase)
 function ASSHex:new(val, constraints)
     self.constraints = table.merge(self.constraints,constraints or {})
-    self.value = type(val) == "string" and tonumber(val,16) or val
-    self.checkRange(self.value,0,255)
-    self.__values__ = {self.value}
+    self.__values__ = {
+        value = type(val) == "string" and tonumber(val,16) or val
+    }
+    setmetatable(getmetatable(self),{__index=self.__values__})
+    self:checkRange(self.value,0,255)
     return self
 end
 
-function ASSHex:add(num)
-    self.value = self.value + num
-end
-
-function ASSHex:multiply(num)
-    self.value = self.value * num
-end
-
-function ASSHex:get(coerceType)
+function ASSHex:getTag(coerceType)
     if not coerceType then self.checkRange(self.value,0,255) end
     return util.clamp(math.round(tonumber(self.value),0),0,255)
 end
 
-ASSColor = createClass("ASSColor")
+ASSColor = createClass("ASSColor", ASSBase)
 function ASSColor:new(r,g,b, constraints)
     if type(r) == "string" then
         constraints = g
         r,g,b = string.toNumbers(16, r:match("(%x%x)(%x%x)(%x%x)"))    
     end 
     self.constraints = table.merge(self.constraints,constraints or {})
-    self.r, self.g, self.b = ASSHex(r), ASSHex(g), ASSHex(b)
-    self.__values__ ={self.r, self.b, self.g}
+    self.__values__ = {
+        r = ASSHex(r),
+        g = ASSHex(g),
+        b = ASSHex(b),
+    }
+    setmetatable(getmetatable(self),{__index=self.__values__})
     return self
 end
 
-function ASSColor:modRGB(callback)
-    local r,g,b = callback(self.r.value, self.g.value, self.b.value)
-    self.r.value, self.g.value, self.b.value = r or self.r.value, g or self.g.value, b or self.b.value
-end
-
-function ASSColor:addRGB(rnum,gnum,bnum)
-    self:modRGB(function(r,g,b)
-        return r+(rnum or 0), g+(gnum or 0), b+(bnum or 0) end
-    )
-end
-
-function ASSColor:multiplyRGB(rnum,gnum,bnum)
-    self:modRGB(function(r,g,b)
-        return r*(rnum or 1), g*(gnum or 1), b*(bnum or 1) end
-    )
-end
-
-function ASSColor:get(coerceType)
+function ASSColor:getTag(coerceType)
     return self.b:get(coerceType), self.g:get(coerceType), self.r:get(coerceType)
 end
 
-ASSFade = createClass("ASSFade")
+ASSFade = createClass("ASSFade", ASSBase)
 function ASSFade:new(startDuration,endDuration,startTime,endTime,startAlpha,midAlpha,endAlpha,constraints)
     if type(startDuration) == "string" then
         constraints = endDuration or {}
@@ -300,15 +326,15 @@ function ASSFade:new(startDuration,endDuration,startTime,endTime,startAlpha,midA
         end
     end 
     self.constraints = table.merge(self.constraints,constraints or {})
-    self.startDuration, self.endDuration = ASSDuration(startDuration), ASSDuration(endDuration)
-    if self.constraints.simple then
-        self.startTime, self.endTime = ASSTime(0), nil
-        self.startAlpha, self.midAlpha, self.endAlpha = ASSHex(0), ASSHex(255), ASSHex(0)
-    else
-        self.startTime, self.endTime = ASSTime(startTime), ASSTime(endTime)
-        self.startAlpha, self.midAlpha, self.endAlpha = ASSHex(startAlpha), ASSHex(midAlpha), ASSHex(endAlpha)
-    end
-    self.__values__ = {self.startDuration, self.endDuration, self.startTime, self.endTime, self.startAlpha, self.midAlpha, self.endAlpha}
+    self.__values__ = {
+        startDuration = ASSDuration(startDuration), endDuration = ASSDuration(endDuration),
+        startTime = self.constraints.simple and ASSTime(0) or ASSTime(startTime),
+        endTime = self.constraints.simple and nil or ASSTime(endTime),
+        startAlpha = self.constraints.simple and 0 or ASSHex(startAlpha),
+        midAlpha = self.constraints.simple and 255 or ASSHex(midAlpha),
+        endAlpha = self.constraints.simple and 0 or ASSHex(endAlpha),
+    }
+    setmetatable(getmetatable(self),{__index=self.__values__})
     return self
 end
 -- only creating from string will set simple flag; otherwise type is dynamically determined from endTime.
@@ -350,6 +376,7 @@ meta.__index.tagMap = {
     italic = {friendlyName="\\i", type="ASSToggle", pattern="\\i([10])"}, 
     underline = {friendlyName="\\u", type="ASSToggle", pattern="\\u([10])"},
     fsp = {friendlyName="\\fsp", type="ASSNumber", pattern="\\fsp([%-%d%.]+)", format="\\fsp%.2f"},
+    fs = {friendlyName="\\fs", type="ASSNumber", constraints={positive=true}, pattern="\\fs([%d%.]+)", format="\\fsp%.2f"},
     kfill = {friendlyName="\\k", type="ASSDuration", constraints={scale=10}, pattern="\\k([%d]+)", format="\\k%d"},
     ksweep = {friendlyName="\\kf", type="ASSDuration", constraints={scale=10}, pattern="\\kf([%d]+)", format="\\kf%d"},   -- because fuck \K and lua patterns
     kbord = {friendlyName="\\ko", type="ASSDuration", constraints={scale=10}, pattern="\\ko([%d]+)", format="\\ko%d"},
@@ -374,7 +401,7 @@ end
 
 meta.__index.getTagString = function(self,tagName,val)
     if type(val) == "table" then -- TODO: better check
-        return self.tagMap[tagName].format:format(val:get())
+        return self.tagMap[tagName].format:format(val:getTag())
     else
         return re.sub(self.tagMap[tagName].format,"(%.*?[A-Za-z],?)+","%s"):format(tostring(val))
     end
@@ -437,10 +464,11 @@ function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,{},sel)
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        line:modTag("pos", function(tags) -- hardcoded for my convenience
+        line:modTag("alpha", function(tags) -- hardcoded for my convenience
             for i=1,#tags,1 do
                 --tags[i]:add(self.value,10)
-                tags[i]:add(ASSPosition(self.value,10))
+                tags[i]:add(self.value)
+                --tags[i]:mul(self.value,5)
             end
             return tags
         end)

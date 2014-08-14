@@ -136,11 +136,14 @@ end
 function ASSBase:getArgs(args, default, ...)
     assert(type(args)=="table", "Error: first argument to getArgs must be a table of packed arguments, got " .. type(args) ..".\n")
     if #args == 1 and type(args[1]) == "table" and args[1].typeName then
-        local res = false
-        for _,class in ipairs(table.concatArray(table.pack(...),{cls})) do
+        local res, selfClasses = false, {}
+        for key,val in pairs(self.instanceOf) do
+            if val then table.insert(selfClasses,key) end
+        end
+        for _,class in ipairs(table.concatArray(table.pack(...),selfClasses)) do
             res = args[1].instanceOf[class] and true or res
         end
-        args = assert(res, self.typeName .. " does not accept instances of class " .. args[1].typeName .. " as argument.") and args[1].__values__
+        args = assert(res, self.typeName .. " does not accept instances of class " .. args[1].typeName .. " as argument.") and table.pack(args[1]:get())
     end
     for i=1,#self.__order__,1 do
         args[i] = type(args[i])=="nil" and default or args[i]
@@ -150,46 +153,47 @@ function ASSBase:getArgs(args, default, ...)
 end
 
 function ASSBase:typeCheck(...)
-    local vals, valNames, valTypes, j, args = self.__values__, self.__order__, self.__types__, 1, {...}
+    local valTypes, j, args = self.__types__, 1, {...}
     --assert(#valNames >= #args, string.format("Error: too many arguments. Expected %d, got %d.\n",#valNames,#args))
-    for i,valName in ipairs(valNames) do
+    for i,valName in ipairs(self.__order__) do
         if type(valTypes[i])=="table" and valTypes[i].instanceOf then
             if type(args[j])=="table" and args[j].instanceOf then
-                vals[valName]:typeCheck(args[j])
+                self[valName]:typeCheck(args[j])
                 j=j+1
             else
-                local subCnt = #vals[valName].__order__
-                vals[valName]:typeCheck(unpack(table.sliceArray(args,j,j+subCnt-1)))
+                local subCnt = #self[valName].__order__
+                self[valName]:typeCheck(unpack(table.sliceArray(args,j,j+subCnt-1)))
                 j=j+subCnt
             end
-        else       
-            assert(type(args[i])==valTypes[i] or type(args[i])=="nil" or valTypes[i]=="nil", 
-                   string.format("Error: bad type for argument %d (%s). Expected %s, got %s.\n", i,valName,type(vals[valName]),type(args[i]))) 
+        else    
+            assert(type(args[i])==valTypes[i] or type(args[i])=="nil" or valTypes[i]=="nil",
+                   string.format("Error: bad type for argument %d (%s). Expected %s, got %s.\n", i,valName,type(self[valName]),type(args[i]))) 
         end
     end
 end
 
 function ASSBase:get()
     local vals = {}
-    for _,val in pairs(self.__values__) do
-        if type(val)=="table" and val.instanceOf then
-            for _,cval in pairs({val:get()}) do vals[#vals+1]=cval end
+    for _,valName in ipairs(self.__order__) do
+        if type(self[valName])=="table" and self[valName].instanceOf then
+            for _,cval in pairs({self[valName]:get()}) do vals[#vals+1]=cval end
         else 
-            vals[#vals+1] = val
+            vals[#vals+1] = self[valName]
         end
     end
+    return unpack(vals)
 end
 
 function ASSBase:commonOp(method, callback, default, ...)
     local args = {self:getArgs({...}, default)}
-    local j,vals = 1, self.__values__
+    local j = 1
     for _,valName in ipairs(self.__order__) do
-        if type(vals[valName])=="table" and vals[valName].instanceOf then
-            local subCnt = #vals[valName].__values__.__order__
-            vals[valName][method](vals[valName],unpack(table.sliceArray(args,j,j+subCnt-1)))
+        if type(self[valName])=="table" and self[valName].instanceOf then
+            local subCnt = #self[valName].__order__
+            self[valName][method](self[valName],unpack(table.sliceArray(args,j,j+subCnt-1)))
             j=j+subCnt
         else 
-            vals[valName]=callback(vals[valName],args[j])
+            self[valName]=callback(self[valName],args[j])
             j=j+1
         end
     end

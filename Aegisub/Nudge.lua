@@ -125,24 +125,24 @@ function createASSClass(typeName,baseClass,order,types,props)
 end
 
 ASSBase = createASSClass("ASSBase")
-function ASSBase:checkType(type_, ...)
+function ASSBase:checkType(type_, ...) --TODO: get rid off
     for _,val in ipairs({...}) do
         result = (type_=="integer" and math.isInt(val)) or type(val)==type_
-        assert(result, "Error: " .. self.typeName .. " must be a " .. type_ .. ", got " .. type(val) .. ".\n")
+        assert(result, string.format("Error: %s must be a %s, got %s.\n",self.typeName,type_,type(val)))
     end
 end
 
 function ASSBase:checkPositive(...)
     self:checkType("number",...)
     for _,val in ipairs({...}) do
-        assert(val >= 0, "Error: " .. self.typeName .. " props do not permit numbers < 0, got " ..  tostring(val) .. ".\n")
+        assert(val >= 0, string.format("Error: %s props do not permit numbers < 0, got %d.\n", self.typeName,val))
     end
 end
 
 function ASSBase:checkRange(min,max,...)
     self:checkType("number",...)
     for _,val in ipairs({...}) do
-        assert(val >= min and val <= max, "Error: " .. self.typeName .. " must be a in range " .. min .. "-" .. max .. ", got " .. tostring(val) .. ".\n")
+        assert(val >= min and val <= max, string.format("Error: %s must be a in range %d-%d, got %d.\n",self.typeName,min,max,val))
     end
 end
 
@@ -156,7 +156,8 @@ function ASSBase:getArgs(args, default, ...)
         for _,class in ipairs(table.concatArray(table.pack(...),selfClasses)) do
             res = args[1].instanceOf[class] and true or res
         end
-        args = assert(res, self.typeName .. " does not accept instances of class " .. args[1].typeName .. " as argument.") and table.pack(args[1]:get())
+        assert(res, string.format("%s does not accept instances of class %s as argument.\n", self.typeName, args[1].typeName))
+        args=table.pack(args[1]:get())
     end
     for i=1,#self.__meta__.order,1 do
         args[i] = type(args[i])=="nil" and default or args[i]
@@ -243,7 +244,7 @@ ASSNumber = createASSClass("ASSNumber", ASSBase, {"value"}, {"number"})
 function ASSNumber:new(val, props)
     self:readProps(props)
     self.value = type(val)=="string" and tonumber(val) or val or 0
-    self:checkType("number",self.value)    
+    self:typeCheck(self.value)
     return self
 end
 
@@ -266,9 +267,8 @@ function ASSPosition:new(valx, valy, props)
         valx, valy = string.toNumbers(10,valx:match("([%-%d%.]+),([%-%d%.]+)"))
     end
     self:readProps(props)
-
+    self:typeCheck(valx, valy)
     self.x, self.y = valx or 0, valy or 0
-    self:checkType("number", self.x, self.y)
     return self
 end
 
@@ -290,7 +290,7 @@ function ASSTime:new(val, props)
     self:readProps(props)
     self.scale = self.scale or 1
     self.value = type(val) == "string" and tonumber(val) or val or 0
-    self:checkType("number", self.value)   -- not sure if it's better to check for integer instead
+    self:typeCheck(self.value) 
     self.value = self.value*self.scale
     return self
      -- TODO: implement adding by framecount
@@ -548,10 +548,10 @@ function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,{},sel)
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        line:modTag("smplmove", function(tags) -- hardcoded for my convenience
+        line:modTag("pos", function(tags) -- hardcoded for my convenience
             for i=1,#tags,1 do
                 --tags[i]:add(self.value,10)
-                tags[i]:add(10,20,30,40)
+                tags[i]:add(10)
                 --tags[i]:mul(self.value,5)
             end
             return tags

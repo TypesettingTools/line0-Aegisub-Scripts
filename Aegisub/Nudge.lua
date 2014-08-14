@@ -89,9 +89,18 @@ table.sliceArray = function(tbl, istart, iend)
     return arr
 end
 
+returnAll = function(...) -- blame lua
+    local arr={}
+    for _,results in ipairs({...}) do
+        for _,result in ipairs(results) do
+            arr[#arr+1] = result
+        end
+    end
+    return unpack(arr)
+end
 ------ Tag Classes ---------------------
 
-function createClass(typeName,baseClass,props)
+function createASSClass(typeName,baseClass,order,types,props)
   local cls, baseClass = {}, baseClass or {}
   for key, val in pairs(baseClass) do
     cls[key] = val
@@ -101,6 +110,10 @@ function createClass(typeName,baseClass,props)
   cls.instanceOf = {[cls] = true}
   cls.typeName = typeName
   cls.props = props or {}
+  cls.__meta__ = { 
+       order = order,
+       types = types
+  }
 
   setmetatable(cls, {
     __call = function (cls, ...)
@@ -111,7 +124,7 @@ function createClass(typeName,baseClass,props)
   return cls
 end
 
-ASSBase = createClass("ASSBase")
+ASSBase = createASSClass("ASSBase")
 function ASSBase:checkType(type_, ...)
     for _,val in ipairs({...}) do
         result = (type_=="integer" and math.isInt(val)) or type(val)==type_
@@ -145,7 +158,7 @@ function ASSBase:getArgs(args, default, ...)
         end
         args = assert(res, self.typeName .. " does not accept instances of class " .. args[1].typeName .. " as argument.") and table.pack(args[1]:get())
     end
-    for i=1,#self.__order__,1 do
+    for i=1,#self.__meta__.order,1 do
         args[i] = type(args[i])=="nil" and default or args[i]
     end
     self:typeCheck(unpack(args))
@@ -153,16 +166,16 @@ function ASSBase:getArgs(args, default, ...)
 end
 
 function ASSBase:typeCheck(...)
-    local valTypes, j, args = self.__types__, 1, {...}
+    local valTypes, j, args = self.__meta__.types, 1, {...}
     --assert(#valNames >= #args, string.format("Error: too many arguments. Expected %d, got %d.\n",#valNames,#args))
-    for i,valName in ipairs(self.__order__) do
+    for i,valName in ipairs(self.__meta__.order) do
         if type(valTypes[i])=="table" and valTypes[i].instanceOf then
             if type(args[j])=="table" and args[j].instanceOf then
                 self[valName]:typeCheck(args[j])
                 j=j+1
             else
-                local subCnt = #self[valName].__order__
-                self[valName]:typeCheck(unpack(table.sliceArray(args,j,j+subCnt-1)))
+                local subCnt = #valTypes[i].__meta__.order
+                valTypes[i]:typeCheck(unpack(table.sliceArray(args,j,j+subCnt-1)))
                 j=j+subCnt
             end
         else    
@@ -174,7 +187,7 @@ end
 
 function ASSBase:get()
     local vals = {}
-    for _,valName in ipairs(self.__order__) do
+    for _,valName in ipairs(self.__meta__.order) do
         if type(self[valName])=="table" and self[valName].instanceOf then
             for _,cval in pairs({self[valName]:get()}) do vals[#vals+1]=cval end
         else 
@@ -187,9 +200,9 @@ end
 function ASSBase:commonOp(method, callback, default, ...)
     local args = {self:getArgs({...}, default)}
     local j = 1
-    for _,valName in ipairs(self.__order__) do
+    for _,valName in ipairs(self.__meta__.order) do
         if type(self[valName])=="table" and self[valName].instanceOf then
-            local subCnt = #self[valName].__order__
+            local subCnt = #self[valName].__meta__.order
             self[valName][method](self[valName],unpack(table.sliceArray(args,j,j+subCnt-1)))
             j=j+subCnt
         else 
@@ -226,15 +239,10 @@ function ASSBase:readProps(props)
 end
 
 
-ASSNumber = createClass("ASSNumber", ASSBase)
+ASSNumber = createASSClass("ASSNumber", ASSBase, {"value"}, {"number"})
 function ASSNumber:new(val, props)
     self:readProps(props)
-    self.__values__ = {
-        value = type(val)=="string" and tonumber(val) or val or 0,
-        __order__ = {"value"},
-        __types__ = {"number"}
-    }
-    setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
+    self.value = type(val)=="string" and tonumber(val) or val or 0
     self:checkType("number",self.value)    
     return self
 end
@@ -242,29 +250,24 @@ end
 function ASSNumber:getTag(coerceType, precision)
     local val = math.round(tonumber(self.value),precision or 3)
     if coerceType then
-        return self.props.positive and math.max(val,0) or val
+        return self.positive and math.max(val,0) or val
     else
         self:checkType("number",self.value)
-        if self.props.positive then self:checkPositive(self.value) end
+        if self.positive then self:checkPositive(self.value) end
         return val
     end
 end
 
 
-ASSPosition = createClass("ASSPosition", ASSBase)
+ASSPosition = createASSClass("ASSPosition", ASSBase, {"x","y"}, {"number", "number"})
 function ASSPosition:new(valx, valy, props)
     if type(valx) == "string" then
         props = valy
         valx, valy = string.toNumbers(10,valx:match("([%-%d%.]+),([%-%d%.]+)"))
     end
     self:readProps(props)
-    self.__values__ = {
-        x = valx or 0,
-        y = valy or 0,
-        __order__ = {"x","y"},
-        __types__ = {"number", "number"}
-    }
-    setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
+
+    self.x, self.y = valx or 0, valy or 0
     self:checkType("number", self.x, self.y)
     return self
 end
@@ -280,16 +283,13 @@ function ASSPosition:getTag(coerceType, precision)
     return x,y
 end
 
-ASSTime = createClass("ASSTime", ASSBase)
+-- TODO: ASSPosition:move()
+
+ASSTime = createASSClass("ASSTime", ASSBase, {"value"}, {"number"})
 function ASSTime:new(val, props)
     self:readProps(props)
     self.scale = self.scale or 1
-    self.__values__ = {
-        value = type(val) == "string" and tonumber(val) or val or 0,
-        __order__ = {"value"},
-        __types__ = {"number"}
-    }
-    setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
+    self.value = type(val) == "string" and tonumber(val) or val or 0
     self:checkType("number", self.value)   -- not sure if it's better to check for integer instead
     self.value = self.value*self.scale
     return self
@@ -310,17 +310,12 @@ function ASSTime:getTag(coerceType, precision)
     return math.round(val,precision)
 end
 
-ASSDuration = createClass("ASSDuration", ASSTime, {positive=true})
+ASSDuration = createASSClass("ASSDuration", ASSTime, {positive=true})
 
-ASSHex = createClass("ASSHex", ASSBase)
+ASSHex = createASSClass("ASSHex", ASSBase, {"value"}, {"number"})
 function ASSHex:new(val, props)
     self:readProps(props)
-    self.__values__ = {
-        value = type(val) == "string" and tonumber(val,16) or val,
-        __order__ = {"value"},
-        __types__ = {"number"}
-    }
-    setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
+    self.value = type(val) == "string" and tonumber(val,16) or val
     self:checkRange(0,255,self.value)
     return self
 end
@@ -330,21 +325,14 @@ function ASSHex:getTag(coerceType)
     return util.clamp(math.round(tonumber(self.value),0),0,255)
 end
 
-ASSColor = createClass("ASSColor", ASSBase)
+ASSColor = createASSClass("ASSColor", ASSBase, {"r","g","b"}, {ASSHex,ASSHex,ASSHex})
 function ASSColor:new(r,g,b, props)
     if type(r) == "string" then
         props = g
         r,g,b = string.toNumbers(16, r:match("(%x%x)(%x%x)(%x%x)"))    
     end 
     self:readProps(props)
-    self.__values__ = {
-        r = ASSHex(r),
-        g = ASSHex(g),
-        b = ASSHex(b),
-        __order__ = {"r","g","b"},
-        __types__ = {ASSHex,ASSHex,ASSHex}
-    }
-    setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
+    self.r, self.g, self.b = ASSHex(r), ASSHex(g), ASSHex(b)
     return self
 end
 
@@ -352,7 +340,10 @@ function ASSColor:getTag(coerceType)
     return self.b:getTag(coerceType), self.g:getTag(coerceType), self.r:getTag(coerceType)
 end
 
-ASSFade = createClass("ASSFade", ASSBase)
+ASSFade = createASSClass("ASSFade", ASSBase,
+    {"startDuration", "endDuration", "startTime", "endTime", "startAlpha", "midAlpha", "endAlpha"},
+    {ASSDuration,ASSDuration,ASSTime,ASSTime,ASSHex,ASSHex,ASSHex}
+)
 function ASSFade:new(startDuration,endDuration,startTime,endTime,startAlpha,midAlpha,endAlpha,props)
     if type(startDuration) == "string" then
         props = endDuration or {}
@@ -368,17 +359,13 @@ function ASSFade:new(startDuration,endDuration,startTime,endTime,startAlpha,midA
         end
     end 
     self:readProps(props)
-    self.__values__ = {
-        startDuration = ASSDuration(startDuration), endDuration = ASSDuration(endDuration),
-        startTime = self.simple and ASSTime(0) or ASSTime(startTime),
-        endTime = self.simple and nil or ASSTime(endTime),
-        startAlpha = self.simple and ASSHex(0) or ASSHex(startAlpha),
-        midAlpha = self.simple and ASSHex(255) or ASSHex(midAlpha),
-        endAlpha = self.simple and ASSHex(0) or ASSHex(endAlpha),
-        __order__ = {"startDuration", "endDuration", "startTime", "endTime", "startAlpha", "midAlpha", "endAlpha"},
-        __types__ = {ASSDuration,ASSDuration,ASSTime,ASSTime,ASSHex,ASSHex,ASSHex}
-    }
-    setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
+
+    self.startDuration, self.endDuration = ASSDuration(startDuration), ASSDuration(endDuration)
+    self.startTime = self.simple and ASSTime(0) or ASSTime(startTime)
+    self.endTime = self.simple and nil or ASSTime(endTime)
+    self.startAlpha = self.simple and ASSHex(0) or ASSHex(startAlpha)
+    self.midAlpha = self.simple and ASSHex(255) or ASSHex(midAlpha)
+    self.endAlpha = self.simple and ASSHex(0) or ASSHex(endAlpha)
     return self
 end
 
@@ -397,7 +384,43 @@ function ASSFade:getTag(coerceType)
     end
 end
 
+ASSMove = createASSClass("ASSMove", ASSBase,
+    {"startPos", "endPos", "startTime", "endTime"},
+    {ASSPosition,ASSPosition,ASSTime,ASSTime}
+)
+function ASSMove:new(startPosX,startPosY,endPosX,endPosY,startTime,endTime,props)
+    if type(startPosX) == "string" then
+        props = startPosY
+        prms={}
+        for prm in startPosX:gmatch("([^,]+)") do
+            prms[#prms+1] = tonumber(prm)
+        end
+        startPosX,startPosY,endPosX,endPosY,startTime,endTime = self:getArgs(prms, nil)
+    end
+    self:readProps(props)
+    assert((startTime==endTime and self.simple~=false) or (startTime and endTime), "Error: creating a complex fade requires both start and end time.\n")
+    self.simple = (startTime==nil or endTime==nil) and true or false
 
+    self.startPos = ASSPosition(startPosX,startPosY)
+    self.endPos = ASSPosition(endPosX,endPosY)
+    self.startTime = ASSTime(startTime)
+    self.endTime = ASSTime(endTime)
+
+    return self
+end
+
+function ASSMove:getTag(coerceType)
+    if self.simple then
+        return returnAll({self.startPos:getTag(coerceType)}, {self.endPos:getTag(coerceType)})
+    else
+        if not coerceType then
+             assert(startTime<=endTime, string.format("Error: move times must evaluate to t1<=t2, got %d<=%d", startTime,endTime))
+        end
+        local t1,t2 = self.startTime:getTag(coerceType), self.endTime:getTag(coerceType)
+        return returnAll({self.startPos:getTag(coerceType)}, {self.endPos:getTag(coerceType)},
+               {math.min(t1,t2)}, {math.max(t2,t1)}) 
+    end
+end
 
 ------ Extend Line Object --------------
 
@@ -440,8 +463,9 @@ meta.__index.tagMap = {
     ksweep = {friendlyName="\\kf", type="ASSDuration", props={scale=10}, pattern="\\kf([%d]+)", format="\\kf%d"},   -- because fuck \K and lua patterns
     kbord = {friendlyName="\\ko", type="ASSDuration", props={scale=10}, pattern="\\ko([%d]+)", format="\\ko%d"},
     pos = {friendlyName="\\pos", type="ASSPosition", pattern="\\pos%(([%-%d%.]+,[%-%d%.]+)%)", format="\\pos(%.2f,%.2f)"},
-    move = {friendlyName="\\move", type="ASSMove", pattern="\\move([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+)"},
-    org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)"},
+    smplmove = {friendlyName="\\move", type="ASSMove", props={simple=true}, pattern="\\move%(([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+)%)", format="\\move(%.2f,%.2f,%.2f,%.2f)"},
+    move = {friendlyName="\\move", type="ASSMove", pattern="\\move%(([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+),[%-%d]+,[%-%d]+)%)"}, format="\\move(%.2f,%.2f,%.2f,%.2f,%.2f,%.2f)",
+    org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)", format="\\pos(%.2f,%.2f)"},
     wrap = {friendlyName="\\q", type="ASSWrapStyle", pattern="\\q(%d)"},
     smplfade = {friendlyName="\\fad", type="ASSFade", props={simple=true}, pattern="\\fad%((%d+,%d+)%)", format="\\fad(%d,%d)"},
     fade = {friendlyName="\\fade", type="ASSFade", pattern="\\fade?%((.-)%)", format="\\fade(%d,%d,%d,%d,%d,%d,%d)"},
@@ -459,14 +483,14 @@ meta.__index.addTag = function(self, tagName, val, pos)
 end
 
 meta.__index.getTagString = function(self,tagName,val)
-    if type(val) == "table" then -- TODO: better check
+    if type(val) == "table" and val.instanceOf then
         return self.tagMap[tagName].format:format(val:getTag())
     else
         return re.sub(self.tagMap[tagName].format,"(%.*?[A-Za-z],?)+","%s"):format(tostring(val))
     end
 end
 
-meta.__index.getTagVal = function(self,tagName,string)
+meta.__index.getTag = function(self,tagName,string)
     return _G[self.tagMap[tagName].type](string,self.tagMap[tagName].props)
 end
 
@@ -474,7 +498,7 @@ meta.__index.modTag = function(self, tagName, callback)
     local tags, tagsOrg = {},{}
     assert(self.tagMap[tagName], string.format("Error: can't find tag %s.\n",tagName))
     for tag in self.text:gmatch("{.-" .. self.tagMap[tagName].pattern .. ".-}") do
-        tags[#tags+1] = self:getTagVal(tagName, tag)
+        tags[#tags+1] = self:getTag(tagName, tag)
         tagsOrg[#tagsOrg+1] = tag
     end
 
@@ -524,10 +548,10 @@ function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,{},sel)
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        line:modTag("smplfade", function(tags) -- hardcoded for my convenience
+        line:modTag("smplmove", function(tags) -- hardcoded for my convenience
             for i=1,#tags,1 do
                 --tags[i]:add(self.value,10)
-                tags[i]:add(10,20)
+                tags[i]:add(10,20,30,40)
                 --tags[i]:mul(self.value,5)
             end
             return tags

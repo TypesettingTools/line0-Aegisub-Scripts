@@ -112,19 +112,25 @@ function createClass(typeName,baseClass,props)
 end
 
 ASSBase = createClass("ASSBase")
-function ASSBase:checkType(val, type_)
-    result = (type_=="integer" and math.isInt(val)) or type(val)==type_
-    assert(result, "Error: " .. self.typeName .. " must be a " .. type_ .. ", got " .. type(val) .. ".\n")
+function ASSBase:checkType(type_, ...)
+    for _,val in ipairs({...}) do
+        result = (type_=="integer" and math.isInt(val)) or type(val)==type_
+        assert(result, "Error: " .. self.typeName .. " must be a " .. type_ .. ", got " .. type(val) .. ".\n")
+    end
 end
 
-function ASSBase:checkPositive(val)
-    self:checkType(val,"number")
-    assert(val >= 0, "Error: " .. self.typeName .. " props do not permit numbers < 0, got " ..  tostring(val) .. ".\n")
+function ASSBase:checkPositive(...)
+    self:checkType("number",...)
+    for _,val in ipairs({...}) do
+        assert(val >= 0, "Error: " .. self.typeName .. " props do not permit numbers < 0, got " ..  tostring(val) .. ".\n")
+    end
 end
 
-function ASSBase:checkRange(val,min,max)
-    self:checkType(val,"number")
-    assert(val >= min and val <= max, "Error: " .. self.typeName .. " must be a in range " .. min .. "-" .. max .. ", got " .. tostring(val) .. ".\n")
+function ASSBase:checkRange(min,max,...)
+    self:checkType("number",...)
+    for _,val in ipairs({...}) do
+        assert(val >= min and val <= max, "Error: " .. self.typeName .. " must be a in range " .. min .. "-" .. max .. ", got " .. tostring(val) .. ".\n")
+    end
 end
 
 function ASSBase:getArgs(args, default, ...)
@@ -136,20 +142,37 @@ function ASSBase:getArgs(args, default, ...)
         end
         args = assert(res, self.typeName .. " does not accept instances of class " .. args[1].typeName .. " as argument.") and args[1].__values__
     end
-
-    assert(#self.__values__.__order__ >= #args, "Error: too many arguments. Expected " .. tostring(#self.__values__.__order__) .. ", got " .. tostring(#args) .. ".\n")
-    for i,val in ipairs(self.__values__.__order__) do
+    for i=1,#self.__order__,1 do
         args[i] = type(args[i])=="nil" and default or args[i]
-        assert(type(args[i])==type(self.__values__[val]) or type(args[i])=="nil" or type(self.__values__[val])=="nil", 
-               "Error: bad type for argument" .. tostring(i) .. " (" .. val .. "). Expected " .. type(self.__values__[val]) .. ", got " .. type(args[i]) .. ".\n") 
     end
+    self:typeCheck(unpack(args))
     return unpack(args)
+end
+
+function ASSBase:typeCheck(...)
+    local vals, valNames, valTypes, j, args = self.__values__, self.__order__, self.__types__, 1, {...}
+    --assert(#valNames >= #args, string.format("Error: too many arguments. Expected %d, got %d.\n",#valNames,#args))
+    for i,valName in ipairs(valNames) do
+        if type(valTypes[i])=="table" and valTypes[i].instanceOf then
+            if type(args[j])=="table" and args[j].instanceOf then
+                vals[valName]:typeCheck(args[j])
+                j=j+1
+            else
+                local subCnt = #vals[valName].__order__
+                vals[valName]:typeCheck(unpack(table.sliceArray(args,j,j+subCnt-1)))
+                j=j+subCnt
+            end
+        else       
+            assert(type(args[i])==valTypes[i] or type(args[i])=="nil" or valTypes[i]=="nil", 
+                   string.format("Error: bad type for argument %d (%s). Expected %s, got %s.\n", i,valName,type(vals[valName]),type(args[i]))) 
+        end
+    end
 end
 
 function ASSBase:get()
     local vals = {}
     for _,val in pairs(self.__values__) do
-        if type(val)=="table" and val.typeOf then
+        if type(val)=="table" and val.instanceOf then
             for _,cval in pairs({val:get()}) do vals[#vals+1]=cval end
         else 
             vals[#vals+1] = val
@@ -160,13 +183,13 @@ end
 function ASSBase:commonOp(method, callback, default, ...)
     local args = {self:getArgs({...}, default)}
     local j,vals = 1, self.__values__
-    for _,val in ipairs(vals.__order__) do
-        if type(self.__values__[val])=="table" and vals[val].typeOf then
-            subCnt = #vals[val].__values__.__order__
-            vals[val][method](self,table.sliceArray(args,j,j+subCnt))
+    for _,valName in ipairs(self.__order__) do
+        if type(vals[valName])=="table" and vals[valName].instanceOf then
+            local subCnt = #vals[valName].__values__.__order__
+            vals[valName][method](vals[valName],unpack(table.sliceArray(args,j,j+subCnt-1)))
             j=j+subCnt
         else 
-            vals[val]=callback(vals[val],args[j])
+            vals[valName]=callback(vals[valName],args[j])
             j=j+1
         end
     end
@@ -204,10 +227,11 @@ function ASSNumber:new(val, props)
     self:readProps(props)
     self.__values__ = {
         value = type(val)=="string" and tonumber(val) or val or 0,
-        __order__ = {"value"}
+        __order__ = {"value"},
+        __types__ = {"number"}
     }
     setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
-    self:checkType(self.value, "number")    
+    self:checkType("number",self.value)    
     return self
 end
 
@@ -216,7 +240,7 @@ function ASSNumber:getTag(coerceType, precision)
     if coerceType then
         return self.props.positive and math.max(val,0) or val
     else
-        self:checkType(self.value,"number")
+        self:checkType("number",self.value)
         if self.props.positive then self:checkPositive(self.value) end
         return val
     end
@@ -233,11 +257,11 @@ function ASSPosition:new(valx, valy, props)
     self.__values__ = {
         x = valx or 0,
         y = valy or 0,
-        __order__ = {"x","y"}
+        __order__ = {"x","y"},
+        __types__ = {"number", "number"}
     }
     setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
-    self:checkType(self.x, "number")
-    self:checkType(self.y, "number")
+    self:checkType("number", self.x, self.y)
     return self
 end
 
@@ -247,8 +271,7 @@ function ASSPosition:getTag(coerceType, precision)
     local x = math.round(tonumber(self.x),precision)
     local y = math.round(tonumber(self.y),precision)
     if not coerceType then 
-        self:checkType(self.x,"number")
-        self:checkType(self.y,"number")
+        self:checkType("number", self.x, self.y)
     end
     return x,y
 end
@@ -259,10 +282,11 @@ function ASSTime:new(val, props)
     self.scale = self.scale or 1
     self.__values__ = {
         value = type(val) == "string" and tonumber(val) or val or 0,
-        __order__ = {"value"}
+        __order__ = {"value"},
+        __types__ = {"number"}
     }
     setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
-    self:checkType(self.value,"number")   -- not sure if it's better to check for integer instead
+    self:checkType("number", self.value)   -- not sure if it's better to check for integer instead
     self.value = self.value*self.scale
     return self
      -- TODO: implement adding by framecount
@@ -276,7 +300,7 @@ function ASSTime:getTag(coerceType, precision)
         val = self.positive and math.max(val,0)
     else
         assert(precision <= 0, "Error: " .. self.typeName .." doesn't support floating point precision")
-        self:checkType(self.value,"number")
+        self:checkType("number", self.value)
         if self.positive then self:checkPositive(self.value) end
     end
     return math.round(val,precision)
@@ -289,10 +313,11 @@ function ASSHex:new(val, props)
     self:readProps(props)
     self.__values__ = {
         value = type(val) == "string" and tonumber(val,16) or val,
-        __order__ = {"value"}
+        __order__ = {"value"},
+        __types__ = {"number"}
     }
     setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
-    self:checkRange(self.value,0,255)
+    self:checkRange(0,255,self.value)
     return self
 end
 
@@ -312,14 +337,15 @@ function ASSColor:new(r,g,b, props)
         r = ASSHex(r),
         g = ASSHex(g),
         b = ASSHex(b),
-        __order__ = {"r","g","b"}
+        __order__ = {"r","g","b"},
+        __types__ = {ASSHex,ASSHex,ASSHex}
     }
     setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
     return self
 end
 
 function ASSColor:getTag(coerceType)
-    return self.b:get(coerceType), self.g:get(coerceType), self.r:get(coerceType)
+    return self.b:getTag(coerceType), self.g:getTag(coerceType), self.r:getTag(coerceType)
 end
 
 ASSFade = createClass("ASSFade", ASSBase)
@@ -342,16 +368,31 @@ function ASSFade:new(startDuration,endDuration,startTime,endTime,startAlpha,midA
         startDuration = ASSDuration(startDuration), endDuration = ASSDuration(endDuration),
         startTime = self.simple and ASSTime(0) or ASSTime(startTime),
         endTime = self.simple and nil or ASSTime(endTime),
-        startAlpha = self.simple and 0 or ASSHex(startAlpha),
-        midAlpha = self.simple and 255 or ASSHex(midAlpha),
-        endAlpha = self.simple and 0 or ASSHex(endAlpha),
-        __order__ = {"startDuration", "endDuration", "startTime", "endTime", "startAlpha", "midAlpha", "endAlpha"}
+        startAlpha = self.simple and ASSHex(0) or ASSHex(startAlpha),
+        midAlpha = self.simple and ASSHex(255) or ASSHex(midAlpha),
+        endAlpha = self.simple and ASSHex(0) or ASSHex(endAlpha),
+        __order__ = {"startDuration", "endDuration", "startTime", "endTime", "startAlpha", "midAlpha", "endAlpha"},
+        __types__ = {ASSDuration,ASSDuration,ASSTime,ASSTime,ASSHex,ASSHex,ASSHex}
     }
     setmetatable(self,{__index=setmetatable(self.__values__,getmetatable(self))})
     return self
 end
--- only creating from string will set simple flag; otherwise type is dynamically determined from endTime.
--- when endtime set but props.simple then throw error, unless type coersion is true
+
+function ASSFade:getTag(coerceType)
+    if self.simple then
+        return self.startDuration:getTag(coerceType), self.endDuration:getTag(coerceType)
+    else
+        local t1, t4 = self.startTime:getTag(coerceType), self.endTime:getTag(coerceType)
+        local t2 = t1 + self.startDuration:getTag(coerceType)
+        local t3 = t4 - self.endDuration:getTag(coerceType)
+        if not coerceType then
+             self:checkPositive(t2,t3)
+             assert(t1<=t2 and t2<=t3 and t3<=t4, string.format("Error: fade times must evaluate to t1<=t2<=t3<=t4, got %d<=%d<=%d<=%d", t1,t2,t3,t4))
+        end
+        return self.startAlpha, self.midAlpha, self.endAlpha, math.min(t1,t2), util.clamp(t2,t1,t3), math.clamp(t3,t2,t4), math.max(t4,t3) 
+    end
+end
+
 
 
 ------ Extend Line Object --------------
@@ -398,8 +439,8 @@ meta.__index.tagMap = {
     move = {friendlyName="\\move", type="ASSMove", pattern="\\move([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+)"},
     org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)"},
     wrap = {friendlyName="\\q", type="ASSWrapStyle", pattern="\\q(%d)"},
-    smplfade = {friendlyName="\\fad", type="ASSFade", props={simple=true}, pattern="\\fad%((%d+,%d+)%)"},
-    fade = {friendlyName="\\fade", type="ASSFade", pattern="\\fade?%((.-)%)"},
+    smplfade = {friendlyName="\\fad", type="ASSFade", props={simple=true}, pattern="\\fad%((%d+,%d+)%)", format="\\fad(%d,%d)"},
+    fade = {friendlyName="\\fade", type="ASSFade", pattern="\\fade?%((.-)%)", format="\\fade(%d,%d,%d,%d,%d,%d,%d)"},
     transform = {friendlyName="\\t", type="ASSTransform", pattern="\\t%((.-)%)"},
 }
 
@@ -426,7 +467,8 @@ meta.__index.getTagVal = function(self,tagName,string)
 end
 
 meta.__index.modTag = function(self, tagName, callback)
-    local tags, tagsOrg = {},{} 
+    local tags, tagsOrg = {},{}
+    assert(self.tagMap[tagName], string.format("Error: can't find tag %s.\n",tagName))
     for tag in self.text:gmatch("{.-" .. self.tagMap[tagName].pattern .. ".-}") do
         tags[#tags+1] = self:getTagVal(tagName, tag)
         tagsOrg[#tagsOrg+1] = tag
@@ -478,7 +520,7 @@ function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,{},sel)
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        line:modTag("pos", function(tags) -- hardcoded for my convenience
+        line:modTag("smplfade", function(tags) -- hardcoded for my convenience
             for i=1,#tags,1 do
                 --tags[i]:add(self.value,10)
                 tags[i]:add(10,20)

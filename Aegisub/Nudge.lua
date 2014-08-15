@@ -100,7 +100,7 @@ returnAll = function(...) -- blame lua
 end
 ------ Tag Classes ---------------------
 
-function createASSClass(typeName,baseClass,order,types,props)
+function createASSClass(typeName,baseClass,order,types,tagProps)
   local cls, baseClass = {}, baseClass or {}
   for key, val in pairs(baseClass) do
     cls[key] = val
@@ -109,7 +109,6 @@ function createASSClass(typeName,baseClass,order,types,props)
   cls.__index = cls
   cls.instanceOf = {[cls] = true}
   cls.typeName = typeName
-  cls.props = props or {}
   cls.__meta__ = { 
        order = order,
        types = types
@@ -117,7 +116,7 @@ function createASSClass(typeName,baseClass,order,types,props)
 
   setmetatable(cls, {
     __call = function (cls, ...)
-        local self = setmetatable({}, cls)
+        local self = setmetatable({__tag = tagProps or {}}, cls)
         self:new(...)
         return self
     end})
@@ -125,7 +124,7 @@ function createASSClass(typeName,baseClass,order,types,props)
 end
 
 ASSBase = createASSClass("ASSBase")
-function ASSBase:checkType(type_, ...) --TODO: get rid off
+function ASSBase:checkType(type_, ...) --TODO: get rid of
     for _,val in ipairs({...}) do
         result = (type_=="integer" and math.isInt(val)) or type(val)==type_
         assert(result, string.format("Error: %s must be a %s, got %s.\n",self.typeName,type_,type(val)))
@@ -135,14 +134,14 @@ end
 function ASSBase:checkPositive(...)
     self:checkType("number",...)
     for _,val in ipairs({...}) do
-        assert(val >= 0, string.format("Error: %s props do not permit numbers < 0, got %d.\n", self.typeName,val))
+        assert(val >= 0, string.format("Error: %s tagProps do not permit numbers < 0, got %d.\n", self.typeName,val))
     end
 end
 
 function ASSBase:checkRange(min,max,...)
     self:checkType("number",...)
     for _,val in ipairs({...}) do
-        assert(val >= min and val <= max, string.format("Error: %s must be a in range %d-%d, got %d.\n",self.typeName,min,max,val))
+        assert(val >= min and val <= max, string.format("Error: %s must be in range %d-%d, got %d.\n",self.typeName,min,max,val))
     end
 end
 
@@ -233,40 +232,51 @@ function ASSBase:mod(callback, ...)
     self:set(callback(self:get(...)))
 end
 
-function ASSBase:readProps(props)
-    for key, val in pairs(props or {}) do
-        self[key] = val
+function ASSBase:readProps(tagProps)
+    self.__tag = self.__tag or {}
+    for key, val in pairs(tagProps or {}) do
+        self.__tag[key] = val
     end
 end
 
 
 ASSNumber = createASSClass("ASSNumber", ASSBase, {"value"}, {"number"})
-function ASSNumber:new(val, props)
-    self:readProps(props)
-    self.value = type(val)=="string" and tonumber(val) or val or 0
+
+function ASSNumber:new(val, tagProps)
+    self:readProps(tagProps)
+    self.__tag.base = self.__tag.base or 10
+    self.value = type(val)=="string" and tonumber(val,self.__tag.base) or val or 0
     self:typeCheck(self.value)
+    if self.__tag.positive then self:checkPositive(self.value) end
+    if self.__tag.range then self:checkRange(self.__tag.range[1], self.__tag.range[2], self.value) end
+    self.__tag.precision = self.__tag.precision or 3
     return self
 end
 
 function ASSNumber:getTag(coerceType, precision)
-    local val = math.round(tonumber(self.value),precision or 3)
-    if coerceType then
-        return self.positive and math.max(val,0) or val
-    else
-        self:checkType("number",self.value)
-        if self.positive then self:checkPositive(self.value) end
-        return val
+    self:readProps(tagProps)
+    precision = precision or self.__tag.precision
+    if not coerceType then
+        assert(precision <= self.__tag.precision, string.format("Error: output wih precision %d is not supported for %s (maximum: %d).\n", 
+               precision,self.typeName,self.__tag.precision))
+        self:typeCheck(self.value)
+        if self.__tag.positive then self:checkPositive(self.value) end
+        if self.__tag.range then self:checkRange(self.__tag.range[1], self.__tag.range[2],self.value) end
     end
+    local val = math.round(tonumber(self.value),self.__tag.precision)
+    val = self.__tag.positive and math.max(val,0) or val
+    val = self.__tag.range and util.clamp(val,self.__tag.range[1], self.__tag.range[2]) or val
+    return val
 end
 
 
 ASSPosition = createASSClass("ASSPosition", ASSBase, {"x","y"}, {"number", "number"})
-function ASSPosition:new(valx, valy, props)
+function ASSPosition:new(valx, valy, tagProps)
     if type(valx) == "string" then
-        props = valy
+        tagProps = valy
         valx, valy = string.toNumbers(10,valx:match("([%-%d%.]+),([%-%d%.]+)"))
     end
-    self:readProps(props)
+    self:readProps(tagProps)
     self:typeCheck(valx, valy)
     self.x, self.y = valx or 0, valy or 0
     return self
@@ -286,52 +296,40 @@ end
 -- TODO: ASSPosition:move()
 
 ASSTime = createASSClass("ASSTime", ASSBase, {"value"}, {"number"})
-function ASSTime:new(val, props)
-    self:readProps(props)
-    self.scale = self.scale or 1
+function ASSTime:new(val, tagProps)
+    self:readProps(tagProps)
+    self.__tag.scale = self.__tag.scale or 1
     self.value = type(val) == "string" and tonumber(val) or val or 0
     self:typeCheck(self.value) 
-    self.value = self.value*self.scale
+    self.value = self.value*self.__tag.scale
     return self
      -- TODO: implement adding by framecount
 end
 
 function ASSTime:getTag(coerceType, precision)
-    local val = tonumber(self.value)/self.scale
+    local val = tonumber(self.value)/self.__tag.scale
     precision = precision or 0
     if coerceType then
         precision = math.min(precision,0)
-        val = self.positive and math.max(val,0)
+        val = self.__tag.positive and math.max(val,0)
     else
         assert(precision <= 0, "Error: " .. self.typeName .." doesn't support floating point precision")
         self:checkType("number", self.value)
-        if self.positive then self:checkPositive(self.value) end
+        if self.__tag.positive then self:checkPositive(self.value) end
     end
     return math.round(val,precision)
 end
 
 ASSDuration = createASSClass("ASSDuration", ASSTime, {positive=true})
+ASSHex = createASSClass("ASSHex", ASSNumber, {"value"}, {"number"}, {range={0,255}, base=16, precision=0})
 
-ASSHex = createASSClass("ASSHex", ASSBase, {"value"}, {"number"})
-function ASSHex:new(val, props)
-    self:readProps(props)
-    self.value = type(val) == "string" and tonumber(val,16) or val
-    self:checkRange(0,255,self.value)
-    return self
-end
-
-function ASSHex:getTag(coerceType)
-    if not coerceType then self.checkRange(self.value,0,255) end
-    return util.clamp(math.round(tonumber(self.value),0),0,255)
-end
-
-ASSColor = createASSClass("ASSColor", ASSBase, {"r","g","b"}, {ASSHex,ASSHex,ASSHex})
-function ASSColor:new(r,g,b, props)
+ASSColor = createASSClass("ASSColor", ASSBase, {"r","g","b"}, {ASSHex,ASSHex,ASSHex})   
+function ASSColor:new(r,g,b, tagProps)
     if type(r) == "string" then
-        props = g
+        tagProps = g
         r,g,b = string.toNumbers(16, r:match("(%x%x)(%x%x)(%x%x)"))    
     end 
-    self:readProps(props)
+    self:readProps(tagProps)
     self.r, self.g, self.b = ASSHex(r), ASSHex(g), ASSHex(b)
     return self
 end
@@ -344,33 +342,33 @@ ASSFade = createASSClass("ASSFade", ASSBase,
     {"startDuration", "endDuration", "startTime", "endTime", "startAlpha", "midAlpha", "endAlpha"},
     {ASSDuration,ASSDuration,ASSTime,ASSTime,ASSHex,ASSHex,ASSHex}
 )
-function ASSFade:new(startDuration,endDuration,startTime,endTime,startAlpha,midAlpha,endAlpha,props)
+function ASSFade:new(startDuration,endDuration,startTime,endTime,startAlpha,midAlpha,endAlpha,tagProps)
     if type(startDuration) == "string" then
-        props = endDuration or {}
+        tagProps = endDuration or {}
         prms={}
         for prm in startDuration:gmatch("([^,]+)") do
             prms[#prms+1] = tonumber(prm)
         end
         if #prms == 2 then 
             startDuration, endDuration = unpack(prms)
-            props.simple = true
+            tagProps.simple = true
         elseif #prms == 7 then
             startDuration, endDuration, startTime, endTime = prms[5]-prms[4], prms[7]-prms[6], prms[4], prms[7] 
         end
     end 
-    self:readProps(props)
+    self:readProps(tagProps)
 
     self.startDuration, self.endDuration = ASSDuration(startDuration), ASSDuration(endDuration)
-    self.startTime = self.simple and ASSTime(0) or ASSTime(startTime)
-    self.endTime = self.simple and nil or ASSTime(endTime)
-    self.startAlpha = self.simple and ASSHex(0) or ASSHex(startAlpha)
-    self.midAlpha = self.simple and ASSHex(255) or ASSHex(midAlpha)
-    self.endAlpha = self.simple and ASSHex(0) or ASSHex(endAlpha)
+    self.startTime = self.__tag.simple and ASSTime(0) or ASSTime(startTime)
+    self.endTime = self.__tag.simple and nil or ASSTime(endTime)
+    self.startAlpha = self.__tag.simple and ASSHex(0) or ASSHex(startAlpha)
+    self.midAlpha = self.__tag.simple and ASSHex(255) or ASSHex(midAlpha)
+    self.endAlpha = self.__tag.simple and ASSHex(0) or ASSHex(endAlpha)
     return self
 end
 
 function ASSFade:getTag(coerceType)
-    if self.simple then
+    if self.__tag.simple then
         return self.startDuration:getTag(coerceType), self.endDuration:getTag(coerceType)
     else
         local t1, t4 = self.startTime:getTag(coerceType), self.endTime:getTag(coerceType)
@@ -388,18 +386,18 @@ ASSMove = createASSClass("ASSMove", ASSBase,
     {"startPos", "endPos", "startTime", "endTime"},
     {ASSPosition,ASSPosition,ASSTime,ASSTime}
 )
-function ASSMove:new(startPosX,startPosY,endPosX,endPosY,startTime,endTime,props)
+function ASSMove:new(startPosX,startPosY,endPosX,endPosY,startTime,endTime,tagProps)
     if type(startPosX) == "string" then
-        props = startPosY
+        tagProps = startPosY
         prms={}
         for prm in startPosX:gmatch("([^,]+)") do
             prms[#prms+1] = tonumber(prm)
         end
         startPosX,startPosY,endPosX,endPosY,startTime,endTime = self:getArgs(prms, nil)
     end
-    self:readProps(props)
-    assert((startTime==endTime and self.simple~=false) or (startTime and endTime), "Error: creating a complex fade requires both start and end time.\n")
-    self.simple = (startTime==nil or endTime==nil) and true or false
+    self:readProps(tagProps)
+    assert((startTime==endTime and self.__tag.simple~=false) or (startTime and endTime), "Error: creating a complex fade requires both start and end time.\n")
+    self.__tag.simple = (startTime==nil or endTime==nil) and true or false
 
     self.startPos = ASSPosition(startPosX,startPosY)
     self.endPos = ASSPosition(endPosX,endPosY)
@@ -410,7 +408,7 @@ function ASSMove:new(startPosX,startPosY,endPosX,endPosY,startTime,endTime,props
 end
 
 function ASSMove:getTag(coerceType)
-    if self.simple then
+    if self.__tag.simple then
         return returnAll({self.startPos:getTag(coerceType)}, {self.endPos:getTag(coerceType)})
     else
         if not coerceType then
@@ -491,7 +489,7 @@ meta.__index.getTagString = function(self,tagName,val)
 end
 
 meta.__index.getTag = function(self,tagName,string)
-    return _G[self.tagMap[tagName].type](string,self.tagMap[tagName].props)
+    return _G[self.tagMap[tagName].type](string,table.merge(self.tagMap[tagName].props or {},{name=tagName}))
 end
 
 meta.__index.modTag = function(self, tagName, callback)
@@ -548,7 +546,7 @@ function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,{},sel)
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        line:modTag("pos", function(tags) -- hardcoded for my convenience
+        line:modTag("alpha", function(tags) -- hardcoded for my convenience
             for i=1,#tags,1 do
                 --tags[i]:add(self.value,10)
                 tags[i]:add(10)

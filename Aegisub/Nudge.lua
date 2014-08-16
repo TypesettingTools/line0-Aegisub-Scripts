@@ -445,7 +445,17 @@ function ASSToggle:getTag(coerceType)
     return self.value and 1 or 0
 end
 
-ASSAlign = createASSClass("ASSAlign", ASSNumber, {"value"}, {"number"}, {precision=0, range={1,9}, default=5})
+ASSIndexed = createASSClass("ASSIndexed", ASSNumber, {"value"}, {"number"}, {precision=0, positive=true})
+function ASSIndexed:cycle(down)
+    local min, max = self.__tag.range[1], self.__tag.range[2]
+    if down then
+        return self.value<=min and self:set(max) or self:add(-1)
+    else
+        return self.value>=max and self:set(min) or self:add(1)
+    end
+end
+
+ASSAlign = createASSClass("ASSAlign", ASSIndexed, {"value"}, {"number"}, {range={1,9}, default=5})
 
 function ASSAlign:up()
     if self.value<7 then return self:add(3)
@@ -466,6 +476,45 @@ function ASSAlign:right()
     if self.value%3~=0 then return self:add(1)
     else return false end
 end
+
+ASSWeight = createASSClass("ASSWeight", ASSBase, {"weightClass","bold"}, {ASSNumber,ASSToggle})
+function ASSWeight:new(weightClass, bold, tagProps)
+    if type(weightClass) == "string" then
+        tagProps = bold
+        local val = tonumber(weightClass)
+        bold = (val==1 and true) or (val==0 and false)
+        weightClass = val>1 and true or 0
+    end
+    self:readProps(tagProps)
+    self.bold = ASSToggle(bold)
+    self.weightClass = ASSNumber(weightClass,{positive=true,precision=0})
+    return self
+end
+
+function ASSWeight:getTag(coerceType)
+    if self.weightClass.value >0 then
+        return self.weightClass:getTag(coerceType)
+    else
+        return self.bold:getTag(coerceType)
+    end
+end
+
+function ASSWeight:setBold(state)
+    self.bold:set(type(state)=="nil" and true or state)
+    self.weightClass.value = 0
+end
+
+function ASSWeight:toggleBold()
+    self.bold:toggle()
+end
+
+function ASSWeight:setWeight(weightClass)
+    self.bold:set(false)
+    self.weightClass:set(weightClass or 400)
+end
+
+ASSWrapStyle = createASSClass("ASSWrapStyle", ASSIndexed, {"value"}, {"number"}, {range={0,3}, default=0})
+
 ------ Extend Line Object --------------
 
 local meta = getmetatable(Line)
@@ -473,9 +522,9 @@ meta.__index.tagMap = {
     xscl = {friendlyName="\\fscx", type="ASSNumber", pattern="\\fscx([%d%.]+)", format="\\fscx%.3f"},
     yscl = {friendlyName="\\fscy", type="ASSNumber", pattern="\\fscy([%d%.]+)", format="\\fscy%.3f"},
     align = {friendlyName="\\an", type="ASSAlign", pattern="\\an([1-9])", format="\\an%d"},
-    zrot = {friendlyName="\\frz", type="ASSNumber", pattern="\\frz?([%-%d%.]+)"}, 
-    yrot = {friendlyName="\\fry", type="ASSNumber", pattern="\\fry([%-%d%.]+)"}, 
-    xrot = {friendlyName="\\frx", type="ASSNumber", pattern="\\frx([%-%d%.]+)"}, 
+    zrot = {friendlyName="\\frz", type="ASSNumber", pattern="\\frz?([%-%d%.]+)", format="\\frz%.3f"}, 
+    yrot = {friendlyName="\\fry", type="ASSNumber", pattern="\\fry([%-%d%.]+)", format="\\frz%.3f"},
+    xrot = {friendlyName="\\frx", type="ASSNumber", pattern="\\frx([%-%d%.]+)", format="\\frz%.3f"}, 
     bord = {friendlyName="\\bord", type="ASSNumber", props={positive=true}, pattern="\\bord([%d%.]+)", format="\\bord%.2f"}, 
     xbord = {friendlyName="\\xbord", type="ASSNumber", props={positive=true}, pattern="\\xbord([%d%.]+)", format="\\xbord%.2f"}, 
     ybord = {friendlyName="\\ybord", type="ASSNumber",props={positive=true}, pattern="\\ybord([%d%.]+)", format="\\ybord%.2f"}, 
@@ -498,7 +547,7 @@ meta.__index.tagMap = {
     blur = {friendlyName="\\blur", type="ASSNumber", props={positive=true}, pattern="\\blur([%d%.]+)", format="\\blur%.2f"}, 
     fax = {friendlyName="\\fax", type="ASSNumber", pattern="\\fax([%-%d%.]+)", format="\\fax%.2f"}, 
     fay = {friendlyName="\\fay", type="ASSNumber", pattern="\\fay([%-%d%.]+)", format="\\fay%.2f"}, 
-    bold = {friendlyName="\\b", type="ASSWeight", pattern="\\b(%d+)"}, 
+    bold = {friendlyName="\\b", type="ASSWeight", pattern="\\b(%d+)", format="\\b%d"}, 
     italic = {friendlyName="\\i", type="ASSToggle", pattern="\\i([10])", format="\\i%d"}, 
     underline = {friendlyName="\\u", type="ASSToggle", pattern="\\u([10])", format="\\u%d"},
     fsp = {friendlyName="\\fsp", type="ASSNumber", pattern="\\fsp([%-%d%.]+)", format="\\fsp%.2f"},
@@ -510,7 +559,7 @@ meta.__index.tagMap = {
     smplmove = {friendlyName="\\move", type="ASSMove", props={simple=true}, pattern="\\move%(([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+)%)", format="\\move(%.2f,%.2f,%.2f,%.2f)"},
     move = {friendlyName="\\move", type="ASSMove", pattern="\\move%(([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+),[%-%d]+,[%-%d]+)%)"}, format="\\move(%.2f,%.2f,%.2f,%.2f,%.2f,%.2f)",
     org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)", format="\\pos(%.2f,%.2f)"},
-    wrap = {friendlyName="\\q", type="ASSWrapStyle", pattern="\\q(%d)"},
+    wrap = {friendlyName="\\q", type="ASSWrapStyle", pattern="\\q(%d)", format="\\q%d"},
     smplfade = {friendlyName="\\fad", type="ASSFade", props={simple=true}, pattern="\\fad%((%d+,%d+)%)", format="\\fad(%d,%d)"},
     fade = {friendlyName="\\fade", type="ASSFade", pattern="\\fade?%((.-)%)", format="\\fade(%d,%d,%d,%d,%d,%d,%d)"},
     transform = {friendlyName="\\t", type="ASSTransform", pattern="\\t%((.-)%)"},
@@ -592,10 +641,10 @@ function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,{},sel)
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        line:modTag("align", function(tags) -- hardcoded for my convenience
+        line:modTag("wrap", function(tags) -- hardcoded for my convenience
             for i=1,#tags,1 do
                 --tags[i]:add(self.value,10)
-                tags[i]:add(10)
+                tags[i]:cycle()
                 --tags[i]:mul(self.value,5)
             end
             return tags

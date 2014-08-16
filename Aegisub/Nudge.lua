@@ -199,37 +199,39 @@ end
 
 function ASSBase:commonOp(method, callback, default, ...)
     local args = {self:getArgs({...}, default)}
-    local j = 1
+    local j, res = 1, {}
     for _,valName in ipairs(self.__meta__.order) do
         if type(self[valName])=="table" and self[valName].instanceOf then
             local subCnt = #self[valName].__meta__.order
-            self[valName][method](self[valName],unpack(table.sliceArray(args,j,j+subCnt-1)))
+            res=table.concatArray(res,{self[valName][method](self[valName],unpack(table.sliceArray(args,j,j+subCnt-1)))})
             j=j+subCnt
         else 
             self[valName]=callback(self[valName],args[j])
             j=j+1
+            table.insert(res,self[valName])
         end
     end
+    return unpack(res)
 end
 
 function ASSBase:add(...)
-    self:commonOp("add", function(a,b) return a+b end, 0, ...)
+    return self:commonOp("add", function(a,b) return a+b end, 0, ...)
 end
 
 function ASSBase:mul(...)
-    self:commonOp("mul", function(a,b) return a*b end, 1, ...)
+    return self:commonOp("mul", function(a,b) return a*b end, 1, ...)
 end
 
 function ASSBase:pow(...)
-    self:commonOp("pow", function(a,b) return a^b end, 1, ...)
+    return self:commonOp("pow", function(a,b) return a^b end, 1, ...)
 end
 
 function ASSBase:set(...)
-    self:commonOp("set", function(a,b) return b end, nil, ...)
+    return self:commonOp("set", function(a,b) return b end, nil, ...)
 end
 
 function ASSBase:mod(callback, ...)
-    self:set(callback(self:get(...)))
+    return self:set(callback(self:get(...)))
 end
 
 function ASSBase:readProps(tagProps)
@@ -245,7 +247,7 @@ ASSNumber = createASSClass("ASSNumber", ASSBase, {"value"}, {"number"})
 function ASSNumber:new(val, tagProps)
     self:readProps(tagProps)
     self.__tag.base = self.__tag.base or 10
-    self.value = type(val)=="string" and tonumber(val,self.__tag.base) or val or 0
+    self.value = type(val)=="string" and tonumber(val,self.__tag.base) or val or self.__tag.default or 0
     self:typeCheck(self.value)
     if self.__tag.positive then self:checkPositive(self.value) end
     if self.__tag.range then self:checkRange(self.__tag.range[1], self.__tag.range[2], self.value) end
@@ -412,7 +414,7 @@ function ASSMove:getTag(coerceType)
         return returnAll({self.startPos:getTag(coerceType)}, {self.endPos:getTag(coerceType)})
     else
         if not coerceType then
-             assert(startTime<=endTime, string.format("Error: move times must evaluate to t1<=t2, got %d<=%d", startTime,endTime))
+             assert(startTime<=endTime, string.format("Error: move times must evaluate to t1<=t2, got %d<=%d.\n", startTime,endTime))
         end
         local t1,t2 = self.startTime:getTag(coerceType), self.endTime:getTag(coerceType)
         return returnAll({self.startPos:getTag(coerceType)}, {self.endPos:getTag(coerceType)},
@@ -420,13 +422,57 @@ function ASSMove:getTag(coerceType)
     end
 end
 
+ASSToggle = createASSClass("ASSToggle", ASSBase, {"value"}, {"boolean"})
+function ASSToggle:new(val, tagProps)
+    self:readProps(tagProps)
+    if type(val) == "string" then
+        self.value = tonumber(val) == 1
+    else 
+        self.value = val or false 
+    end
+    self:typeCheck(self.value)
+    return self
+end
+
+function ASSToggle:toggle(state)
+    assert(type(state)=="boolean" or type(state)=="nil", "Error: state argument to toggle must be true, false or nil.\n")
+    self.value = state==nil and not self.value or state
+    return self.value
+end
+
+function ASSToggle:getTag(coerceType)
+    if not coerceType then self:typeCheck(self.value) end
+    return self.value and 1 or 0
+end
+
+ASSAlign = createASSClass("ASSAlign", ASSNumber, {"value"}, {"number"}, {precision=0, range={1,9}, default=5})
+
+function ASSAlign:up()
+    if self.value<7 then return self:add(3)
+    else return false end
+end
+
+function ASSAlign:down()
+    if self.value>3 then return self:add(-3)
+    else return false end
+end
+
+function ASSAlign:left()
+    if self.value%3~=1 then return self:add(-1)
+    else return false end
+end
+
+function ASSAlign:right()
+    if self.value%3~=0 then return self:add(1)
+    else return false end
+end
 ------ Extend Line Object --------------
 
 local meta = getmetatable(Line)
 meta.__index.tagMap = {
     xscl = {friendlyName="\\fscx", type="ASSNumber", pattern="\\fscx([%d%.]+)", format="\\fscx%.3f"},
     yscl = {friendlyName="\\fscy", type="ASSNumber", pattern="\\fscy([%d%.]+)", format="\\fscy%.3f"},
-    ali = {friendlyName="\\an", type="ASSAlign", pattern="\\an([1-9])"},
+    align = {friendlyName="\\an", type="ASSAlign", pattern="\\an([1-9])", format="\\an%d"},
     zrot = {friendlyName="\\frz", type="ASSNumber", pattern="\\frz?([%-%d%.]+)"}, 
     yrot = {friendlyName="\\fry", type="ASSNumber", pattern="\\fry([%-%d%.]+)"}, 
     xrot = {friendlyName="\\frx", type="ASSNumber", pattern="\\frx([%-%d%.]+)"}, 
@@ -453,8 +499,8 @@ meta.__index.tagMap = {
     fax = {friendlyName="\\fax", type="ASSNumber", pattern="\\fax([%-%d%.]+)", format="\\fax%.2f"}, 
     fay = {friendlyName="\\fay", type="ASSNumber", pattern="\\fay([%-%d%.]+)", format="\\fay%.2f"}, 
     bold = {friendlyName="\\b", type="ASSWeight", pattern="\\b(%d+)"}, 
-    italic = {friendlyName="\\i", type="ASSToggle", pattern="\\i([10])"}, 
-    underline = {friendlyName="\\u", type="ASSToggle", pattern="\\u([10])"},
+    italic = {friendlyName="\\i", type="ASSToggle", pattern="\\i([10])", format="\\i%d"}, 
+    underline = {friendlyName="\\u", type="ASSToggle", pattern="\\u([10])", format="\\u%d"},
     fsp = {friendlyName="\\fsp", type="ASSNumber", pattern="\\fsp([%-%d%.]+)", format="\\fsp%.2f"},
     fs = {friendlyName="\\fs", type="ASSNumber", props={positive=true}, pattern="\\fs([%d%.]+)", format="\\fsp%.2f"},
     kfill = {friendlyName="\\k", type="ASSDuration", props={scale=10}, pattern="\\k([%d]+)", format="\\k%d"},
@@ -482,7 +528,7 @@ end
 
 meta.__index.getTagString = function(self,tagName,val)
     if type(val) == "table" and val.instanceOf then
-        return self.tagMap[tagName].format:format(val:getTag())
+        return self.tagMap[tagName].format:format(val:getTag(true))
     else
         return re.sub(self.tagMap[tagName].format,"(%.*?[A-Za-z],?)+","%s"):format(tostring(val))
     end
@@ -546,7 +592,7 @@ function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,{},sel)
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        line:modTag("alpha", function(tags) -- hardcoded for my convenience
+        line:modTag("align", function(tags) -- hardcoded for my convenience
             for i=1,#tags,1 do
                 --tags[i]:add(self.value,10)
                 tags[i]:add(10)

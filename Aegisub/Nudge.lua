@@ -518,53 +518,65 @@ ASSWrapStyle = createASSClass("ASSWrapStyle", ASSIndexed, {"value"}, {"number"},
 ------ Extend Line Object --------------
 
 local meta = getmetatable(Line)
-meta.__index.tagMap = {
-    xscl = {friendlyName="\\fscx", type="ASSNumber", pattern="\\fscx([%d%.]+)", format="\\fscx%.3f"},
-    yscl = {friendlyName="\\fscy", type="ASSNumber", pattern="\\fscy([%d%.]+)", format="\\fscy%.3f"},
-    align = {friendlyName="\\an", type="ASSAlign", pattern="\\an([1-9])", format="\\an%d"},
-    zrot = {friendlyName="\\frz", type="ASSNumber", pattern="\\frz?([%-%d%.]+)", format="\\frz%.3f"}, 
-    yrot = {friendlyName="\\fry", type="ASSNumber", pattern="\\fry([%-%d%.]+)", format="\\frz%.3f"},
-    xrot = {friendlyName="\\frx", type="ASSNumber", pattern="\\frx([%-%d%.]+)", format="\\frz%.3f"}, 
-    bord = {friendlyName="\\bord", type="ASSNumber", props={positive=true}, pattern="\\bord([%d%.]+)", format="\\bord%.2f"}, 
-    xbord = {friendlyName="\\xbord", type="ASSNumber", props={positive=true}, pattern="\\xbord([%d%.]+)", format="\\xbord%.2f"}, 
-    ybord = {friendlyName="\\ybord", type="ASSNumber",props={positive=true}, pattern="\\ybord([%d%.]+)", format="\\ybord%.2f"}, 
-    shad = {friendlyName="\\shad", type="ASSNumber", pattern="\\shad([%-%d%.]+)", format="\\shad%.2f"}, 
-    xshad = {friendlyName="\\xshad", type="ASSNumber", pattern="\\xshad([%-%d%.]+)", format="\\xshad%.2f"}, 
-    yshad = {friendlyName="\\yshad", type="ASSNumber", pattern="\\yshad([%-%d%.]+)", format="\\yshad%.2f"}, 
-    reset = {friendlyName="\\r", type="ASSReset", pattern="\\r([^\\}]*)", format="\\r"}, 
-    alpha = {friendlyName="\\alpha", type="ASSHex", pattern="\\alpha&H(%x%x)&", format="\\alpha&H%02X&"}, 
-    l1a = {friendlyName="\\1a", type="ASSHex", pattern="\\1a&H(%x%x)&", format="\\alpha&H%02X&"}, 
-    l2a = {friendlyName="\\2a", type="ASSHex", pattern="\\2a&H(%x%x)&", format="\\alpha&H%02X&"}, 
-    l3a = {friendlyName="\\3a", type="ASSHex", pattern="\\3a&H(%x%x)&", format="\\alpha&H%02X&"}, 
-    l4a = {friendlyName="\\4a", type="ASSHex", pattern="\\4a&H(%x%x)&", format="\\alpha&H%02X&"}, 
-    l1c = {friendlyName="\\1c", type="ASSColor", pattern="\\1?c&H(%x+)&", format="\\1c&H%02X%02X%02X&"}, 
-    l2c = {friendlyName="\\2c", type="ASSColor", pattern="\\2c&H(%x+)&", format="\\2c&H%02X%02X%02X&"}, 
-    l3c = {friendlyName="\\3c", type="ASSColor", pattern="\\3c&H(%x+)&", format="\\3c&H%02X%02X%02X&"}, 
-    l4c = {friendlyName="\\4c", type="ASSColor", pattern="\\4c&H(%x+)&", format="\\4c&H%02X%02X%02X&"}, 
-    clip = {friendlyName="\\clip", type="ASSClip", pattern="\\clip%((.-)%)"}, 
-    iclip = {friendlyName="\\iclip", type="ASSClip", pattern="\\iclip%((.-)%)"}, 
-    be = {friendlyName="\\be", type="ASSNumber", props={positive=true}, pattern="\\be([%d%.]+)", format="\\be%.2f"}, 
-    blur = {friendlyName="\\blur", type="ASSNumber", props={positive=true}, pattern="\\blur([%d%.]+)", format="\\blur%.2f"}, 
-    fax = {friendlyName="\\fax", type="ASSNumber", pattern="\\fax([%-%d%.]+)", format="\\fax%.2f"}, 
-    fay = {friendlyName="\\fay", type="ASSNumber", pattern="\\fay([%-%d%.]+)", format="\\fay%.2f"}, 
-    bold = {friendlyName="\\b", type="ASSWeight", pattern="\\b(%d+)", format="\\b%d"}, 
-    italic = {friendlyName="\\i", type="ASSToggle", pattern="\\i([10])", format="\\i%d"}, 
-    underline = {friendlyName="\\u", type="ASSToggle", pattern="\\u([10])", format="\\u%d"},
-    fsp = {friendlyName="\\fsp", type="ASSNumber", pattern="\\fsp([%-%d%.]+)", format="\\fsp%.2f"},
-    fs = {friendlyName="\\fs", type="ASSNumber", props={positive=true}, pattern="\\fs([%d%.]+)", format="\\fsp%.2f"},
-    kfill = {friendlyName="\\k", type="ASSDuration", props={scale=10}, pattern="\\k([%d]+)", format="\\k%d"},
-    ksweep = {friendlyName="\\kf", type="ASSDuration", props={scale=10}, pattern="\\kf([%d]+)", format="\\kf%d"},   -- because fuck \K and lua patterns
-    kbord = {friendlyName="\\ko", type="ASSDuration", props={scale=10}, pattern="\\ko([%d]+)", format="\\ko%d"},
-    pos = {friendlyName="\\pos", type="ASSPosition", pattern="\\pos%(([%-%d%.]+,[%-%d%.]+)%)", format="\\pos(%.2f,%.2f)"},
-    smplmove = {friendlyName="\\move", type="ASSMove", props={simple=true}, pattern="\\move%(([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+)%)", format="\\move(%.2f,%.2f,%.2f,%.2f)"},
-    move = {friendlyName="\\move", type="ASSMove", pattern="\\move%(([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+),[%-%d]+,[%-%d]+)%)"}, format="\\move(%.2f,%.2f,%.2f,%.2f,%.2f,%.2f)",
-    org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)", format="\\pos(%.2f,%.2f)"},
-    wrap = {friendlyName="\\q", type="ASSWrapStyle", pattern="\\q(%d)", format="\\q%d"},
-    smplfade = {friendlyName="\\fad", type="ASSFade", props={simple=true}, pattern="\\fad%((%d+,%d+)%)", format="\\fad(%d,%d)"},
-    fade = {friendlyName="\\fade", type="ASSFade", pattern="\\fade?%((.-)%)", format="\\fade(%d,%d,%d,%d,%d,%d,%d)"},
-    transform = {friendlyName="\\t", type="ASSTransform", pattern="\\t%((.-)%)"},
-}
+meta.__index.mapTag = function(self, tagName)
+    local tagMap = {
+        fscx = {friendlyName="\\fscx", type="ASSNumber", pattern="\\fscx([%d%.]+)", format="\\fscx%.3f"},
+        fscy = {friendlyName="\\fscy", type="ASSNumber", pattern="\\fscy([%d%.]+)", format="\\fscy%.3f"},
+        align = {friendlyName="\\an", type="ASSAlign", pattern="\\an([1-9])", format="\\an%d"},
+        frz = {friendlyName="\\frz", type="ASSNumber", pattern="\\frz?([%-%d%.]+)", format="\\frz%.3f"}, 
+        fry = {friendlyName="\\fry", type="ASSNumber", pattern="\\fry([%-%d%.]+)", format="\\frz%.3f"},
+        frx = {friendlyName="\\frx", type="ASSNumber", pattern="\\frx([%-%d%.]+)", format="\\frz%.3f"}, 
+        bord = {friendlyName="\\bord", type="ASSNumber", props={positive=true}, pattern="\\bord([%d%.]+)", format="\\bord%.2f"}, 
+        xbord = {friendlyName="\\xbord", type="ASSNumber", props={positive=true}, pattern="\\xbord([%d%.]+)", format="\\xbord%.2f"}, 
+        ybord = {friendlyName="\\ybord", type="ASSNumber",props={positive=true}, pattern="\\ybord([%d%.]+)", format="\\ybord%.2f"}, 
+        shad = {friendlyName="\\shad", type="ASSNumber", pattern="\\shad([%-%d%.]+)", format="\\shad%.2f"}, 
+        xshad = {friendlyName="\\xshad", type="ASSNumber", pattern="\\xshad([%-%d%.]+)", format="\\xshad%.2f"}, 
+        yshad = {friendlyName="\\yshad", type="ASSNumber", pattern="\\yshad([%-%d%.]+)", format="\\yshad%.2f"}, 
+        reset = {friendlyName="\\r", type="ASSReset", pattern="\\r([^\\}]*)", format="\\r"}, 
+        alpha = {friendlyName="\\alpha", type="ASSHex", pattern="\\alpha&H(%x%x)&", format="\\alpha&H%02X&"}, 
+        alpha1 = {friendlyName="\\1a", type="ASSHex", pattern="\\1a&H(%x%x)&", format="\\alpha&H%02X&"}, 
+        alpha2 = {friendlyName="\\2a", type="ASSHex", pattern="\\2a&H(%x%x)&", format="\\alpha&H%02X&"}, 
+        alpha3 = {friendlyName="\\3a", type="ASSHex", pattern="\\3a&H(%x%x)&", format="\\alpha&H%02X&"}, 
+        alpha4 = {friendlyName="\\4a", type="ASSHex", pattern="\\4a&H(%x%x)&", format="\\alpha&H%02X&"}, 
+        color1 = {friendlyName="\\1c", type="ASSColor", pattern="\\1?c&H(%x+)&", format="\\1c&H%02X%02X%02X&"}, 
+        color2 = {friendlyName="\\2c", type="ASSColor", pattern="\\2c&H(%x+)&", format="\\2c&H%02X%02X%02X&"}, 
+        color3 = {friendlyName="\\3c", type="ASSColor", pattern="\\3c&H(%x+)&", format="\\3c&H%02X%02X%02X&"}, 
+        color4 = {friendlyName="\\4c", type="ASSColor", pattern="\\4c&H(%x+)&", format="\\4c&H%02X%02X%02X&"}, 
+        clip = {friendlyName="\\clip", type="ASSClip", pattern="\\clip%((.-)%)"}, 
+        iclip = {friendlyName="\\iclip", type="ASSClip", pattern="\\iclip%((.-)%)"}, 
+        be = {friendlyName="\\be", type="ASSNumber", props={positive=true}, pattern="\\be([%d%.]+)", format="\\be%.2f"}, 
+        blur = {friendlyName="\\blur", type="ASSNumber", props={positive=true}, pattern="\\blur([%d%.]+)", format="\\blur%.2f"}, 
+        fax = {friendlyName="\\fax", type="ASSNumber", pattern="\\fax([%-%d%.]+)", format="\\fax%.2f"}, 
+        fay = {friendlyName="\\fay", type="ASSNumber", pattern="\\fay([%-%d%.]+)", format="\\fay%.2f"}, 
+        bold = {friendlyName="\\b", type="ASSWeight", pattern="\\b(%d+)", format="\\b%d"}, 
+        italic = {friendlyName="\\i", type="ASSToggle", pattern="\\i([10])", format="\\i%d"}, 
+        underline = {friendlyName="\\u", type="ASSToggle", pattern="\\u([10])", format="\\u%d"},
+        fsp = {friendlyName="\\fsp", type="ASSNumber", pattern="\\fsp([%-%d%.]+)", format="\\fsp%.2f"},
+        fs = {friendlyName="\\fs", type="ASSNumber", props={positive=true}, pattern="\\fs([%d%.]+)", format="\\fsp%.2f"},
+        kFill = {friendlyName="\\k", type="ASSDuration", props={scale=10}, pattern="\\k([%d]+)", format="\\k%d"},
+        kSweep = {friendlyName="\\kf", type="ASSDuration", props={scale=10}, pattern="\\kf([%d]+)", format="\\kf%d"},   -- because fuck \K and lua patterns
+        kBord = {friendlyName="\\ko", type="ASSDuration", props={scale=10}, pattern="\\ko([%d]+)", format="\\ko%d"},
+        pos = {friendlyName="\\pos", type="ASSPosition", pattern="\\pos%(([%-%d%.]+,[%-%d%.]+)%)", format="\\pos(%.2f,%.2f)"},
+        moveSmpl = {friendlyName="\\move", type="ASSMove", props={simple=true}, pattern="\\move%(([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+)%)", format="\\move(%.2f,%.2f,%.2f,%.2f)"},
+        move = {friendlyName="\\move", type="ASSMove", pattern="\\move%(([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+),[%-%d]+,[%-%d]+)%)", format="\\move(%.2f,%.2f,%.2f,%.2f,%.2f,%.2f)"},
+        org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)", format="\\pos(%.2f,%.2f)"},
+        wrap = {friendlyName="\\q", type="ASSWrapStyle", pattern="\\q(%d)", format="\\q%d"},
+        fadeSmpl = {friendlyName="\\fad", type="ASSFade", props={simple=true}, pattern="\\fad%((%d+,%d+)%)", format="\\fad(%d,%d)"},
+        fade = {friendlyName="\\fade", type="ASSFade", pattern="\\fade?%((.-)%)", format="\\fade(%d,%d,%d,%d,%d,%d,%d)"},
+        transform = {friendlyName="\\t", type="ASSTransform", pattern="\\t%((.-)%)"},
+    }
 
+    if not tagMap[tagName] then 
+        for key,val in pairs(tagMap) do
+            if val.friendlyName == tagName then 
+                tagName = key
+            break end
+        end
+    end
+
+    assert(tagMap[tagName], string.format("Error: can't find tag %s.\n",tagName))
+    return tagMap[tagName]
+end
 
 meta.__index.getDefault = function(self,tag)
     -- returns an object with the default values for a tag in this line
@@ -576,25 +588,27 @@ meta.__index.addTag = function(self, tagName, val, pos)
 end
 
 meta.__index.getTagString = function(self,tagName,val)
+    local tagData = self:mapTag(tagName)
     if type(val) == "table" and val.instanceOf then
-        return self.tagMap[tagName].format:format(val:getTag(true))
+        return tagData.format:format(val:getTag(true))
     else
-        return re.sub(self.tagMap[tagName].format,"(%.*?[A-Za-z],?)+","%s"):format(tostring(val))
+        return re.sub(tagData.format,"(%.*?[A-Za-z],?)+","%s"):format(tostring(val))
     end
 end
 
-meta.__index.getTag = function(self,tagName,string)
-    return _G[self.tagMap[tagName].type](string,table.merge(self.tagMap[tagName].props or {},{name=tagName}))
+meta.__index.getTags = function(self,tagName,asString)
+    local tagData = self:mapTag(tagName)
+
+    local tags={}
+    for tag in self.text:gmatch("{.-" .. tagData.pattern .. ".-}") do
+        tags[#tags+1] = asString and tag or _G[tagData.type](tag,table.merge(tagData.props or {},{name=tagName}))
+    end
+    return tags
 end
 
 meta.__index.modTag = function(self, tagName, callback)
-    local tags, tagsOrg = {},{}
-    assert(self.tagMap[tagName], string.format("Error: can't find tag %s.\n",tagName))
-    for tag in self.text:gmatch("{.-" .. self.tagMap[tagName].pattern .. ".-}") do
-        tags[#tags+1] = self:getTag(tagName, tag)
-        tagsOrg[#tagsOrg+1] = tag
-    end
-
+    local tags, tagsOrg = self:getTags(tagName), self:getTags(tagName, true)
+    
     for i,tag in pairs(callback(tags)) do
         aegisub.log("Changed Tag: " .. self:getTagString(tagName, tagsOrg[i]) .. " to: " .. self:getTagString(tagName,tags[i]).. "\n")
         self.text = self.text:gsub(string.patternEscape(self:getTagString(tagName, tagsOrg[i])), self:getTagString(tagName,tags[i]), 1)
@@ -641,7 +655,7 @@ function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,{},sel)
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        line:modTag("wrap", function(tags) -- hardcoded for my convenience
+        line:modTag("\\q", function(tags) -- hardcoded for my convenience
             for i=1,#tags,1 do
                 --tags[i]:add(self.value,10)
                 tags[i]:cycle()

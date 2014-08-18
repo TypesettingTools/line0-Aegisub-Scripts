@@ -113,10 +113,11 @@ function createASSClass(typeName,baseClass,order,types,tagProps)
        order = order,
        types = types
   }
+  cls.__defProps = table.merge(cls.__defProps or {},tagProps or {})
 
   setmetatable(cls, {
     __call = function (cls, ...)
-        local self = setmetatable({__tag = tagProps or {}}, cls)
+        local self = setmetatable({__tag = util.copy(cls.__defProps)}, cls)
         self:new(...)
         return self
     end})
@@ -145,8 +146,9 @@ function ASSBase:checkRange(min,max,...)
     end
 end
 
-function ASSBase:getArgs(args, default, ...)
+function ASSBase:getArgs(args, default, coerce, ...)
     assert(type(args)=="table", "Error: first argument to getArgs must be a table of packed arguments, got " .. type(args) ..".\n")
+    -- check if first arg is a compatible ASSTag and dump into args 
     if #args == 1 and type(args[1]) == "table" and args[1].typeName then
         local res, selfClasses = false, {}
         for key,val in pairs(self.instanceOf) do
@@ -158,11 +160,37 @@ function ASSBase:getArgs(args, default, ...)
         assert(res, string.format("%s does not accept instances of class %s as argument.\n", self.typeName, args[1].typeName))
         args=table.pack(args[1]:get())
     end
-    for i=1,#self.__meta__.order,1 do
-        args[i] = type(args[i])=="nil" and default or args[i]
+
+    local valTypes, j, outArgs = self.__meta__.types, 1, {}
+    for i,valName in ipairs(self.__meta__.order) do
+        aegisub.log("argument: " .. valName .."|" .. tostring(valTypes[i]) .. "\n")
+        -- write defaults
+        args[j] = type(args[j])=="nil" and default or args[j]
+
+        if type(valTypes[i])=="table" and valTypes[i].instanceOf then
+            local subCnt = #valTypes[i].__meta__.order
+            aegisub.log("Walking " .. valTypes[i].typeName .. " with " .. subCnt .. " types.\n")
+            outArgs = table.concatArray(outArgs, {valTypes[i]:getArgs(table.sliceArray(args,j,j+subCnt-1), default, coerce)})
+            j=j+subCnt-1
+
+        elseif coerce then
+            local tagProps = self.__tag or self.__defProps
+            aegisub.log("tagProps: " .. json.encode(tagProps) .. "\n")
+            local map = {
+                number = function() return tonumber(args[j],tagProps.base or 10)*(tagProps.scale or 1) end,
+                string = function() return tostring(args[j]) end,
+                boolean = function() return not (args[j] == 0 or not args[j]) end
+            }
+            table.insert(outArgs, args[j]~= nil and map[valTypes[i]]() or nil)
+            aegisub.log("returning .... " .. type(outArgs[#outArgs]) .. "\n")
+        else table.insert(outArgs, args[j]) end
+
+        j=j+1
     end
-    self:typeCheck(unpack(args))
-    return unpack(args)
+        aegisub.log("Test1: " .. json.encode(args) .. "\n")
+        aegisub.log("Test2: " .. json.encode(outArgs) .. "\n")
+    --self:typeCheck(unpack(outArgs))
+    return unpack(outArgs)
 end
 
 function ASSBase:typeCheck(...)
@@ -198,7 +226,8 @@ function ASSBase:get()
 end
 
 function ASSBase:commonOp(method, callback, default, ...)
-    local args = {self:getArgs({...}, default)}
+    local args = {self:getArgs({...}, default, false)}
+    aegisub.log("vdfdfs: " .. json.encode(args) .. "\n")
     local j, res = 1, {}
     for _,valName in ipairs(self.__meta__.order) do
         if type(self[valName])=="table" and self[valName].instanceOf then
@@ -235,23 +264,21 @@ function ASSBase:mod(callback, ...)
 end
 
 function ASSBase:readProps(tagProps)
-    self.__tag = self.__tag or {}
     for key, val in pairs(tagProps or {}) do
         self.__tag[key] = val
     end
 end
 
 
-ASSNumber = createASSClass("ASSNumber", ASSBase, {"value"}, {"number"})
+ASSNumber = createASSClass("ASSNumber", ASSBase, {"value"}, {"number"}, {base=10, precision=3, scale=1})
 
 function ASSNumber:new(val, tagProps)
     self:readProps(tagProps)
-    self.__tag.base = self.__tag.base or 10
-    self.value = type(val)=="string" and tonumber(val,self.__tag.base) or val or self.__tag.default or 0
+    self.value = type(val)=="table" and self:getArgs(val,0,true) or val or 0
+    aegisub.log("00000: " .. self.value)
     self:typeCheck(self.value)
     if self.__tag.positive then self:checkPositive(self.value) end
     if self.__tag.range then self:checkRange(self.__tag.range[1], self.__tag.range[2], self.value) end
-    self.__tag.precision = self.__tag.precision or 3
     return self
 end
 
@@ -274,13 +301,14 @@ end
 
 ASSPosition = createASSClass("ASSPosition", ASSBase, {"x","y"}, {"number", "number"})
 function ASSPosition:new(valx, valy, tagProps)
-    if type(valx) == "string" then
+    if type(valx) == "table" then
         tagProps = valy
-        valx, valy = string.toNumbers(10,valx:match("([%-%d%.]+),([%-%d%.]+)"))
+        valx, valy = self:getArgs(valx,0,true)
+        aegisub.log("YYY:" .. json.encode({type(valx), type(valy)}) .. "\n")
     end
     self:readProps(tagProps)
     self:typeCheck(valx, valy)
-    self.x, self.y = valx or 0, valy or 0
+    self.x, self.y = valx, valy
     return self
 end
 
@@ -294,19 +322,10 @@ function ASSPosition:getTag(coerceType, precision)
     end
     return x,y
 end
-
 -- TODO: ASSPosition:move()
 
-ASSTime = createASSClass("ASSTime", ASSBase, {"value"}, {"number"})
-function ASSTime:new(val, tagProps)
-    self:readProps(tagProps)
-    self.__tag.scale = self.__tag.scale or 1
-    self.value = type(val) == "string" and tonumber(val) or val or 0
-    self:typeCheck(self.value) 
-    self.value = self.value*self.__tag.scale
-    return self
-     -- TODO: implement adding by framecount
-end
+ASSTime = createASSClass("ASSTime", ASSNumber, {"value"}, {"number"}, {precision=0})
+-- TODO: implement adding by framecount
 
 function ASSTime:getTag(coerceType, precision)
     local val = tonumber(self.value)/self.__tag.scale
@@ -322,14 +341,14 @@ function ASSTime:getTag(coerceType, precision)
     return math.round(val,precision)
 end
 
-ASSDuration = createASSClass("ASSDuration", ASSTime, {positive=true})
+ASSDuration = createASSClass("ASSDuration", ASSTime, {"value"}, {"number"}, {positive=true})
 ASSHex = createASSClass("ASSHex", ASSNumber, {"value"}, {"number"}, {range={0,255}, base=16, precision=0})
 
 ASSColor = createASSClass("ASSColor", ASSBase, {"r","g","b"}, {ASSHex,ASSHex,ASSHex})   
 function ASSColor:new(r,g,b, tagProps)
-    if type(r) == "string" then
+    if type(r) == "table" then
         tagProps = g
-        r,g,b = string.toNumbers(16, r:match("(%x%x)(%x%x)(%x%x)"))    
+        r,g,b = self:getArgs({r[1]:match("(%x%x)(%x%x)(%x%x)")},0,true)
     end 
     self:readProps(tagProps)
     self.r, self.g, self.b = ASSHex(r), ASSHex(g), ASSHex(b)
@@ -345,12 +364,9 @@ ASSFade = createASSClass("ASSFade", ASSBase,
     {ASSDuration,ASSDuration,ASSTime,ASSTime,ASSHex,ASSHex,ASSHex}
 )
 function ASSFade:new(startDuration,endDuration,startTime,endTime,startAlpha,midAlpha,endAlpha,tagProps)
-    if type(startDuration) == "string" then
+    if type(startDuration) == "table" then
         tagProps = endDuration or {}
-        prms={}
-        for prm in startDuration:gmatch("([^,]+)") do
-            prms[#prms+1] = tonumber(prm)
-        end
+        prms={self:getArgs(startDuration,nil,true)}
         if #prms == 2 then 
             startDuration, endDuration = unpack(prms)
             tagProps.simple = true
@@ -389,13 +405,10 @@ ASSMove = createASSClass("ASSMove", ASSBase,
     {ASSPosition,ASSPosition,ASSTime,ASSTime}
 )
 function ASSMove:new(startPosX,startPosY,endPosX,endPosY,startTime,endTime,tagProps)
-    if type(startPosX) == "string" then
+    if type(startPosX) == "table" then
         tagProps = startPosY
-        prms={}
-        for prm in startPosX:gmatch("([^,]+)") do
-            prms[#prms+1] = tonumber(prm)
-        end
-        startPosX,startPosY,endPosX,endPosY,startTime,endTime = self:getArgs(prms, nil)
+        startPosX,startPosY,endPosX,endPosY,startTime,endTime = self:getArgs(startPosX, nil, true)
+        aegisub.log("!!!" .. json.encode({startPosX,startPosY,endPosX,endPosY,startTime,endTime}) .. "\n")
     end
     self:readProps(tagProps)
     assert((startTime==endTime and self.__tag.simple~=false) or (startTime and endTime), "Error: creating a complex fade requires both start and end time.\n")
@@ -403,6 +416,7 @@ function ASSMove:new(startPosX,startPosY,endPosX,endPosY,startTime,endTime,tagPr
 
     self.startPos = ASSPosition(startPosX,startPosY)
     self.endPos = ASSPosition(endPosX,endPosY)
+    aegisub.log("XXXX: " .. type(startTime) .. "\n")
     self.startTime = ASSTime(startTime)
     self.endTime = ASSTime(endTime)
 
@@ -425,8 +439,8 @@ end
 ASSToggle = createASSClass("ASSToggle", ASSBase, {"value"}, {"boolean"})
 function ASSToggle:new(val, tagProps)
     self:readProps(tagProps)
-    if type(val) == "string" then
-        self.value = tonumber(val) == 1
+    if type(val) == "table" then
+        self.value = self:getArgs(val,false,true)
     else 
         self.value = val or false 
     end
@@ -478,16 +492,18 @@ function ASSAlign:right()
 end
 
 ASSWeight = createASSClass("ASSWeight", ASSBase, {"weightClass","bold"}, {ASSNumber,ASSToggle})
-function ASSWeight:new(weightClass, bold, tagProps)
-    if type(weightClass) == "string" then
-        tagProps = bold
-        local val = tonumber(weightClass)
-        bold = (val==1 and true) or (val==0 and false)
-        weightClass = val>1 and true or 0
+function ASSWeight:new(val, tagProps)
+    if type(val) == "table" then
+        local val = self:getArgs(val,0,true)
+        self.bold = (val==1 and true) or (val==0 and false)
+        self.weightClass = val>1 and true or 0
+    elseif type(val) == "boolean" then
+        self.bold, self.weightClass = val, 0
+    else self.weightClass = val
     end
     self:readProps(tagProps)
-    self.bold = ASSToggle(bold)
-    self.weightClass = ASSNumber(weightClass,{positive=true,precision=0})
+    self.bold = ASSToggle(self.bold)
+    self.weightClass = ASSNumber(self.weightClass,{positive=true,precision=0})
     return self
 end
 
@@ -519,49 +535,59 @@ ASSWrapStyle = createASSClass("ASSWrapStyle", ASSIndexed, {"value"}, {"number"},
 
 local meta = getmetatable(Line)
 meta.__index.mapTag = function(self, tagName)
+    local function getStyleRef(tag)
+        if tag:find("alpha") then 
+            local alpha = true
+            tag = tag:gsub("alpha", "color")
+        end
+        if tag:find("color") then
+            return alpha and self.styleref[tag]:sub(3,4) or self.styleref[tag]:sub(5,10)
+        else return  self.styleref[tag] end
+    end
+
     local tagMap = {
-        fscx = {friendlyName="\\fscx", type="ASSNumber", pattern="\\fscx([%d%.]+)", format="\\fscx%.3f"},
-        fscy = {friendlyName="\\fscy", type="ASSNumber", pattern="\\fscy([%d%.]+)", format="\\fscy%.3f"},
-        align = {friendlyName="\\an", type="ASSAlign", pattern="\\an([1-9])", format="\\an%d"},
-        frz = {friendlyName="\\frz", type="ASSNumber", pattern="\\frz?([%-%d%.]+)", format="\\frz%.3f"}, 
-        fry = {friendlyName="\\fry", type="ASSNumber", pattern="\\fry([%-%d%.]+)", format="\\frz%.3f"},
-        frx = {friendlyName="\\frx", type="ASSNumber", pattern="\\frx([%-%d%.]+)", format="\\frz%.3f"}, 
-        bord = {friendlyName="\\bord", type="ASSNumber", props={positive=true}, pattern="\\bord([%d%.]+)", format="\\bord%.2f"}, 
-        xbord = {friendlyName="\\xbord", type="ASSNumber", props={positive=true}, pattern="\\xbord([%d%.]+)", format="\\xbord%.2f"}, 
-        ybord = {friendlyName="\\ybord", type="ASSNumber",props={positive=true}, pattern="\\ybord([%d%.]+)", format="\\ybord%.2f"}, 
-        shad = {friendlyName="\\shad", type="ASSNumber", pattern="\\shad([%-%d%.]+)", format="\\shad%.2f"}, 
-        xshad = {friendlyName="\\xshad", type="ASSNumber", pattern="\\xshad([%-%d%.]+)", format="\\xshad%.2f"}, 
-        yshad = {friendlyName="\\yshad", type="ASSNumber", pattern="\\yshad([%-%d%.]+)", format="\\yshad%.2f"}, 
+        scaleX= {friendlyName="\\fscx", type="ASSNumber", pattern="\\fscx([%d%.]+)", format="\\fscx%.3f", default=getStyleRef("scale_x")},
+        scaleY = {friendlyName="\\fscy", type="ASSNumber", pattern="\\fscy([%d%.]+)", format="\\fscy%.3f", default=getStyleRef("scale_y")},
+        align = {friendlyName="\\an", type="ASSAlign", pattern="\\an([1-9])", format="\\an%d", default=getStyleRef("align")},
+        angleZ = {friendlyName="\\frz", type="ASSNumber", pattern="\\frz?([%-%d%.]+)", format="\\frz%.3f", default=getStyleRef("angle")}, 
+        angleY = {friendlyName="\\fry", type="ASSNumber", pattern="\\fry([%-%d%.]+)", format="\\frz%.3f", default=0},
+        angleX = {friendlyName="\\frx", type="ASSNumber", pattern="\\frx([%-%d%.]+)", format="\\frz%.3f", default=0}, 
+        outline = {friendlyName="\\bord", type="ASSNumber", props={positive=true}, pattern="\\bord([%d%.]+)", format="\\bord%.2f", default=getStyleRef("outline")}, 
+        outlineX = {friendlyName="\\xbord", type="ASSNumber", props={positive=true}, pattern="\\xbord([%d%.]+)", format="\\xbord%.2f", default=getStyleRef("outline")}, 
+        outlineY = {friendlyName="\\ybord", type="ASSNumber",props={positive=true}, pattern="\\ybord([%d%.]+)", format="\\ybord%.2f", default=getStyleRef("outline")}, 
+        shadow = {friendlyName="\\shad", type="ASSNumber", pattern="\\shad([%-%d%.]+)", format="\\shad%.2f", default=getStyleRef("shadow")}, 
+        shadowX = {friendlyName="\\xshad", type="ASSNumber", pattern="\\xshad([%-%d%.]+)", format="\\xshad%.2f", default=getStyleRef("shadow")}, 
+        shadowY = {friendlyName="\\yshad", type="ASSNumber", pattern="\\yshad([%-%d%.]+)", format="\\yshad%.2f", default=getStyleRef("shadow")}, 
         reset = {friendlyName="\\r", type="ASSReset", pattern="\\r([^\\}]*)", format="\\r"}, 
-        alpha = {friendlyName="\\alpha", type="ASSHex", pattern="\\alpha&H(%x%x)&", format="\\alpha&H%02X&"}, 
-        alpha1 = {friendlyName="\\1a", type="ASSHex", pattern="\\1a&H(%x%x)&", format="\\alpha&H%02X&"}, 
-        alpha2 = {friendlyName="\\2a", type="ASSHex", pattern="\\2a&H(%x%x)&", format="\\alpha&H%02X&"}, 
-        alpha3 = {friendlyName="\\3a", type="ASSHex", pattern="\\3a&H(%x%x)&", format="\\alpha&H%02X&"}, 
-        alpha4 = {friendlyName="\\4a", type="ASSHex", pattern="\\4a&H(%x%x)&", format="\\alpha&H%02X&"}, 
-        color1 = {friendlyName="\\1c", type="ASSColor", pattern="\\1?c&H(%x+)&", format="\\1c&H%02X%02X%02X&"}, 
-        color2 = {friendlyName="\\2c", type="ASSColor", pattern="\\2c&H(%x+)&", format="\\2c&H%02X%02X%02X&"}, 
-        color3 = {friendlyName="\\3c", type="ASSColor", pattern="\\3c&H(%x+)&", format="\\3c&H%02X%02X%02X&"}, 
-        color4 = {friendlyName="\\4c", type="ASSColor", pattern="\\4c&H(%x+)&", format="\\4c&H%02X%02X%02X&"}, 
+        alpha = {friendlyName="\\alpha", type="ASSHex", pattern="\\alpha&H(%x%x)&", format="\\alpha&H%02X&", default=0}, 
+        alpha1 = {friendlyName="\\1a", type="ASSHex", pattern="\\1a&H(%x%x)&", format="\\alpha&H%02X&", default=getStyleRef("alpha1")}, 
+        alpha2 = {friendlyName="\\2a", type="ASSHex", pattern="\\2a&H(%x%x)&", format="\\alpha&H%02X&", default=getStyleRef("alpha2")}, 
+        alpha3 = {friendlyName="\\3a", type="ASSHex", pattern="\\3a&H(%x%x)&", format="\\alpha&H%02X&", default=getStyleRef("alpha3")}, 
+        alpha4 = {friendlyName="\\4a", type="ASSHex", pattern="\\4a&H(%x%x)&", format="\\alpha&H%02X&", default=getStyleRef("alpha4")}, 
+        color1 = {friendlyName="\\1c", type="ASSColor", pattern="\\1?c&H(%x+)&", format="\\1c&H%02X%02X%02X&", default=getStyleRef("color1")}, 
+        color2 = {friendlyName="\\2c", type="ASSColor", pattern="\\2c&H(%x+)&", format="\\2c&H%02X%02X%02X&", default=getStyleRef("color2")}, 
+        color3 = {friendlyName="\\3c", type="ASSColor", pattern="\\3c&H(%x+)&", format="\\3c&H%02X%02X%02X&", default=getStyleRef("color3")}, 
+        color4 = {friendlyName="\\4c", type="ASSColor", pattern="\\4c&H(%x+)&", format="\\4c&H%02X%02X%02X&", default=getStyleRef("color4")}, 
         clip = {friendlyName="\\clip", type="ASSClip", pattern="\\clip%((.-)%)"}, 
         iclip = {friendlyName="\\iclip", type="ASSClip", pattern="\\iclip%((.-)%)"}, 
-        be = {friendlyName="\\be", type="ASSNumber", props={positive=true}, pattern="\\be([%d%.]+)", format="\\be%.2f"}, 
-        blur = {friendlyName="\\blur", type="ASSNumber", props={positive=true}, pattern="\\blur([%d%.]+)", format="\\blur%.2f"}, 
-        fax = {friendlyName="\\fax", type="ASSNumber", pattern="\\fax([%-%d%.]+)", format="\\fax%.2f"}, 
-        fay = {friendlyName="\\fay", type="ASSNumber", pattern="\\fay([%-%d%.]+)", format="\\fay%.2f"}, 
-        bold = {friendlyName="\\b", type="ASSWeight", pattern="\\b(%d+)", format="\\b%d"}, 
-        italic = {friendlyName="\\i", type="ASSToggle", pattern="\\i([10])", format="\\i%d"}, 
-        underline = {friendlyName="\\u", type="ASSToggle", pattern="\\u([10])", format="\\u%d"},
-        fsp = {friendlyName="\\fsp", type="ASSNumber", pattern="\\fsp([%-%d%.]+)", format="\\fsp%.2f"},
-        fs = {friendlyName="\\fs", type="ASSNumber", props={positive=true}, pattern="\\fs([%d%.]+)", format="\\fsp%.2f"},
-        kFill = {friendlyName="\\k", type="ASSDuration", props={scale=10}, pattern="\\k([%d]+)", format="\\k%d"},
-        kSweep = {friendlyName="\\kf", type="ASSDuration", props={scale=10}, pattern="\\kf([%d]+)", format="\\kf%d"},   -- because fuck \K and lua patterns
-        kBord = {friendlyName="\\ko", type="ASSDuration", props={scale=10}, pattern="\\ko([%d]+)", format="\\ko%d"},
-        pos = {friendlyName="\\pos", type="ASSPosition", pattern="\\pos%(([%-%d%.]+,[%-%d%.]+)%)", format="\\pos(%.2f,%.2f)"},
+        be = {friendlyName="\\be", type="ASSNumber", props={positive=true}, pattern="\\be([%d%.]+)", format="\\be%.2f", default=0}, 
+        blur = {friendlyName="\\blur", type="ASSNumber", props={positive=true}, pattern="\\blur([%d%.]+)", format="\\blur%.2f", default=0}, 
+        fax = {friendlyName="\\fax", type="ASSNumber", pattern="\\fax([%-%d%.]+)", format="\\fax%.2f", default=0}, 
+        fay = {friendlyName="\\fay", type="ASSNumber", pattern="\\fay([%-%d%.]+)", format="\\fay%.2f", default=0}, 
+        bold = {friendlyName="\\b", type="ASSWeight", pattern="\\b(%d+)", format="\\b%d", default=getStyleRef("bold")}, 
+        italic = {friendlyName="\\i", type="ASSToggle", pattern="\\i([10])", format="\\i%d", default=getStyleRef("italic")}, 
+        underline = {friendlyName="\\u", type="ASSToggle", pattern="\\u([10])", format="\\u%d", default=getStyleRef("underline")},
+        spacing = {friendlyName="\\fsp", type="ASSNumber", pattern="\\fsp([%-%d%.]+)", format="\\fsp%.2f", default=getStyleRef("spacing")},
+        fontsize = {friendlyName="\\fs", type="ASSNumber", props={positive=true}, pattern="\\fs([%d%.]+)", format="\\fsp%.2f", default=getStyleRef("fontsize")},
+        kFill = {friendlyName="\\k", type="ASSDuration", props={scale=10}, pattern="\\k([%d]+)", format="\\k%d", default=0},
+        kSweep = {friendlyName="\\kf", type="ASSDuration", props={scale=10}, pattern="\\kf([%d]+)", format="\\kf%d", default=0},   -- because fuck \K and lua patterns
+        kBord = {friendlyName="\\ko", type="ASSDuration", props={scale=10}, pattern="\\ko([%d]+)", format="\\ko%d", default=0},
+        pos = {friendlyName="\\pos", type="ASSPosition", pattern="\\pos%(([%-%d%.]+,[%-%d%.]+)%)", format="\\pos(%.2f,%.2f)", default={0,0}}, -- TODO: default position
         moveSmpl = {friendlyName="\\move", type="ASSMove", props={simple=true}, pattern="\\move%(([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+)%)", format="\\move(%.2f,%.2f,%.2f,%.2f)"},
         move = {friendlyName="\\move", type="ASSMove", pattern="\\move%(([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+),[%-%d]+,[%-%d]+)%)", format="\\move(%.2f,%.2f,%.2f,%.2f,%.2f,%.2f)"},
         org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)", format="\\pos(%.2f,%.2f)"},
-        wrap = {friendlyName="\\q", type="ASSWrapStyle", pattern="\\q(%d)", format="\\q%d"},
-        fadeSmpl = {friendlyName="\\fad", type="ASSFade", props={simple=true}, pattern="\\fad%((%d+,%d+)%)", format="\\fad(%d,%d)"},
+        wrap = {friendlyName="\\q", type="ASSWrapStyle", pattern="\\q(%d)", format="\\q%d", default=0},
+        fadeSmpl = {friendlyName="\\fad", type="ASSFade", props={simple=true}, pattern="\\fad%((%d+,%d+)%)", format="\\fad(%d,%d)", default={0,0}},
         fade = {friendlyName="\\fade", type="ASSFade", pattern="\\fade?%((.-)%)", format="\\fade(%d,%d,%d,%d,%d,%d,%d)"},
         transform = {friendlyName="\\t", type="ASSTransform", pattern="\\t%((.-)%)"},
     }
@@ -578,40 +604,59 @@ meta.__index.mapTag = function(self, tagName)
     return tagMap[tagName]
 end
 
-meta.__index.getDefault = function(self,tag)
-    -- returns an object with the default values for a tag in this line
-end
+meta.__index.addTag = function(self,tagName,val,pos)
+    if type(val) == "table" and val.instanceOf then
+        local tagName, tag = tagName or val.__tag.name, val
+    else
+        local tagData = self:mapTag(tagName)
+        if val==nil then val=tagData.default end
+        local tag = _G[tagData.type](val, table.merge(tagData.props or {},{name=tagName})) 
+    end
 
-meta.__index.addTag = function(self, tagName, val, pos)
-    -- adds override tag from Defaults to start of line if not present
-    -- pos: +n:n-th override tag; 0:first override tag and after resets -n: position in line
+    local _,linePos = self.text:find("{.-}")
+    if linePos then 
+        self.text = self.text:sub(0,linePos-1)..self:getTagString(tagName,tag)..self.text:sub(linePos,self.text:len())
+    else
+        self.text = string.format("{%s}%s", self:getTagString(tagName,tag), self.text)
+    end
+
+    return tag
+    -- TODO: pos: +n:n-th override tag; 0:first override tag and after resets -n: position in line
 end
 
 meta.__index.getTagString = function(self,tagName,val)
-    local tagData = self:mapTag(tagName)
     if type(val) == "table" and val.instanceOf then
+        local tagData = self:mapTag(tagName or val.__tag.name)
         return tagData.format:format(val:getTag(true))
     else
-        return re.sub(tagData.format,"(%.*?[A-Za-z],?)+","%s"):format(tostring(val))
+        return re.sub(self:mapTag(tagName).format,"(%.*?[A-Za-z],?)+","%s"):format(tostring(val))
     end
 end
 
-meta.__index.getTags = function(self,tagName,asString)
+meta.__index.getTags = function(self,tagName,asStrings)
     local tagData = self:mapTag(tagName)
 
     local tags={}
     for tag in self.text:gmatch("{.-" .. tagData.pattern .. ".-}") do
-        tags[#tags+1] = asString and tag or _G[tagData.type](tag,table.merge(tagData.props or {},{name=tagName}))
+        prms={}
+        for prm in tag:gmatch("([^,]+)") do prms[#prms+1] = prm end
+        tags[#tags+1] = asStrings and self:getTagString(tagName,tag) or
+                        _G[tagData.type](prms,table.merge(tagData.props or {},{name=tagName}))
     end
     return tags
 end
 
 meta.__index.modTag = function(self, tagName, callback)
-    local tags, tagsOrg = self:getTags(tagName), self:getTags(tagName, true)
+    local tags, orgStrings = self:getTags(tagName), self:getTags(tagName, true)
+
+    if #orgStrings==0 then
+        local newTag = self:addTag(tagName,nil)
+        tags, orgStrings = {newTag}, {self:getTagString(nil,newTag)}
+    end
     
     for i,tag in pairs(callback(tags)) do
-        aegisub.log("Changed Tag: " .. self:getTagString(tagName, tagsOrg[i]) .. " to: " .. self:getTagString(tagName,tags[i]).. "\n")
-        self.text = self.text:gsub(string.patternEscape(self:getTagString(tagName, tagsOrg[i])), self:getTagString(tagName,tags[i]), 1)
+        aegisub.log("Changed Tag: " .. orgStrings[i] .. " to: " .. self:getTagString(nil,tags[i]).. "\n")
+        self.text = self.text:gsub(string.patternEscape(orgStrings[i]), self:getTagString(nil,tags[i]), 1)
     end
 
     return #tags>0
@@ -655,10 +700,10 @@ function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,{},sel)
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        line:modTag("\\q", function(tags) -- hardcoded for my convenience
+        line:modTag("shadow", function(tags) -- hardcoded for my convenience
             for i=1,#tags,1 do
-                --tags[i]:add(self.value,10)
-                tags[i]:cycle()
+                tags[i]:add(10)
+                --tags[i]:cycle()
                 --tags[i]:mul(self.value,5)
             end
             return tags

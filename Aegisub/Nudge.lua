@@ -30,12 +30,12 @@ math.round = function(num,idp)
 end
 
 string.formatFancy = function(fmtStr,...)
-    local i, args = 1, {...}
+    local i, args = 0, {...}
     local outStr=fmtStr:gsub("(%%[%+%- 0]*%d*.?%d*[hlLzjtI]*)([aAcedEfFgGcnNopiuAsuxX])", function(opts,type_)
+        i=i+1
         if type_=="N" then
             return string.format(opts.."f",args[i]):gsub("%.(%d-)0+$","%.%1"):gsub("%.$",""), ""
         else return string.format(opts..type_,args[i]), "" end
-        i=i+1
     end)
     return outStr
 end
@@ -598,7 +598,7 @@ meta.__index.mapTag = function(self, tagName)
         kSweep = {friendlyName="\\kf", type="ASSDuration", props={scale=10}, pattern="\\kf([%d]+)", format="\\kf%d", default=0},
         kSweepAlt = {friendlyName="\\K", type="ASSDuration", props={scale=10}, pattern="\\K([%d]+)", format="\\K%d", default=0},
         kBord = {friendlyName="\\ko", type="ASSDuration", props={scale=10}, pattern="\\ko([%d]+)", format="\\ko%d", default=0},
-        pos = {friendlyName="\\pos", type="ASSPosition", pattern="\\pos%(([%-%d%.]+,[%-%d%.]+)%)", format="\\pos(%.2N,%.2N)", default={0,0}}, -- TODO: default position
+        pos = {friendlyName="\\pos", type="ASSPosition", pattern="\\pos%(([%-%d%.]+,[%-%d%.]+)%)", format="\\pos(%.2N,%.2N)", default={self:getDefaultPosition(self.styleref)}},
         moveSmpl = {friendlyName=nil, type="ASSMove", props={simple=true}, format="\\move(%.2N,%.2N,%.2N,%.2N)"}, -- only for output formatting
         move = {friendlyName="\\move", type="ASSMove", pattern="\\move%(([%-%d%.,]+)%)", format="\\move(%.2N,%.2N,%.2N,%.2N,%.2N,%.2N)"},
         org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)", format="\\pos(%.2N,%.2N)"},

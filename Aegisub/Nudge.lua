@@ -163,32 +163,26 @@ function ASSBase:getArgs(args, default, coerce, ...)
 
     local valTypes, j, outArgs = self.__meta__.types, 1, {}
     for i,valName in ipairs(self.__meta__.order) do
-        aegisub.log("argument: " .. valName .."|" .. tostring(valTypes[i]) .. "\n")
         -- write defaults
         args[j] = type(args[j])=="nil" and default or args[j]
 
         if type(valTypes[i])=="table" and valTypes[i].instanceOf then
             local subCnt = #valTypes[i].__meta__.order
-            aegisub.log("Walking " .. valTypes[i].typeName .. " with " .. subCnt .. " types.\n")
             outArgs = table.concatArray(outArgs, {valTypes[i]:getArgs(table.sliceArray(args,j,j+subCnt-1), default, coerce)})
             j=j+subCnt-1
 
         elseif coerce then
             local tagProps = self.__tag or self.__defProps
-            aegisub.log("tagProps: " .. json.encode(tagProps) .. "\n")
             local map = {
                 number = function() return tonumber(args[j],tagProps.base or 10)*(tagProps.scale or 1) end,
                 string = function() return tostring(args[j]) end,
                 boolean = function() return not (args[j] == 0 or not args[j]) end
             }
             table.insert(outArgs, args[j]~= nil and map[valTypes[i]]() or nil)
-            aegisub.log("returning .... " .. type(outArgs[#outArgs]) .. "\n")
         else table.insert(outArgs, args[j]) end
 
         j=j+1
     end
-        aegisub.log("Test1: " .. json.encode(args) .. "\n")
-        aegisub.log("Test2: " .. json.encode(outArgs) .. "\n")
     --self:typeCheck(unpack(outArgs))
     return unpack(outArgs)
 end
@@ -227,7 +221,6 @@ end
 
 function ASSBase:commonOp(method, callback, default, ...)
     local args = {self:getArgs({...}, default, false)}
-    aegisub.log("vdfdfs: " .. json.encode(args) .. "\n")
     local j, res = 1, {}
     for _,valName in ipairs(self.__meta__.order) do
         if type(self[valName])=="table" and self[valName].instanceOf then
@@ -275,7 +268,6 @@ ASSNumber = createASSClass("ASSNumber", ASSBase, {"value"}, {"number"}, {base=10
 function ASSNumber:new(val, tagProps)
     self:readProps(tagProps)
     self.value = type(val)=="table" and self:getArgs(val,0,true) or val or 0
-    aegisub.log("00000: " .. self.value)
     self:typeCheck(self.value)
     if self.__tag.positive then self:checkPositive(self.value) end
     if self.__tag.range then self:checkRange(self.__tag.range[1], self.__tag.range[2], self.value) end
@@ -304,7 +296,6 @@ function ASSPosition:new(valx, valy, tagProps)
     if type(valx) == "table" then
         tagProps = valy
         valx, valy = self:getArgs(valx,0,true)
-        aegisub.log("YYY:" .. json.encode({type(valx), type(valy)}) .. "\n")
     end
     self:readProps(tagProps)
     self:typeCheck(valx, valy)
@@ -408,7 +399,6 @@ function ASSMove:new(startPosX,startPosY,endPosX,endPosY,startTime,endTime,tagPr
     if type(startPosX) == "table" then
         tagProps = startPosY
         startPosX,startPosY,endPosX,endPosY,startTime,endTime = self:getArgs(startPosX, nil, true)
-        aegisub.log("!!!" .. json.encode({startPosX,startPosY,endPosX,endPosY,startTime,endTime}) .. "\n")
     end
     self:readProps(tagProps)
     assert((startTime==endTime and self.__tag.simple~=false) or (startTime and endTime), "Error: creating a complex fade requires both start and end time.\n")
@@ -416,7 +406,6 @@ function ASSMove:new(startPosX,startPosY,endPosX,endPosY,startTime,endTime,tagPr
 
     self.startPos = ASSPosition(startPosX,startPosY)
     self.endPos = ASSPosition(endPosX,endPosY)
-    aegisub.log("XXXX: " .. type(startTime) .. "\n")
     self.startTime = ASSTime(startTime)
     self.endTime = ASSTime(endTime)
 
@@ -606,28 +595,28 @@ end
 
 meta.__index.addTag = function(self,tagName,val,pos)
     if type(val) == "table" and val.instanceOf then
-        local tagName, tag = tagName or val.__tag.name, val
+        tagName = tagName or val.__tag.name
     else
         local tagData = self:mapTag(tagName)
         if val==nil then val=tagData.default end
-        local tag = _G[tagData.type](val, table.merge(tagData.props or {},{name=tagName})) 
+        val = _G[tagData.type](val, table.merge(tagData.props or {},{name=tagName})) 
     end
 
     local _,linePos = self.text:find("{.-}")
     if linePos then 
-        self.text = self.text:sub(0,linePos-1)..self:getTagString(tagName,tag)..self.text:sub(linePos,self.text:len())
+        self.text = self.text:sub(0,linePos-1)..self:getTagString(tagName,val)..self.text:sub(linePos,self.text:len())
     else
-        self.text = string.format("{%s}%s", self:getTagString(tagName,tag), self.text)
+        self.text = string.format("{%s}%s", self:getTagString(tagName,val), self.text)
     end
 
-    return tag
+    return val
     -- TODO: pos: +n:n-th override tag; 0:first override tag and after resets -n: position in line
 end
 
 meta.__index.getTagString = function(self,tagName,val)
     if type(val) == "table" and val.instanceOf then
-        local tagData = self:mapTag(tagName or val.__tag.name)
-        return tagData.format:format(val:getTag(true))
+        tagName = tagName or val.__tag.name
+        return self:mapTag(tagName).format:format(val:getTag(true))
     else
         return re.sub(self:mapTag(tagName).format,"(%.*?[A-Za-z],?)+","%s"):format(tostring(val))
     end

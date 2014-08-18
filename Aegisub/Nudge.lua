@@ -423,8 +423,12 @@ function ASSMove:new(startPosX,startPosY,endPosX,endPosY,startTime,endTime,tagPr
         startPosX,startPosY,endPosX,endPosY,startTime,endTime = self:getArgs(startPosX, nil, true)
     end
     self:readProps(tagProps)
-    assert((startTime==endTime and self.__tag.simple~=false) or (startTime and endTime), "Error: creating a complex fade requires both start and end time.\n")
-    self.__tag.simple = (startTime==nil or endTime==nil) and true or false
+    assert((startTime==endTime and self.__tag.simple~=false) or (startTime and endTime), "Error: creating a complex move requires both start and end time.\n")
+    
+    if (startTime==nil or endTime==nil or (startTime==0 and endTime=0))
+        self.__tag.simple = true
+        self.__tag.name = "moveSmpl"
+    else self.__tag.simple = false end
 
     self.startPos = ASSPosition(startPosX,startPosY)
     self.endPos = ASSPosition(endPosX,endPosY)
@@ -435,7 +439,7 @@ function ASSMove:new(startPosX,startPosY,endPosX,endPosY,startTime,endTime,tagPr
 end
 
 function ASSMove:getTag(coerceType)
-    if self.__tag.simple then
+    if self.__tag.simple or self.__tag.name=="moveSmpl" then
         return returnAll({self.startPos:getTag(coerceType)}, {self.endPos:getTag(coerceType)})
     else
         if not coerceType then
@@ -591,11 +595,12 @@ meta.__index.mapTag = function(self, tagName)
         spacing = {friendlyName="\\fsp", type="ASSNumber", pattern="\\fsp([%-%d%.]+)", format="\\fsp%.2N", default=getStyleRef("spacing")},
         fontsize = {friendlyName="\\fs", type="ASSNumber", props={positive=true}, pattern="\\fs([%d%.]+)", format="\\fsp%.2N", default=getStyleRef("fontsize")},
         kFill = {friendlyName="\\k", type="ASSDuration", props={scale=10}, pattern="\\k([%d]+)", format="\\k%d", default=0},
-        kSweep = {friendlyName="\\kf", type="ASSDuration", props={scale=10}, pattern="\\kf([%d]+)", format="\\kf%d", default=0},   -- because fuck \K and lua patterns
+        kSweep = {friendlyName="\\kf", type="ASSDuration", props={scale=10}, pattern="\\kf([%d]+)", format="\\kf%d", default=0},
+        kSweepAlt = {friendlyName="\\K", type="ASSDuration", props={scale=10}, pattern="\\K([%d]+)", format="\\K%d", default=0},
         kBord = {friendlyName="\\ko", type="ASSDuration", props={scale=10}, pattern="\\ko([%d]+)", format="\\ko%d", default=0},
         pos = {friendlyName="\\pos", type="ASSPosition", pattern="\\pos%(([%-%d%.]+,[%-%d%.]+)%)", format="\\pos(%.2N,%.2N)", default={0,0}}, -- TODO: default position
-        moveSmpl = {friendlyName="\\move", type="ASSMove", props={simple=true}, pattern="\\move%(([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+)%)", format="\\move(%.2N,%.2N,%.2N,%.2N)"},
-        move = {friendlyName="\\move", type="ASSMove", pattern="\\move%(([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+),[%-%d]+,[%-%d]+)%)", format="\\move(%.2N,%.2N,%.2N,%.2N,%.2N,%.2N)"},
+        moveSmpl = {friendlyName=nil, type="ASSMove", props={simple=true}, format="\\move(%.2N,%.2N,%.2N,%.2N)"}, -- only for output formatting
+        move = {friendlyName="\\move", type="ASSMove", pattern="\\move%(([%-%d%.,]+)%)", format="\\move(%.2N,%.2N,%.2N,%.2N,%.2N,%.2N)"},
         org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)", format="\\pos(%.2N,%.2N)"},
         wrap = {friendlyName="\\q", type="ASSWrapStyle", pattern="\\q(%d)", format="\\q%d", default=0},
         fadeSmpl = {friendlyName="\\fad", type="ASSFade", props={simple=true}, pattern="\\fad%((%d+,%d+)%)", format="\\fad(%d,%d)", default={0,0}},

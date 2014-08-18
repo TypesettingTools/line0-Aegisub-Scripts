@@ -425,7 +425,7 @@ function ASSMove:new(startPosX,startPosY,endPosX,endPosY,startTime,endTime,tagPr
     self:readProps(tagProps)
     assert((startTime==endTime and self.__tag.simple~=false) or (startTime and endTime), "Error: creating a complex move requires both start and end time.\n")
     
-    if (startTime==nil or endTime==nil or (startTime==0 and endTime==0))
+    if startTime==nil or endTime==nil or (startTime==0 and endTime==0) then
         self.__tag.simple = true
         self.__tag.name = "moveSmpl"
     else self.__tag.simple = false end

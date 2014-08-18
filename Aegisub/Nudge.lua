@@ -15,10 +15,6 @@ math.isInt = function(val)
     return type(val) == "number" and val%1==0
 end
 
-math.toPrettyString = function(string, precision)
-    -- stolen from liblyger, TODO: actually use it
-    precision = precision or 3
-    return string.format("%."..tostring(precision).."f",string):gsub("%.(%d-)0+$","%.%1"):gsub("%.$","") end
 
 math.toStrings = function(...)
     strings={}
@@ -31,6 +27,17 @@ end
 math.round = function(num,idp)
   local mult = 10^(idp or 0)
   return math.floor(num * mult + 0.5) / mult
+end
+
+string.formatFancy = function(fmtStr,...)
+    local i, args = 1, {...}
+    local outStr=fmtStr:gsub("(%%[%+%- 0]*%d*.?%d*[hlLzjtI]*)([aAcedEfFgGcnNopiuAsuxX])", function(opts,type_)
+        if type_=="N" then
+            return string.format(opts.."f",args[i]):gsub("%.(%d-)0+$","%.%1"):gsub("%.$",""), ""
+        else return string.format(opts..type_,args[i]), "" end
+        i=i+1
+    end)
+    return outStr
 end
 
 string.patternEscape = function(str)
@@ -550,18 +557,18 @@ meta.__index.mapTag = function(self, tagName)
     end
 
     local tagMap = {
-        scaleX= {friendlyName="\\fscx", type="ASSNumber", pattern="\\fscx([%d%.]+)", format="\\fscx%.3f", default=getStyleRef("scale_x")},
-        scaleY = {friendlyName="\\fscy", type="ASSNumber", pattern="\\fscy([%d%.]+)", format="\\fscy%.3f", default=getStyleRef("scale_y")},
+        scaleX= {friendlyName="\\fscx", type="ASSNumber", pattern="\\fscx([%d%.]+)", format="\\fscx%.3N", default=getStyleRef("scale_x")},
+        scaleY = {friendlyName="\\fscy", type="ASSNumber", pattern="\\fscy([%d%.]+)", format="\\fscy%.3N", default=getStyleRef("scale_y")},
         align = {friendlyName="\\an", type="ASSAlign", pattern="\\an([1-9])", format="\\an%d", default=getStyleRef("align")},
-        angleZ = {friendlyName="\\frz", type="ASSNumber", pattern="\\frz?([%-%d%.]+)", format="\\frz%.3f", default=getStyleRef("angle")}, 
-        angleY = {friendlyName="\\fry", type="ASSNumber", pattern="\\fry([%-%d%.]+)", format="\\frz%.3f", default=0},
-        angleX = {friendlyName="\\frx", type="ASSNumber", pattern="\\frx([%-%d%.]+)", format="\\frz%.3f", default=0}, 
-        outline = {friendlyName="\\bord", type="ASSNumber", props={positive=true}, pattern="\\bord([%d%.]+)", format="\\bord%.2f", default=getStyleRef("outline")}, 
-        outlineX = {friendlyName="\\xbord", type="ASSNumber", props={positive=true}, pattern="\\xbord([%d%.]+)", format="\\xbord%.2f", default=getStyleRef("outline")}, 
-        outlineY = {friendlyName="\\ybord", type="ASSNumber",props={positive=true}, pattern="\\ybord([%d%.]+)", format="\\ybord%.2f", default=getStyleRef("outline")}, 
-        shadow = {friendlyName="\\shad", type="ASSNumber", pattern="\\shad([%-%d%.]+)", format="\\shad%.2f", default=getStyleRef("shadow")}, 
-        shadowX = {friendlyName="\\xshad", type="ASSNumber", pattern="\\xshad([%-%d%.]+)", format="\\xshad%.2f", default=getStyleRef("shadow")}, 
-        shadowY = {friendlyName="\\yshad", type="ASSNumber", pattern="\\yshad([%-%d%.]+)", format="\\yshad%.2f", default=getStyleRef("shadow")}, 
+        angleZ = {friendlyName="\\frz", type="ASSNumber", pattern="\\frz?([%-%d%.]+)", format="\\frz%.3N", default=getStyleRef("angle")}, 
+        angleY = {friendlyName="\\fry", type="ASSNumber", pattern="\\fry([%-%d%.]+)", format="\\frz%.3N", default=0},
+        angleX = {friendlyName="\\frx", type="ASSNumber", pattern="\\frx([%-%d%.]+)", format="\\frz%.3N", default=0}, 
+        outline = {friendlyName="\\bord", type="ASSNumber", props={positive=true}, pattern="\\bord([%d%.]+)", format="\\bord%.2N", default=getStyleRef("outline")}, 
+        outlineX = {friendlyName="\\xbord", type="ASSNumber", props={positive=true}, pattern="\\xbord([%d%.]+)", format="\\xbord%.2N", default=getStyleRef("outline")}, 
+        outlineY = {friendlyName="\\ybord", type="ASSNumber",props={positive=true}, pattern="\\ybord([%d%.]+)", format="\\ybord%.2N", default=getStyleRef("outline")}, 
+        shadow = {friendlyName="\\shad", type="ASSNumber", pattern="\\shad([%-%d%.]+)", format="\\shad%.2N", default=getStyleRef("shadow")}, 
+        shadowX = {friendlyName="\\xshad", type="ASSNumber", pattern="\\xshad([%-%d%.]+)", format="\\xshad%.2N", default=getStyleRef("shadow")}, 
+        shadowY = {friendlyName="\\yshad", type="ASSNumber", pattern="\\yshad([%-%d%.]+)", format="\\yshad%.2N", default=getStyleRef("shadow")}, 
         reset = {friendlyName="\\r", type="ASSReset", pattern="\\r([^\\}]*)", format="\\r"}, 
         alpha = {friendlyName="\\alpha", type="ASSHex", pattern="\\alpha&H(%x%x)&", format="\\alpha&H%02X&", default=0}, 
         alpha1 = {friendlyName="\\1a", type="ASSHex", pattern="\\1a&H(%x%x)&", format="\\alpha&H%02X&", default=getStyleRef("alpha1")}, 
@@ -574,22 +581,22 @@ meta.__index.mapTag = function(self, tagName)
         color4 = {friendlyName="\\4c", type="ASSColor", pattern="\\4c&H(%x+)&", format="\\4c&H%02X%02X%02X&", default=getStyleRef("color4")}, 
         clip = {friendlyName="\\clip", type="ASSClip", pattern="\\clip%((.-)%)"}, 
         iclip = {friendlyName="\\iclip", type="ASSClip", pattern="\\iclip%((.-)%)"}, 
-        be = {friendlyName="\\be", type="ASSNumber", props={positive=true}, pattern="\\be([%d%.]+)", format="\\be%.2f", default=0}, 
-        blur = {friendlyName="\\blur", type="ASSNumber", props={positive=true}, pattern="\\blur([%d%.]+)", format="\\blur%.2f", default=0}, 
-        fax = {friendlyName="\\fax", type="ASSNumber", pattern="\\fax([%-%d%.]+)", format="\\fax%.2f", default=0}, 
-        fay = {friendlyName="\\fay", type="ASSNumber", pattern="\\fay([%-%d%.]+)", format="\\fay%.2f", default=0}, 
+        be = {friendlyName="\\be", type="ASSNumber", props={positive=true}, pattern="\\be([%d%.]+)", format="\\be%.2N", default=0}, 
+        blur = {friendlyName="\\blur", type="ASSNumber", props={positive=true}, pattern="\\blur([%d%.]+)", format="\\blur%.2N", default=0}, 
+        fax = {friendlyName="\\fax", type="ASSNumber", pattern="\\fax([%-%d%.]+)", format="\\fax%.2N", default=0}, 
+        fay = {friendlyName="\\fay", type="ASSNumber", pattern="\\fay([%-%d%.]+)", format="\\fay%.2N", default=0}, 
         bold = {friendlyName="\\b", type="ASSWeight", pattern="\\b(%d+)", format="\\b%d", default=getStyleRef("bold")}, 
         italic = {friendlyName="\\i", type="ASSToggle", pattern="\\i([10])", format="\\i%d", default=getStyleRef("italic")}, 
         underline = {friendlyName="\\u", type="ASSToggle", pattern="\\u([10])", format="\\u%d", default=getStyleRef("underline")},
-        spacing = {friendlyName="\\fsp", type="ASSNumber", pattern="\\fsp([%-%d%.]+)", format="\\fsp%.2f", default=getStyleRef("spacing")},
-        fontsize = {friendlyName="\\fs", type="ASSNumber", props={positive=true}, pattern="\\fs([%d%.]+)", format="\\fsp%.2f", default=getStyleRef("fontsize")},
+        spacing = {friendlyName="\\fsp", type="ASSNumber", pattern="\\fsp([%-%d%.]+)", format="\\fsp%.2N", default=getStyleRef("spacing")},
+        fontsize = {friendlyName="\\fs", type="ASSNumber", props={positive=true}, pattern="\\fs([%d%.]+)", format="\\fsp%.2N", default=getStyleRef("fontsize")},
         kFill = {friendlyName="\\k", type="ASSDuration", props={scale=10}, pattern="\\k([%d]+)", format="\\k%d", default=0},
         kSweep = {friendlyName="\\kf", type="ASSDuration", props={scale=10}, pattern="\\kf([%d]+)", format="\\kf%d", default=0},   -- because fuck \K and lua patterns
         kBord = {friendlyName="\\ko", type="ASSDuration", props={scale=10}, pattern="\\ko([%d]+)", format="\\ko%d", default=0},
-        pos = {friendlyName="\\pos", type="ASSPosition", pattern="\\pos%(([%-%d%.]+,[%-%d%.]+)%)", format="\\pos(%.2f,%.2f)", default={0,0}}, -- TODO: default position
-        moveSmpl = {friendlyName="\\move", type="ASSMove", props={simple=true}, pattern="\\move%(([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+)%)", format="\\move(%.2f,%.2f,%.2f,%.2f)"},
-        move = {friendlyName="\\move", type="ASSMove", pattern="\\move%(([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+),[%-%d]+,[%-%d]+)%)", format="\\move(%.2f,%.2f,%.2f,%.2f,%.2f,%.2f)"},
-        org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)", format="\\pos(%.2f,%.2f)"},
+        pos = {friendlyName="\\pos", type="ASSPosition", pattern="\\pos%(([%-%d%.]+,[%-%d%.]+)%)", format="\\pos(%.2N,%.2N)", default={0,0}}, -- TODO: default position
+        moveSmpl = {friendlyName="\\move", type="ASSMove", props={simple=true}, pattern="\\move%(([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+)%)", format="\\move(%.2N,%.2N,%.2N,%.2N)"},
+        move = {friendlyName="\\move", type="ASSMove", pattern="\\move%(([%-%d%.]+,[%-%d%.]+,[%-%d%.]+,[%-%d%.]+),[%-%d]+,[%-%d]+)%)", format="\\move(%.2N,%.2N,%.2N,%.2N,%.2N,%.2N)"},
+        org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)", format="\\pos(%.2N,%.2N)"},
         wrap = {friendlyName="\\q", type="ASSWrapStyle", pattern="\\q(%d)", format="\\q%d", default=0},
         fadeSmpl = {friendlyName="\\fad", type="ASSFade", props={simple=true}, pattern="\\fad%((%d+,%d+)%)", format="\\fad(%d,%d)", default={0,0}},
         fade = {friendlyName="\\fade", type="ASSFade", pattern="\\fade?%((.-)%)", format="\\fade(%d,%d,%d,%d,%d,%d,%d)"},
@@ -635,9 +642,9 @@ end
 meta.__index.getTagString = function(self,tagName,val)
     if type(val) == "table" and val.instanceOf then
         tagName = tagName or val.__tag.name
-        return self:mapTag(tagName).format:format(val:getTag(true))
+        return self:mapTag(tagName).format:formatFancy(val:getTag(true))
     else
-        return re.sub(self:mapTag(tagName).format,"(%.*?[A-Za-z],?)+","%s"):format(tostring(val))
+        return re.sub(self:mapTag(tagName).format,"(%.*?[A-Za-z],?)+","%s"):formatFancy(tostring(val))
     end
 end
 

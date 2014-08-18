@@ -69,11 +69,26 @@ table.filter = function(tbl, callback)
     return fltTbl
 end
 
-table.concatArray = function(tbl1,tbl2)
+table.find = function(tbl,findVal)
+    for key,val in pairs(tbl) do
+        if val==findVal then return key end
+    end
+    return nil
+end
+
+table.join = function(tbl1,tbl2)
     local tbl = {}
     for _,val in ipairs(tbl1) do table.insert(tbl,val) end
     for _,val in ipairs(tbl2) do table.insert(tbl,val) end
     return tbl
+end
+
+table.keys = function(tbl)
+    local keys={}
+    for key,_ in pairs(tbl) do
+        table.insert(keys, key)
+    end
+    return keys
 end
 
 table.merge = function(tbl1,tbl2)
@@ -154,7 +169,7 @@ function ASSBase:getArgs(args, default, coerce, ...)
         for key,val in pairs(self.instanceOf) do
             if val then table.insert(selfClasses,key) end
         end
-        for _,class in ipairs(table.concatArray(table.pack(...),selfClasses)) do
+        for _,class in ipairs(table.join(table.pack(...),selfClasses)) do
             res = args[1].instanceOf[class] and true or res
         end
         assert(res, string.format("%s does not accept instances of class %s as argument.\n", self.typeName, args[1].typeName))
@@ -168,7 +183,7 @@ function ASSBase:getArgs(args, default, coerce, ...)
 
         if type(valTypes[i])=="table" and valTypes[i].instanceOf then
             local subCnt = #valTypes[i].__meta__.order
-            outArgs = table.concatArray(outArgs, {valTypes[i]:getArgs(table.sliceArray(args,j,j+subCnt-1), default, coerce)})
+            outArgs = table.join(outArgs, {valTypes[i]:getArgs(table.sliceArray(args,j,j+subCnt-1), default, coerce)})
             j=j+subCnt-1
 
         elseif coerce then
@@ -225,7 +240,7 @@ function ASSBase:commonOp(method, callback, default, ...)
     for _,valName in ipairs(self.__meta__.order) do
         if type(self[valName])=="table" and self[valName].instanceOf then
             local subCnt = #self[valName].__meta__.order
-            res=table.concatArray(res,{self[valName][method](self[valName],unpack(table.sliceArray(args,j,j+subCnt-1)))})
+            res=table.join(res,{self[valName][method](self[valName],unpack(table.sliceArray(args,j,j+subCnt-1)))})
             j=j+subCnt
         else 
             self[valName]=callback(self[valName],args[j])
@@ -313,7 +328,7 @@ function ASSPosition:getTag(coerceType, precision)
     end
     return x,y
 end
--- TODO: ASSPosition:move()
+-- TODO: ASSPosition:move(ASSPosition) -> return \move tag
 
 ASSTime = createASSClass("ASSTime", ASSNumber, {"value"}, {"number"}, {precision=0})
 -- TODO: implement adding by framecount
@@ -593,13 +608,17 @@ meta.__index.mapTag = function(self, tagName)
     return tagMap[tagName]
 end
 
+meta.__index.getDefaultTag = function (self,tagName)
+    local tagData = self:mapTag(tagName)
+    return _G[tagData.type](tagData.default, table.merge(tagData.props or {},{name=tagName}))
+end
+
 meta.__index.addTag = function(self,tagName,val,pos)
     if type(val) == "table" and val.instanceOf then
         tagName = tagName or val.__tag.name
     else
         local tagData = self:mapTag(tagName)
-        if val==nil then val=tagData.default end
-        val = _G[tagData.type](val, table.merge(tagData.props or {},{name=tagName})) 
+        if val==nil then val=self:getDefaultTag(tagName) end
     end
 
     local _,linePos = self.text:find("{.-}")
@@ -654,7 +673,21 @@ end
 setmetatable(Line, meta)
 
 --------  Nudger Class -------------------
-local Nudger = {}
+local cmnOps = {"Add", "Multiply", "Power", "Cycle", "Set", "Set Default"}
+local Nudger = {
+    opList = {Add="add", Multiply="mul", Power="pow", Set="set", Up="up", Down="down", Left="left", Right="right", 
+              Toggle="toggle", AutoCycle="cycle", Cycle=false, ["Set Default"]=false},
+    supportedOps = {
+        ["\\pos"]=cmnOps, ["\\be"]=cmnOps, ["\\fscx"]=cmnOps, ["\\fscy"]=cmnOps, 
+        ["\\an"]=table.join(cmnOps,{"Up","Down","Left","Right","AutoCycle"}),
+        ["\\frz"]=cmnOps, ["\\fry"]=cmnOps, ["\\frx"]=cmnOps, ["\\bord"]=cmnOps, ["\\xbord"]=cmnOps, ["\\ybord"]=cmnOps,
+        ["\\shad"]=cmnOps, ["\\xshad"]=cmnOps, ["\\yshad"]=cmnOps, ["\\alpha"]=cmnOps, ["\\1a"]=cmnOps, 
+        ["\\2a"]=cmnOps, ["\\3a"]=cmnOps, ["\\4a"]=cmnOps, ["\\1c"]=cmnOps, ["\\2c"]=cmnOps, ["\\3c"]=cmnOps, ["\\4c"]=cmnOps,
+        ["\\blur"]=cmnOps, ["\\fax"]=cmnOps, ["\\fay"]=cmnOps, ["\\b"]=table.join(cmnOps,{"Toggle"}), ["\\u"]={"Toggle","Set", "Set Default"},
+        ["\\fsp"]=cmnOps, ["\\fs"]=cmnOps, ["\\k"]=cmnOps, ["\\kf"]=cmnOps, ["\\ko"]=cmnOps, ["\\move"]=cmnOps, ["\\org"]=cmnOps,
+        ["\\q"]=table.join(cmnOps,{"AutoCycle"}), ["\\fad"]=cmnOps, ["\\fade"]=cmnOps, ["\\i"]={"Toggle","Set", "Set Default"}
+    }
+}
 Nudger.__index = Nudger
 
 setmetatable(Nudger, {
@@ -664,8 +697,8 @@ setmetatable(Nudger, {
 })
 
 function Nudger.new(params)
-    -- https://gist.github.com/jrus/3197011
     local function uuid()
+        -- https://gist.github.com/jrus/3197011
         math.randomseed(os.time())
         local template ='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
         return string.gsub(template, '[xy]', function (c)
@@ -677,28 +710,56 @@ function Nudger.new(params)
     local self = setmetatable({}, Nudger)
     params = params or {}
     self.name = params.name or "Unnamed Nudger"
-    self.tag = params.tag or "posx"
-    self.action = params.action or "add"
-    self.value = params.value or 1
+    self.tag = params.tag or "\\pos"
+    self.operation = params.operation or "Add"
+    self.value = params.value or {}
     self.id = params.id or uuid()
-
+    self:validate()
     return self
 end
 
+function Nudger:validate()
+    -- do we need to check the other values?
+    assert(table.find(self.supportedOps[self.tag],self.operation), string.format("Error: Operation %s not supported for tag %s.\n",self.operation,self.tag))
+end
+
 function Nudger:nudge(sub, sel)
-    local lines = LineCollection(sub,{},sel)
+    local lines = LineCollection(sub,sel)
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        line:modTag("shadow", function(tags) -- hardcoded for my convenience
-            for i=1,#tags,1 do
-                tags[i]:add(10)
-                --tags[i]:cycle()
-                --tags[i]:mul(self.value,5)
-            end
-            return tags
-        end)
+        if self.opList[self.operation] then
+            line:modTag(self.tag, function(tags)
+                for i=1,#tags,1 do
+                    tags[i][self.opList[self.operation]](tags[i],unpack(self.value))
+                end
+                return tags
+            end)
+
+        elseif self.operation=="Cycle" then
+            line:modTag(self.tag, function(tags)
+                local edField = "l0.Nudge.cycleState"
+                local ed = line:getExtraData(edField)
+                if type(ed)=="table" then
+                    ed[self.id] = ed[self.id] and ed[self.id]<#self.value and ed[self.id]+1 or 1
+                else ed={[self.id]=1} end
+                line:setExtraData(edField,ed)
+
+                for i=1,#tags,1 do
+                    tags[i]:set(unpack(self.value[ed[self.id]]))
+                end
+                return tags
+            end)   
+        elseif self.operation=="Set Default" then
+            line:modTag(self.tag, function(tags)
+                for i=1,#tags,1 do
+                    tags[i]:set(line:getDefaultTag(self.tag))
+                end
+                return tags
+            end)
+        end
         aegisub.log("AFTER: " .. line.text .. "\n")
     end)
+    lines:replaceLines()
 end
 -------Dialog Resource Name Encoding---------
 
@@ -772,12 +833,17 @@ function Configuration:getDialog()
         {class="label", label="Remove", x=4, y=0, width=1, height=1},
     }
 
+    local function getUnwrappedJson(arr)
+        local json = json.encode(arr)
+        return json:sub(2,json:len()-1)
+    end
+
     for i,nu in ipairs(self.nudgers) do
-        dialog = table.concatArray(dialog, {
+        dialog = table.join(dialog, {
             {class="edit", name=uName.encode(nu.id,"name"), value=nu.name, x=0, y=i, width=1, height=1},
-            {class="dropdown", name=uName.encode(nu.id,"tag"), items= {"posx","posy"}, value=nu.tag, x=1, y=i, width=1, height=1},
-            {class="dropdown", name=uName.encode(nu.id,"action"), items= {"add","multiply"}, value=nu.action, x=2, y=i, width=1, height=1},
-            {class="floatedit", name=uName.encode(nu.id,"value"), value=nu.value, step=0.5, x=3, y=i, width=1, height=1},
+            {class="dropdown", name=uName.encode(nu.id,"tag"), items=table.keys(Nudger.supportedOps), value=nu.tag, x=1, y=i, width=1, height=1},
+            {class="dropdown", name=uName.encode(nu.id,"operation"), items= table.keys(Nudger.opList), value=nu.operation, x=2, y=i, width=1, height=1},
+            {class="edit", name=uName.encode(nu.id,"value"), value=getUnwrappedJson(nu.value), step=0.5, x=3, y=i, width=1, height=1},
             {class="checkbox", name=uName.encode(nu.id,"remove"), value=false, x=4, y=i, width=1, height=1},
         })
     end
@@ -785,8 +851,10 @@ function Configuration:getDialog()
 end
 
 function Configuration:Update(res)
+    aegisub.log(json.encode(res))
     for key,val in pairs(res) do
         local id,name = uName.decode(key)
+        if name=="value" then val=json.decode("["..val.."]") end
         if name=="remove" and val==true then
             self:removeNudger(id)
         else
@@ -794,6 +862,10 @@ function Configuration:Update(res)
             if nudger then nudger[name] = val end
         end
     end
+    for _,nudger in ipairs(self.nudgers) do
+        nudger:validate()
+    end
+    self:registerMacros()
 end
 
 function Configuration:registerMacros()

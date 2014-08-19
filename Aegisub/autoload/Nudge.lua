@@ -20,17 +20,17 @@ LineExtend = require("l0.LineExtend")
 local cmnOps = {"Add", "Multiply", "Power", "Cycle", "Set", "Set Default"}
 local colorOps = table.join(cmnOps, {"Add HSV"})
 local Nudger = {
-    opList = {Add="add", Multiply="mul", Power="pow", Set="set", Up="up", Down="down", Left="left", Right="right", 
-              Toggle="toggle", AutoCycle="cycle", Cycle=false, ["Set Default"]=false, ["Add HSV"]="addHSV"},
+    opList = {Add="add", Multiply="mul", Power="pow", Set="set", ["Align Up"]="up", ["Align Down"]="down", ["Align Left"]="left", ["Align Right"]="right", 
+              Toggle="toggle", ["Auto Cycle"]="cycle", Cycle=false, ["Set Default"]=false, ["Add HSV"]="addHSV"},
     supportedOps = {
         ["\\pos"]=cmnOps, ["\\be"]=cmnOps, ["\\fscx"]=cmnOps, ["\\fscy"]=cmnOps, 
-        ["\\an"]=table.join(cmnOps,{"Up","Down","Left","Right","AutoCycle"}),
+        ["\\an"]=table.join(cmnOps,{"Align Up", "Align Down", "Align Left", "Align Right", "Auto Cycle"}),
         ["\\frz"]=cmnOps, ["\\fry"]=cmnOps, ["\\frx"]=cmnOps, ["\\bord"]=cmnOps, ["\\xbord"]=cmnOps, ["\\ybord"]=cmnOps,
         ["\\shad"]=cmnOps, ["\\xshad"]=cmnOps, ["\\yshad"]=cmnOps, ["\\alpha"]=cmnOps, ["\\1a"]=cmnOps, 
         ["\\2a"]=cmnOps, ["\\3a"]=cmnOps, ["\\4a"]=cmnOps, ["\\c"]=colorOps, ["\\1c"]=colorOps, ["\\2c"]=colorOps, ["\\3c"]=colorOps, ["\\4c"]=colorOps,
         ["\\blur"]=cmnOps, ["\\fax"]=cmnOps, ["\\fay"]=cmnOps, ["\\b"]=table.join(cmnOps,{"Toggle"}), ["\\u"]={"Toggle","Set", "Set Default"},
         ["\\fsp"]=cmnOps, ["\\fs"]=cmnOps, ["\\k"]=cmnOps, ["\\K"]=cmnOps, ["\\kf"]=cmnOps, ["\\ko"]=cmnOps, ["\\move"]=cmnOps, ["\\org"]=cmnOps,
-        ["\\q"]=table.join(cmnOps,{"AutoCycle"}), ["\\fad"]=cmnOps, ["\\fade"]=cmnOps, ["\\i"]={"Toggle","Set", "Set Default"},
+        ["\\q"]=table.join(cmnOps,{"Auto Cycle"}), ["\\fad"]=cmnOps, ["\\fade"]=cmnOps, ["\\i"]={"Toggle","Set", "Set Default"},
         ["Colors"]=colorOps, ["Alphas"]=cmnOps, ["Primary Color"]=colorOps
     },
     compoundTags= {
@@ -127,7 +127,26 @@ local uName = {
 
 -----  Configuration Class ----------------
 
-local Configuration = {}
+local Configuration = {
+    default = {nudgers = {
+        {operation="Add", value={1,0}, id="d0dad24e-515e-40ab-a120-7b8d24ecbad0", name="Position Right (+1)", tag="\\pos"},
+        {operation="Add", value={-1,0}, id="0c6ff644-ef9c-405a-bb12-032694d432c0", name="Position Left (-1)", tag="\\pos"},
+        {operation="Add", value={0,1}, id="cb2ec6c1-a8c1-48b8-8a13-cafadf55ffdd", name="Position Up (+1)", tag="\\pos"},
+        {operation="Add", value={0,-1}, id="cb9c1a5b-6910-4fb2-b457-a9c72a392d90", name="Position Down (-1)", tag="\\pos"},
+        {operation="Cycle", value={{0.6},{0.8},{1},{1.2},{1.5},{2},{3},{4},{5},{8}}, id="c900ef51-88dd-413d-8380-cebb7a59c793", name="Cycle Blur", tag="\\blur"},
+        {operation="Cycle", value={{255},{0},{16},{48},{96},{128},{160},{192},{224}}, id="d338cbca-1575-4795-9b80-3680130cce62", name="Cycle Alpha", tag="\\alpha"},
+        {operation="Toggle", value={}, id="974c3af9-ef51-45f5-a992-4850cb006743", name="Toggle Bold", tag="\\b"},
+        {operation="Auto Cycle", value={}, id="aa74461a-477b-47de-bbf4-16ef1ee568f5", name="Cycle Wrap Styles", tag="\\q"},
+        {operation="Align Up", value={}, id="254bf380-22bc-457b-abb7-3d1f85b90eef", name="Align Up", tag="\\an"},
+        {operation="Align Down", value={}, id="260318dc-5bdd-4975-9feb-8c95b41e7b5b", name="Align Down", tag="\\an"},
+        {operation="Align Left", value={}, id="e6aeca35-d4e0-4ff4-81ac-8d3a853d5a9c", name="Align Left", tag="\\an"},
+        {operation="Align Right", value={}, id="dd80e1c5-7c07-478c-bc90-7c473c3abe49", name="Align Right", tag="\\an"},
+        {operation="Set", value={1}, id="18a27245-5306-4990-865c-ae7f0062083a", name="Add Edgeblur", tag="\\be"},
+        {operation="Set Default", value={1}, id="bb4967a7-fb8a-4907-b5e8-395ea67c0a52", name="Default Origin", tag="\\org"},
+        {operation="Add HSV", value={0,0,0.1}, id="015cd09b-3c2b-458e-a65a-80b80bb951b1", name="Brightness Up", tag="Colors"},
+        {operation="Add HSV", value={0,0,-0.1}, id="93f07885-c3f7-41bb-b319-0542e6fd52d7", name="Brightness Down", tag="Colors"},
+    }}
+}
 Configuration.__index = Configuration
 
 setmetatable(Configuration, {
@@ -146,18 +165,27 @@ end
 
 function Configuration:load()
   local fileHandle = io.open(self.fileName)
-  local data = json.decode(fileHandle:read('*a'))
+  local data
+  if fileHandle then
+    data = json.decode(fileHandle:read('*a'))
+    fileHandle:close()
+  else
+    data = self.default
+  end
 
   self.nudgers = {}
   for _,val in ipairs(data.nudgers) do
     self:addNudger(val)
   end
+
+  if not fileHandle then self:save() end
 end
 
 function Configuration:save()
   local data = json.encode({nudgers=self.nudgers, __version=script_version})
   local fileHandle = io.open(self.fileName,'w')
   fileHandle:write(data)
+  fileHandle:close()
 end
 
 function Configuration:addNudger(params)

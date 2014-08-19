@@ -168,6 +168,14 @@ function ASSBase:checkRange(min,max,...)
     end
 end
 
+function ASSBase:CoerceNumber(num, default)
+    num = tonumber(num)
+    if not num then num=default or 0 end
+    if self.__tag.positive then num=math.max(num,0) end
+    if self.__tag.range then num=util.clamp(num,self.__tag.range[1], self.__tag.range[2]) end
+    return num 
+end
+
 function ASSBase:getArgs(args, default, coerce, ...)
     assert(type(args)=="table", "Error: first argument to getArgs must be a table of packed arguments, got " .. type(args) ..".\n")
     -- check if first arg is a compatible ASSTag and dump into args 
@@ -296,20 +304,20 @@ function ASSNumber:new(val, tagProps)
     return self
 end
 
-function ASSNumber:getTag(coerceType, precision)
+function ASSNumber:getTag(coerce, precision)
     self:readProps(tagProps)
     precision = precision or self.__tag.precision
-    if not coerceType then
+    local val = self.value
+    if coerce then
+        self:CoerceNumber(val,0)
+    else
         assert(precision <= self.__tag.precision, string.format("Error: output wih precision %d is not supported for %s (maximum: %d).\n", 
                precision,self.typeName,self.__tag.precision))
         self:typeCheck(self.value)
-        if self.__tag.positive then self:checkPositive(self.value) end
-        if self.__tag.range then self:checkRange(self.__tag.range[1], self.__tag.range[2],self.value) end
+        if self.__tag.positive then self:checkPositive(val) end
+        if self.__tag.range then self:checkRange(self.__tag.range[1], self.__tag.range[2],val) end
     end
-    local val = math.round(tonumber(self.value),self.__tag.precision)
-    val = self.__tag.positive and math.max(val,0) or val
-    val = self.__tag.range and util.clamp(val,self.__tag.range[1], self.__tag.range[2]) or val
-    return val
+    return math.round(val,self.__tag.precision)
 end
 
 
@@ -326,13 +334,16 @@ function ASSPosition:new(valx, valy, tagProps)
 end
 
 
-function ASSPosition:getTag(coerceType, precision)
-    precision = precision or 3
-    local x = math.round(tonumber(self.x),precision)
-    local y = math.round(tonumber(self.y),precision)
-    if not coerceType then 
-        self:checkType("number", self.x, self.y)
+function ASSPosition:getTag(coerce, precision)
+    local x,y = self.x, self.y
+    if coerce then
+        x,y = self:CoerceNumber(x,0), self:CoerceNumber(y,0)
+    else 
+        self:checkType("number", x, y)
     end
+    precision = precision or 3
+    local x = math.round(x,precision)
+    local y = math.round(y,precision)
     return x,y
 end
 -- TODO: ASSPosition:move(ASSPosition) -> return \move tag
@@ -340,17 +351,18 @@ end
 ASSTime = createASSClass("ASSTime", ASSNumber, {"value"}, {"number"}, {precision=0})
 -- TODO: implement adding by framecount
 
-function ASSTime:getTag(coerceType, precision)
-    local val = tonumber(self.value)/self.__tag.scale
+function ASSTime:getTag(coerce, precision)
     precision = precision or 0
-    if coerceType then
+    local val = self.value
+    if coerce then
         precision = math.min(precision,0)
-        val = self.__tag.positive and math.max(val,0)
+        val = self:CoerceNumber(0)
     else
         assert(precision <= 0, "Error: " .. self.typeName .." doesn't support floating point precision")
         self:checkType("number", self.value)
         if self.__tag.positive then self:checkPositive(self.value) end
     end
+    val = val/self.__tag.scale
     return math.round(val,precision)
 end
 
@@ -368,8 +380,8 @@ function ASSColor:new(r,g,b, tagProps)
     return self
 end
 
-function ASSColor:getTag(coerceType)
-    return self.b:getTag(coerceType), self.g:getTag(coerceType), self.r:getTag(coerceType)
+function ASSColor:getTag(coerce)
+    return self.b:getTag(coerce), self.g:getTag(coerce), self.r:getTag(coerce)
 end
 
 ASSFade = createASSClass("ASSFade", ASSBase,
@@ -398,14 +410,14 @@ function ASSFade:new(startDuration,endDuration,startTime,endTime,startAlpha,midA
     return self
 end
 
-function ASSFade:getTag(coerceType)
+function ASSFade:getTag(coerce)
     if self.__tag.simple then
-        return self.startDuration:getTag(coerceType), self.endDuration:getTag(coerceType)
+        return self.startDuration:getTag(coerce), self.endDuration:getTag(coerce)
     else
-        local t1, t4 = self.startTime:getTag(coerceType), self.endTime:getTag(coerceType)
-        local t2 = t1 + self.startDuration:getTag(coerceType)
-        local t3 = t4 - self.endDuration:getTag(coerceType)
-        if not coerceType then
+        local t1, t4 = self.startTime:getTag(coerce), self.endTime:getTag(coerce)
+        local t2 = t1 + self.startDuration:getTag(coerce)
+        local t3 = t4 - self.endDuration:getTag(coerce)
+        if not coerce then
              self:checkPositive(t2,t3)
              assert(t1<=t2 and t2<=t3 and t3<=t4, string.format("Error: fade times must evaluate to t1<=t2<=t3<=t4, got %d<=%d<=%d<=%d", t1,t2,t3,t4))
         end
@@ -434,19 +446,18 @@ function ASSMove:new(startPosX,startPosY,endPosX,endPosY,startTime,endTime,tagPr
     self.endPos = ASSPosition(endPosX,endPosY)
     self.startTime = ASSTime(startTime)
     self.endTime = ASSTime(endTime)
-
     return self
 end
 
-function ASSMove:getTag(coerceType)
+function ASSMove:getTag(coerce)
     if self.__tag.simple or self.__tag.name=="moveSmpl" then
-        return returnAll({self.startPos:getTag(coerceType)}, {self.endPos:getTag(coerceType)})
+        return returnAll({self.startPos:getTag(coerce)}, {self.endPos:getTag(coerce)})
     else
-        if not coerceType then
+        if not coerce then
              assert(startTime<=endTime, string.format("Error: move times must evaluate to t1<=t2, got %d<=%d.\n", startTime,endTime))
         end
-        local t1,t2 = self.startTime:getTag(coerceType), self.endTime:getTag(coerceType)
-        return returnAll({self.startPos:getTag(coerceType)}, {self.endPos:getTag(coerceType)},
+        local t1,t2 = self.startTime:getTag(coerce), self.endTime:getTag(coerce)
+        return returnAll({self.startPos:getTag(coerce)}, {self.endPos:getTag(coerce)},
                {math.min(t1,t2)}, {math.max(t2,t1)}) 
     end
 end
@@ -469,8 +480,8 @@ function ASSToggle:toggle(state)
     return self.value
 end
 
-function ASSToggle:getTag(coerceType)
-    if not coerceType then self:typeCheck(self.value) end
+function ASSToggle:getTag(coerce)
+    if not coerce then self:typeCheck(self.value) end
     return self.value and 1 or 0
 end
 
@@ -522,11 +533,11 @@ function ASSWeight:new(val, tagProps)
     return self
 end
 
-function ASSWeight:getTag(coerceType)
+function ASSWeight:getTag(coerce)
     if self.weightClass.value >0 then
-        return self.weightClass:getTag(coerceType)
+        return self.weightClass:getTag(coerce)
     else
-        return self.bold:getTag(coerceType)
+        return self.bold:getTag(coerce)
     end
 end
 
@@ -601,8 +612,8 @@ meta.__index.mapTag = function(self, tagName)
             kSweepAlt = {friendlyName="\\K", type="ASSDuration", props={scale=10}, pattern="\\K([%d]+)", format="\\K%d", default=0},
             kBord = {friendlyName="\\ko", type="ASSDuration", props={scale=10}, pattern="\\ko([%d]+)", format="\\ko%d", default=0},
             position = {friendlyName="\\pos", type="ASSPosition", pattern="\\pos%(([%-%d%.]+,[%-%d%.]+)%)", format="\\pos(%.2N,%.2N)", default={self:getDefaultPosition(self.styleref)}},
-            moveSmpl = {friendlyName=nil, type="ASSMove", props={simple=true}, format="\\move(%.2N,%.2N,%.2N,%.2N)"}, -- only for output formatting
-            move = {friendlyName="\\move", type="ASSMove", pattern="\\move%(([%-%d%.,]+)%)", format="\\move(%.2N,%.2N,%.2N,%.2N,%.2N,%.2N)"},
+            moveSmpl = {friendlyName=nil, type="ASSMove", props={simple=true}, format="\\move(%.2N,%.2N,%.2N,%.2N)", default={self.xPosition, self.yPosition, self.xPosition, self.yPosition}}, -- only for output formatting
+            move = {friendlyName="\\move", type="ASSMove", pattern="\\move%(([%-%d%.,]+)%)", format="\\move(%.2N,%.2N,%.2N,%.2N,%.2N,%.2N)", default={self.xPosition, self.yPosition, self.xPosition, self.yPosition}},
             org = {friendlyName="\\org", type="ASSPosition", pattern="\\org([%-%d%.]+,[%-%d%.]+)", format="\\org(%.2N,%.2N)", default={self.xPosition, self.yPosition}},
             wrap = {friendlyName="\\q", type="ASSWrapStyle", pattern="\\q(%d)", format="\\q%d", default=0},
             fadeSmpl = {friendlyName="\\fad", type="ASSFade", props={simple=true}, pattern="\\fad%((%d+,%d+)%)", format="\\fad(%d,%d)", default={0,0}},
@@ -620,11 +631,11 @@ meta.__index.mapTag = function(self, tagName)
     end
 
     assert(self.tagMap[tagName], string.format("Error: can't find tag %s.\n",tagName))
-    return self.tagMap[tagName]
+    return self.tagMap[tagName], tagName
 end
 
 meta.__index.getDefaultTag = function (self,tagName)
-    local tagData = self:mapTag(tagName)
+    local tagData, tagName = self:mapTag(tagName)  -- make sure to not pass friendlyNames into ASSTypes
     return _G[tagData.type](tagData.default, table.merge(tagData.props or {},{name=tagName}))
 end
 
@@ -638,7 +649,7 @@ meta.__index.addTag = function(self,tagName,val,pos)
 
     local _,linePos = self.text:find("{.-}")
     if linePos then 
-        self.text = self.text:sub(0,linePos-1)..self:getTagString(tagName,val)..self.text:sub(linePos,self.text:len())
+        self.text = self.text:sub(0,linePos-1)..self:getTagString(nil,val)..self.text:sub(linePos,self.text:len())
     else
         self.text = string.format("{%s}%s", self:getTagString(tagName,val), self.text)
     end
@@ -657,8 +668,7 @@ meta.__index.getTagString = function(self,tagName,val)
 end
 
 meta.__index.getTags = function(self,tagName,asStrings)
-    local tagData = self:mapTag(tagName)
-
+    local tagData, tagName = self:mapTag(tagName) -- make sure to not pass friendlyNames into ASSTypes
     local tags={}
     for tag in self.text:gmatch("{.-" .. tagData.pattern .. ".-}") do
         prms={}

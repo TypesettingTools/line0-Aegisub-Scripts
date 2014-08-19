@@ -586,8 +586,8 @@ meta.__index.mapTag = function(self, tagName)
             tag = tag:gsub("alpha", "color")
         end
         if tag:find("color") then
-            return alpha and self.styleref[tag]:sub(3,4) or self.styleref[tag]:sub(5,10)
-        else return  self.styleref[tag] end
+            return alpha and {self.styleref[tag]:sub(3,4)} or {self.styleref[tag]:sub(5,10)}
+        else return  {self.styleref[tag]} end
     end
 
     if not  self.tagMap then
@@ -611,7 +611,7 @@ meta.__index.mapTag = function(self, tagName)
             alpha2 = {friendlyName="\\2a", type="ASSHex", pattern="\\2a&H(%x%x)&", format="\\alpha&H%02X&", default=getStyleRef("alpha2")}, 
             alpha3 = {friendlyName="\\3a", type="ASSHex", pattern="\\3a&H(%x%x)&", format="\\alpha&H%02X&", default=getStyleRef("alpha3")}, 
             alpha4 = {friendlyName="\\4a", type="ASSHex", pattern="\\4a&H(%x%x)&", format="\\alpha&H%02X&", default=getStyleRef("alpha4")}, 
-            color = {friendlyName="\\c", type="ASSColor", pattern="\\1c&H(%x+)&", format="\\c&H%02X%02X%02X&", default=getStyleRef("color1")}, 
+            color = {friendlyName="\\c", type="ASSColor", pattern="\\c&H(%x+)&", format="\\c&H%02X%02X%02X&", default=getStyleRef("color1")}, 
             color1 = {friendlyName="\\1c", type="ASSColor", pattern="\\1c&H(%x+)&", format="\\1c&H%02X%02X%02X&", default=getStyleRef("color1")}, 
             color2 = {friendlyName="\\2c", type="ASSColor", pattern="\\2c&H(%x+)&", format="\\2c&H%02X%02X%02X&", default=getStyleRef("color2")}, 
             color3 = {friendlyName="\\3c", type="ASSColor", pattern="\\3c&H(%x+)&", format="\\3c&H%02X%02X%02X&", default=getStyleRef("color3")}, 
@@ -731,7 +731,13 @@ local Nudger = {
         ["\\2a"]=cmnOps, ["\\3a"]=cmnOps, ["\\4a"]=cmnOps, ["\\c"]=colorOps, ["\\1c"]=colorOps, ["\\2c"]=colorOps, ["\\3c"]=colorOps, ["\\4c"]=colorOps,
         ["\\blur"]=cmnOps, ["\\fax"]=cmnOps, ["\\fay"]=cmnOps, ["\\b"]=table.join(cmnOps,{"Toggle"}), ["\\u"]={"Toggle","Set", "Set Default"},
         ["\\fsp"]=cmnOps, ["\\fs"]=cmnOps, ["\\k"]=cmnOps, ["\\K"]=cmnOps, ["\\kf"]=cmnOps, ["\\ko"]=cmnOps, ["\\move"]=cmnOps, ["\\org"]=cmnOps,
-        ["\\q"]=table.join(cmnOps,{"AutoCycle"}), ["\\fad"]=cmnOps, ["\\fade"]=cmnOps, ["\\i"]={"Toggle","Set", "Set Default"}
+        ["\\q"]=table.join(cmnOps,{"AutoCycle"}), ["\\fad"]=cmnOps, ["\\fade"]=cmnOps, ["\\i"]={"Toggle","Set", "Set Default"},
+        ["Colors"]=colorOps, ["Alphas"]=cmnOps, ["Primary Color"]=colorOps
+    },
+    compoundTags= {
+        Colors = {"\\c","\\1c","\\2c","\\3c","\\4c"},
+        ["Primary Color"] = {"\\c","\\1c"},
+        Alphas = {"\\alpha", "\\1a", "\\2a", "\\3a", "\\4a"}
     }
 }
 Nudger.__index = Nudger
@@ -770,38 +776,42 @@ function Nudger:validate()
 end
 
 function Nudger:nudge(sub, sel)
+    local tags = self.tag:sub(1,1)=="\\" and {self.tag} or self.compoundTags[self.tag]
     local lines = LineCollection(sub,sel)
+
     lines:runCallback(function(lines, line)
         aegisub.log("BEFORE: " .. line.text .. "\n")
-        if self.opList[self.operation] then
-            line:modTag(self.tag, function(tags)
-                for i=1,#tags,1 do
-                    tags[i][self.opList[self.operation]](tags[i],unpack(self.value))
-                end
-                return tags
-            end)
+        for _,tag in ipairs(tags) do
+            if self.opList[self.operation] then
+                line:modTag(tag, function(tags)
+                    for i=1,#tags,1 do
+                        tags[i][self.opList[self.operation]](tags[i],unpack(self.value))
+                    end
+                    return tags
+                end)
 
-        elseif self.operation=="Cycle" then
-            line:modTag(self.tag, function(tags)
-                local edField = "l0.Nudge.cycleState"
-                local ed = line:getExtraData(edField)
-                if type(ed)=="table" then
-                    ed[self.id] = ed[self.id] and ed[self.id]<#self.value and ed[self.id]+1 or 1
-                else ed={[self.id]=1} end
-                line:setExtraData(edField,ed)
+            elseif self.operation=="Cycle" then
+                line:modTag(tag, function(tags)
+                    local edField = "l0.Nudge.cycleState"
+                    local ed = line:getExtraData(edField)
+                    if type(ed)=="table" then
+                        ed[self.id] = ed[self.id] and ed[self.id]<#self.value and ed[self.id]+1 or 1
+                    else ed={[self.id]=1} end
+                    line:setExtraData(edField,ed)
 
-                for i=1,#tags,1 do
-                    tags[i]:set(unpack(self.value[ed[self.id]]))
-                end
-                return tags
-            end)   
-        elseif self.operation=="Set Default" then
-            line:modTag(self.tag, function(tags)
-                for i=1,#tags,1 do
-                    tags[i]:set(line:getDefaultTag(self.tag))
-                end
-                return tags
-            end)
+                    for i=1,#tags,1 do
+                        tags[i]:set(unpack(self.value[ed[self.id]]))
+                    end
+                    return tags
+                end)   
+            elseif self.operation=="Set Default" then
+                line:modTag(tag, function(tags)
+                    for i=1,#tags,1 do
+                        tags[i]:set(line:getDefaultTag(self.tag))
+                    end
+                    return tags
+                end)
+            end
         end
         aegisub.log("AFTER: " .. line.text .. "\n")
     end)

@@ -15,7 +15,6 @@ math.isInt = function(val)
     return type(val) == "number" and val%1==0
 end
 
-
 math.toStrings = function(...)
     strings={}
     for _,num in ipairs(table.pack(...)) do
@@ -110,6 +109,20 @@ table.sliceArray = function(tbl, istart, iend)
     for i=istart,iend,1 do arr[#arr+1]=tbl[i] end
     return arr
 end
+
+util.RGB_to_HSV = function(r,g,b)
+    r,g,b = util.clamp(r,0,255), util.clamp(g,0,255), util.clamp(b,0,255)
+    local min, max = math.min(r,g,b), math.max(r,g,b)
+    local v, delta = max, max-min
+    if delta==0 then 
+        return 0,0,0
+    else         
+        local s,c = delta/max, (r==max and g-b) or (g==max and b-r+2) or (r-g+4)
+        local h = 60*c/delta
+        return h>0 and h or h+360, s, v
+    end
+end
+
 
 returnAll = function(...) -- blame lua
     local arr={}
@@ -380,6 +393,12 @@ function ASSColor:new(r,g,b, tagProps)
     return self
 end
 
+function ASSColor:addHSV(h,s,v)
+    local ho,so,vo = util.RGB_to_HSV(self.r:get(),self.g:get(),self.b:get())
+    local r,g,b = util.HSV_to_RGB(ho+h,util.clamp(so+s,0,1),util.clamp(vo+v,0,1))
+    return self:set(r,g,b)
+end
+
 function ASSColor:getTag(coerce)
     return self.b:getTag(coerce), self.g:getTag(coerce), self.r:getTag(coerce)
 end
@@ -592,7 +611,8 @@ meta.__index.mapTag = function(self, tagName)
             alpha2 = {friendlyName="\\2a", type="ASSHex", pattern="\\2a&H(%x%x)&", format="\\alpha&H%02X&", default=getStyleRef("alpha2")}, 
             alpha3 = {friendlyName="\\3a", type="ASSHex", pattern="\\3a&H(%x%x)&", format="\\alpha&H%02X&", default=getStyleRef("alpha3")}, 
             alpha4 = {friendlyName="\\4a", type="ASSHex", pattern="\\4a&H(%x%x)&", format="\\alpha&H%02X&", default=getStyleRef("alpha4")}, 
-            color1 = {friendlyName="\\1c", type="ASSColor", pattern="\\1?c&H(%x+)&", format="\\1c&H%02X%02X%02X&", default=getStyleRef("color1")}, 
+            color = {friendlyName="\\c", type="ASSColor", pattern="\\1c&H(%x+)&", format="\\c&H%02X%02X%02X&", default=getStyleRef("color1")}, 
+            color1 = {friendlyName="\\1c", type="ASSColor", pattern="\\1c&H(%x+)&", format="\\1c&H%02X%02X%02X&", default=getStyleRef("color1")}, 
             color2 = {friendlyName="\\2c", type="ASSColor", pattern="\\2c&H(%x+)&", format="\\2c&H%02X%02X%02X&", default=getStyleRef("color2")}, 
             color3 = {friendlyName="\\3c", type="ASSColor", pattern="\\3c&H(%x+)&", format="\\3c&H%02X%02X%02X&", default=getStyleRef("color3")}, 
             color4 = {friendlyName="\\4c", type="ASSColor", pattern="\\4c&H(%x+)&", format="\\4c&H%02X%02X%02X&", default=getStyleRef("color4")}, 
@@ -699,17 +719,18 @@ setmetatable(Line, meta)
 
 --------  Nudger Class -------------------
 local cmnOps = {"Add", "Multiply", "Power", "Cycle", "Set", "Set Default"}
+local colorOps = table.join(cmnOps, {"Add HSV"})
 local Nudger = {
     opList = {Add="add", Multiply="mul", Power="pow", Set="set", Up="up", Down="down", Left="left", Right="right", 
-              Toggle="toggle", AutoCycle="cycle", Cycle=false, ["Set Default"]=false},
+              Toggle="toggle", AutoCycle="cycle", Cycle=false, ["Set Default"]=false, ["Add HSV"]="addHSV"},
     supportedOps = {
         ["\\pos"]=cmnOps, ["\\be"]=cmnOps, ["\\fscx"]=cmnOps, ["\\fscy"]=cmnOps, 
         ["\\an"]=table.join(cmnOps,{"Up","Down","Left","Right","AutoCycle"}),
         ["\\frz"]=cmnOps, ["\\fry"]=cmnOps, ["\\frx"]=cmnOps, ["\\bord"]=cmnOps, ["\\xbord"]=cmnOps, ["\\ybord"]=cmnOps,
         ["\\shad"]=cmnOps, ["\\xshad"]=cmnOps, ["\\yshad"]=cmnOps, ["\\alpha"]=cmnOps, ["\\1a"]=cmnOps, 
-        ["\\2a"]=cmnOps, ["\\3a"]=cmnOps, ["\\4a"]=cmnOps, ["\\1c"]=cmnOps, ["\\2c"]=cmnOps, ["\\3c"]=cmnOps, ["\\4c"]=cmnOps,
+        ["\\2a"]=cmnOps, ["\\3a"]=cmnOps, ["\\4a"]=cmnOps, ["\\c"]=colorOps, ["\\1c"]=colorOps, ["\\2c"]=colorOps, ["\\3c"]=colorOps, ["\\4c"]=colorOps,
         ["\\blur"]=cmnOps, ["\\fax"]=cmnOps, ["\\fay"]=cmnOps, ["\\b"]=table.join(cmnOps,{"Toggle"}), ["\\u"]={"Toggle","Set", "Set Default"},
-        ["\\fsp"]=cmnOps, ["\\fs"]=cmnOps, ["\\k"]=cmnOps, ["\\kf"]=cmnOps, ["\\ko"]=cmnOps, ["\\move"]=cmnOps, ["\\org"]=cmnOps,
+        ["\\fsp"]=cmnOps, ["\\fs"]=cmnOps, ["\\k"]=cmnOps, ["\\K"]=cmnOps, ["\\kf"]=cmnOps, ["\\ko"]=cmnOps, ["\\move"]=cmnOps, ["\\org"]=cmnOps,
         ["\\q"]=table.join(cmnOps,{"AutoCycle"}), ["\\fad"]=cmnOps, ["\\fade"]=cmnOps, ["\\i"]={"Toggle","Set", "Set Default"}
     }
 }

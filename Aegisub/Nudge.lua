@@ -708,7 +708,6 @@ meta.__index.modTag = function(self, tagName, callback)
     end
     
     for i,tag in pairs(callback(tags)) do
-        aegisub.log("Changed Tag: " .. orgStrings[i] .. " to: " .. self:getTagString(nil,tags[i]).. "\n")
         self.text = self.text:gsub(string.patternEscape(orgStrings[i]), self:getTagString(nil,tags[i]), 1)
     end
 
@@ -780,7 +779,6 @@ function Nudger:nudge(sub, sel)
     local lines = LineCollection(sub,sel)
 
     lines:runCallback(function(lines, line)
-        aegisub.log("BEFORE: " .. line.text .. "\n")
         for _,tag in ipairs(tags) do
             if self.opList[self.operation] then
                 line:modTag(tag, function(tags)
@@ -813,7 +811,6 @@ function Nudger:nudge(sub, sel)
                 end)
             end
         end
-        aegisub.log("AFTER: " .. line.text .. "\n")
     end)
     lines:replaceLines()
 end
@@ -874,7 +871,6 @@ function Configuration:removeNudger(uuid)
 end
 
 function Configuration:getNudger(uuid)
-    aegisub.log("getNudger: looking for " .. uuid .. "\n")
     return table.filter(self.nudgers, function(nudger)
         return nudger.id == uuid end
     )[1]
@@ -907,7 +903,6 @@ function Configuration:getDialog()
 end
 
 function Configuration:Update(res)
-    aegisub.log(json.encode(res))
     for key,val in pairs(res) do
         local id,name = uName.decode(key)
         if name=="value" then val=json.decode("["..val.."]") end

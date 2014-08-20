@@ -1,1 +1,0 @@
-if (documents.length) { activeDocument.close(SaveOptions.DONOTSAVECHANGES)};

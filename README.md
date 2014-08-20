@@ -31,7 +31,7 @@ Installation
 
 **From source repo:**
 1. Install Aegisub-Motion
-2. Clone the TSScripts repository and copy the *autoload* and *include* folders into your Aegisub automation directory. You only need to take the *Nudge.lua* from the *autoload* folder, but all files from the *include* folder are required.
+2. Clone the repository and copy the *autoload* and *include* folders into your Aegisub automation directory. You only need to take the *Nudge.lua* from the *autoload* folder, but all files from the *include* folder are required.
  
 
 Usage

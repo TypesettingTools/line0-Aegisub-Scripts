@@ -1,13 +1,13 @@
 line0's Aegisub Scripts
 =======================
 
- 1. [Nudge](#Nudge)
- 2. [Shake It](#ShakeIt)
+ 1. [Nudge](#nudge)
+ 2. [Shake It](#shake-it)
 
 ----------------------------------
 
 
-<a name="Nudge"></a>Nudge
+Nudge
 ==========================
 
 Nudge is an automation script for Aegisub that lets you **create your own hotkeyable macros for common tag modifications** like nudging a line up and down, increasing the brightness of signs or cycling through a predefined set of blur states.
@@ -128,7 +128,7 @@ Pri. Color |  ✔  |  ✔  |  ✔  |  ✔  |  ✔  |  ✔  |        |        |  
 
 -------------------------------
 
-<a name="ShakeIt"></a>Shake It
+Shake It
 ==============================
 
 tbd

@@ -1,6 +1,6 @@
 script_name="Nudge"
 script_description="Modifies override tags according to configuration."
-script_version="0.1.0"
+script_version="0.2.0"
 script_author="line0"
 
 re = require("aegisub.re")

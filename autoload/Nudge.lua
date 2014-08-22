@@ -19,9 +19,11 @@ LineExtend = require("l0.LineExtend")
 
 local cmnOps = {"Add", "Multiply", "Power", "Cycle", "Set", "Set Default"}
 local colorOps, stringOps = table.join(cmnOps, {"Add HSV"}),  {"Append", "Prepend", "Replace", "Cycle", "Set", "Set Default"}
+local clipOps = {"Add", "Multiply", "Power", "Set Default", "Invert Clip"}
 local Nudger = {
     opList = {Add="add", Multiply="mul", Power="pow", Set="set", ["Align Up"]="up", ["Align Down"]="down", ["Align Left"]="left", ["Align Right"]="right", 
-              Toggle="toggle", ["Auto Cycle"]="cycle", Cycle=false, ["Set Default"]=false, ["Add HSV"]="addHSV", Replace="replace", Append="append", Prepend="prepend"},
+              Toggle="toggle", ["Auto Cycle"]="cycle", Cycle=false, ["Set Default"]=false, ["Add HSV"]="addHSV", Replace="replace", Append="append", Prepend="prepend",
+              ["Invert Clip"]="toggleInverse"},
     supportedOps = {
         ["\\pos"]=cmnOps, ["\\be"]=cmnOps, ["\\fscx"]=cmnOps, ["\\fscy"]=cmnOps, 
         ["\\an"]={"Align Up", "Align Down", "Align Left", "Align Right", "Auto Cycle", "Set", "Set Default", "Cycle"},
@@ -31,14 +33,19 @@ local Nudger = {
         ["\\blur"]=cmnOps, ["\\fax"]=cmnOps, ["\\fay"]=cmnOps, ["\\b"]=table.join(cmnOps,{"Toggle"}), ["\\u"]={"Toggle","Set", "Set Default"},
         ["\\fsp"]=cmnOps, ["\\fs"]=cmnOps, ["\\k"]=cmnOps, ["\\K"]=cmnOps, ["\\kf"]=cmnOps, ["\\ko"]=cmnOps, ["\\move"]=cmnOps, ["\\org"]=cmnOps,
         ["\\q"]={"Auto Cycle","Cycle", "Set", "Set Default"}, ["\\fad"]=cmnOps, ["\\fade"]=cmnOps, ["\\i"]={"Toggle","Set", "Set Default"},
-        ["\\r"]=stringOps, ["\\fn"]=stringOps, 
+        ["\\r"]=stringOps, ["\\fn"]=stringOps, ["\\clip"]=clipOps, ["\\iclip"]=clipOps, ["\\iclip (Vect)"]=clipOps, ["\\clip (Vect)"]=clipOps,
+        ["\\clip (Rect)"] = table.join(cmnOps,{"Invert Clip"}), ["\\iclip (Rect)"]= table.join(cmnOps,{"Invert Clip"}),
+        ["Clips (Vect)"] = clipOps, ["Clips (Rect)"]= table.join(cmnOps,{"Invert Clip"}),
         ["Colors"]=colorOps, ["Alphas"]=cmnOps, ["Primary Color"]=colorOps, ["Fades"]=cmnOps
     },
     compoundTags= {
         Colors = {"\\c","\\1c","\\2c","\\3c","\\4c"},
         ["Primary Color"] = {"\\c","\\1c"},
         Alphas = {"\\alpha", "\\1a", "\\2a", "\\3a", "\\4a"},
-        Fades = {"\\fad", "\\fade"}
+        Fades = {"\\fad", "\\fade"},
+        Clips = {"\\clip", "\\iclip"},
+        ["Clips (Vect)"] = {"\\clip (Vect)", "\\iclip (Vect)"},
+        ["Clips (Rect)"] = {"\\clip (Rect)", "\\iclip (Rect)"}
     }
 }
 Nudger.__index = Nudger

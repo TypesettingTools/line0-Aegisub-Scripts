@@ -34,8 +34,8 @@ local Nudger = {
         ["\\fsp"]=cmnOps, ["\\fs"]=cmnOps, ["\\k"]=cmnOps, ["\\K"]=cmnOps, ["\\kf"]=cmnOps, ["\\ko"]=cmnOps, ["\\move"]=cmnOps, ["\\org"]=cmnOps,
         ["\\q"]={"Auto Cycle","Cycle", "Set", "Set Default"}, ["\\fad"]=cmnOps, ["\\fade"]=cmnOps, ["\\i"]={"Toggle","Set", "Set Default"},
         ["\\r"]=stringOps, ["\\fn"]=stringOps, ["\\clip"]=clipOps, ["\\iclip"]=clipOps, ["\\iclip (Vect)"]=clipOps, ["\\clip (Vect)"]=clipOps,
-        ["\\clip (Rect)"] = table.join(cmnOps,{"Invert Clip"}), ["\\iclip (Rect)"]= table.join(cmnOps,{"Invert Clip"}),
-        ["Clips (Vect)"] = clipOps, ["Clips (Rect)"]= table.join(cmnOps,{"Invert Clip"}),
+        ["\\clip (Rect)"]=table.join(cmnOps,{"Invert Clip"}), ["\\iclip (Rect)"]=table.join(cmnOps,{"Invert Clip"}),
+        ["Clips (Vect)"]=clipOps, ["Clips (Rect)"]=table.join(cmnOps,{"Invert Clip"}), Clips=clipOps,
         ["Colors"]=colorOps, ["Alphas"]=cmnOps, ["Primary Color"]=colorOps, ["Fades"]=cmnOps
     },
     compoundTags= {
@@ -43,9 +43,9 @@ local Nudger = {
         ["Primary Color"] = {"\\c","\\1c"},
         Alphas = {"\\alpha", "\\1a", "\\2a", "\\3a", "\\4a"},
         Fades = {"\\fad", "\\fade"},
-        Clips = {"\\clip", "\\iclip"},
-        ["Clips (Vect)"] = {"\\clip (Vect)", "\\iclip (Vect)"},
-        ["Clips (Rect)"] = {"\\clip (Rect)", "\\iclip (Rect)"}
+        Clips = {"\\iclip", "\\clip"},
+        ["Clips (Vect)"] = {"\\iclip (Vect)", "\\clip (Vect)"},
+        ["Clips (Rect)"] = {"\\iclip (Rect)", "\\clip (Rect)"}
     }
 }
 Nudger.__index = Nudger
@@ -74,6 +74,7 @@ function Nudger.new(params)
     self.operation = params.operation or "Add"
     self.value = params.value or {}
     self.id = params.id or uuid()
+    self.noDefault = params.noDefault or false
     self:validate()
     return self
 end
@@ -95,7 +96,7 @@ function Nudger:nudge(sub, sel)
                         tags[i][self.opList[self.operation]](tags[i],unpack(self.value))
                     end
                     return tags
-                end)
+                end, self.noDefault)
 
             elseif self.operation=="Cycle" then
                 line:modTag(tag, function(tags)
@@ -110,14 +111,14 @@ function Nudger:nudge(sub, sel)
                         tags[i]:set(unpack(self.value[ed[self.id]]))
                     end
                     return tags
-                end)   
+                end, self.noDefault)   
             elseif self.operation=="Set Default" then
                 line:modTag(tag, function(tags)
                     for i=1,#tags,1 do
                         tags[i]:set(line:getDefaultTag(self.tag))
                     end
                     return tags
-                end)
+                end, self.noDefault)
             end
         end
     end)
@@ -154,6 +155,7 @@ local Configuration = {
         {operation="Set Default", value={1}, id="bb4967a7-fb8a-4907-b5e8-395ea67c0a52", name="Default Origin", tag="\\org"},
         {operation="Add HSV", value={0,0,0.1}, id="015cd09b-3c2b-458e-a65a-80b80bb951b1", name="Brightness Up", tag="Colors"},
         {operation="Add HSV", value={0,0,-0.1}, id="93f07885-c3f7-41bb-b319-0542e6fd52d7", name="Brightness Down", tag="Colors"},
+        {operation="Invert Clip", value={}, id="5995dd81-dd27-44c4-926f-fa543641190e ", name="Invert Clips", tag="Clips", noDefault=true},
     }}
 }
 Configuration.__index = Configuration
@@ -219,7 +221,8 @@ function Configuration:getDialog()
         {class="label", label="Override Tag", x=1, y=0, width=1, height=1},
         {class="label", label="Action", x=2, y=0, width=1, height=1},
         {class="label", label="Value", x=3, y=0, width=1, height=1},
-        {class="label", label="Remove", x=4, y=0, width=1, height=1},
+        {class="label", label="No Default", x=4, y=0, width=1, height=1},
+        {class="label", label="Remove", x=5, y=0, width=1, height=1},
     }
 
     local function getUnwrappedJson(arr)
@@ -233,7 +236,8 @@ function Configuration:getDialog()
             {class="dropdown", name=uName.encode(nu.id,"tag"), items=table.keys(Nudger.supportedOps), value=nu.tag, x=1, y=i, width=1, height=1},
             {class="dropdown", name=uName.encode(nu.id,"operation"), items= table.keys(Nudger.opList), value=nu.operation, x=2, y=i, width=1, height=1},
             {class="edit", name=uName.encode(nu.id,"value"), value=getUnwrappedJson(nu.value), step=0.5, x=3, y=i, width=1, height=1},
-            {class="checkbox", name=uName.encode(nu.id,"remove"), value=false, x=4, y=i, width=1, height=1},
+            {class="checkbox", name=uName.encode(nu.id,"noDefault"), value=nu.noDefault, x=4, y=i, width=1, height=1},
+            {class="checkbox", name=uName.encode(nu.id,"remove"), value=false, x=5, y=i, width=1, height=1}
         })
     end
     return dialog

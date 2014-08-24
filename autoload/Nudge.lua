@@ -3,15 +3,9 @@ script_description="Modifies override tags according to configuration."
 script_version="0.2.0"
 script_author="line0"
 
-local re = require("aegisub.re")
-local util = require("aegisub.util")
 local json = require("json")
-
-local Line = require("a-mo.Line")
-local LineCollection = require("a-mo.LineCollection")
-
 local l0Common = require("l0.Common")
-local ASSTags = require("l0.ASSTags")
+local LineCollection = require("a-mo.LineCollection")
 local LineExtend = require("l0.LineExtend")
 
 

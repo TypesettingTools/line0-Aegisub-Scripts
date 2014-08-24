@@ -3,16 +3,16 @@ script_description="Modifies override tags according to configuration."
 script_version="0.2.0"
 script_author="line0"
 
-re = require("aegisub.re")
-util = require("aegisub.util")
-json = require("json")
+local re = require("aegisub.re")
+local util = require("aegisub.util")
+local json = require("json")
 
-Line = require("a-mo.Line")
-LineCollection = require("a-mo.LineCollection")
+local Line = require("a-mo.Line")
+local LineCollection = require("a-mo.LineCollection")
 
-l0Common = require("l0.Common")
-ASSTags = require("l0.ASSTags")
-LineExtend = require("l0.LineExtend")
+local l0Common = require("l0.Common")
+local ASSTags = require("l0.ASSTags")
+local LineExtend = require("l0.LineExtend")
 
 
 --------  Nudger Class -------------------
@@ -269,7 +269,7 @@ function Configuration:registerMacros()
 end
 
 function Configuration:run(noReload)
-    if not noReload then self:load() else noReload=false end
+    if not noReload then self:load() end
     local btn, res = aegisub.dialog.display(self:getDialog(),{"Save","Cancel","Add Nudger"},{save="Save",cancel="Cancel", close="Save"})
     if btn=="Add Nudger" then
         self:addNudger()
@@ -284,7 +284,7 @@ end
 
 local config = Configuration("nudge.json")
 
-aegisub.register_macro(script_name .. "/Configure Nudge", script_description, function(_,_,_) 
+aegisub.register_macro(script_name .. "/Configure Nudge", script_description, function()
     config:run()
 end)
 config:registerMacros()

@@ -88,7 +88,6 @@ function process(sub,sel,res)
         end, false) end
 
         currDistance = currDistance + (totalLength * (line.duration/totalDuration))
-        local x=i/#lines.lines
         aegisub.progress.set(i*100/#lines.lines)
     end, true)
     lines:replaceLines()

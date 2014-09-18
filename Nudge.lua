@@ -219,9 +219,9 @@ function Configuration:removeNudger(uuid)
 end
 
 function Configuration:getNudger(uuid)
-    return table.filter(self.nudgers, function(nudger)
+    return table.trimArray(table.filter(self.nudgers, function(nudger)
         return nudger.id == uuid end
-    )[1]
+    ))[1]
 end
 
 function Configuration:getDialog()

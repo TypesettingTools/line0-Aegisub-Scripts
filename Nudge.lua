@@ -6,44 +6,49 @@ script_author="line0"
 local json = require("json")
 local l0Common = require("l0.Common")
 local LineCollection = require("a-mo.LineCollection")
-local LineExtend = require("l0.LineExtend")
-
+local ASSTags = require("l0.ASSTags")
 
 --------  Nudger Class -------------------
 
 local cmnOps = {"Add", "Multiply", "Power", "Cycle", "Set", "Set Default"}
 local colorOps, stringOps = table.join(cmnOps, {"Add HSV"}),  {"Append", "Prepend", "Replace", "Cycle", "Set", "Set Default"}
-local clipOps = {"Add", "Multiply", "Power", "Set Default", "Invert Clip"}
+local clipOpsVect = {"Add", "Multiply", "Power", "Set Default", "Invert Clip"}
+local clipOptsRect = table.join(cmnOps,{"Invert Clip"})
 local Nudger = {
     opList = {Add="add", Multiply="mul", Power="pow", Set="set", ["Align Up"]="up", ["Align Down"]="down", ["Align Left"]="left", ["Align Right"]="right", 
               Toggle="toggle", ["Auto Cycle"]="cycle", Cycle=false, ["Set Default"]=false, ["Add HSV"]="addHSV", Replace="replace", Append="append", Prepend="prepend",
               ["Invert Clip"]="toggleInverse"},
     supportedOps = {
-        ["\\pos"]=cmnOps, ["\\be"]=cmnOps, ["\\fscx"]=cmnOps, ["\\fscy"]=cmnOps, 
-        ["\\an"]={"Align Up", "Align Down", "Align Left", "Align Right", "Auto Cycle", "Set", "Set Default", "Cycle"},
-        ["\\frz"]=cmnOps, ["\\fry"]=cmnOps, ["\\frx"]=cmnOps, ["\\bord"]=cmnOps, ["\\xbord"]=cmnOps, ["\\ybord"]=cmnOps,
-        ["\\shad"]=cmnOps, ["\\xshad"]=cmnOps, ["\\yshad"]=cmnOps, ["\\alpha"]=cmnOps, ["\\1a"]=cmnOps, 
-        ["\\2a"]=cmnOps, ["\\3a"]=cmnOps, ["\\4a"]=cmnOps, ["\\c"]=colorOps, ["\\1c"]=colorOps, ["\\2c"]=colorOps, ["\\3c"]=colorOps, ["\\4c"]=colorOps,
-        ["\\blur"]=cmnOps, ["\\fax"]=cmnOps, ["\\fay"]=cmnOps, ["\\b"]=table.join(cmnOps,{"Toggle"}), ["\\u"]={"Toggle","Set", "Set Default"},
-        ["\\fsp"]=cmnOps, ["\\fs"]=cmnOps, ["\\k"]=cmnOps, ["\\K"]=cmnOps, ["\\kf"]=cmnOps, ["\\ko"]=cmnOps, ["\\move"]=cmnOps, ["\\org"]=cmnOps,
-        ["\\q"]={"Auto Cycle","Cycle", "Set", "Set Default"}, ["\\fad"]=cmnOps, ["\\fade"]=cmnOps, ["\\i"]={"Toggle","Set", "Set Default"},
-        ["\\r"]=stringOps, ["\\fn"]=stringOps, ["\\clip"]=clipOps, ["\\iclip"]=clipOps, ["\\iclip (Vect)"]=clipOps, ["\\clip (Vect)"]=clipOps,
-        ["\\clip (Rect)"]=table.join(cmnOps,{"Invert Clip"}), ["\\iclip (Rect)"]=table.join(cmnOps,{"Invert Clip"}),
-        ["Clips (Vect)"]=clipOps, ["Clips (Rect)"]=table.join(cmnOps,{"Invert Clip"}), Clips=clipOps,
+        position=cmnOps, blur_edges=cmnOps, scale_x=cmnOps, scale_y=cmnOps, 
+        align={"Align Up", "Align Down", "Align Left", "Align Right", "Auto Cycle", "Set", "Set Default", "Cycle"},
+        angle=cmnOps, angle_y=cmnOps, angle_x=cmnOps, outline=cmnOps, outline_x=cmnOps, outline_y=cmnOps,
+        shadow=cmnOps, shadow_x=cmnOps, shadow_y=cmnOps, alpha=cmnOps, alpha1=cmnOps, 
+        alpha2=cmnOps, alpha3=cmnOps, alpha4=cmnOps, color1=colorOps, color2=colorOps, color3=colorOps, color4=colorOps,
+        blur=cmnOps, shear_x=cmnOps, shear_y=cmnOps, bold=table.join(cmnOps,{"Toggle"}), underline={"Toggle","Set", "Set Default"},
+        spacing=cmnOps, fontsize=cmnOps, k_fill=cmnOps, k_sweep_alt=cmnOps, k_sweep=cmnOps, k_bord=cmnOps, move=cmnOps, move_simple=cmnOps, origin=cmnOps,
+        wrapstyle={"Auto Cycle","Cycle", "Set", "Set Default"}, fade_simple=cmnOps, fade=cmnOps, italic={"Toggle","Set", "Set Default"},
+        reset=stringOps, fontname=stringOps, clip_vect=clipOpsVect, iclip_vect=clipOpsVect, clip_rect=clipOptsRect, iclip_rect=clipOptsRect,
+        ["Clips (Vect)"]=clipOpsVect, ["Clips (Rect)"]=clipOptsRect, Clips=clipOpsVect,
         ["Colors"]=colorOps, ["Alphas"]=cmnOps, ["Primary Color"]=colorOps, ["Fades"]=cmnOps
     },
-    compoundTags= {
-        Colors = {"\\c","\\1c","\\2c","\\3c","\\4c"},
-        ["Primary Color"] = {"\\c","\\1c"},
-        Alphas = {"\\alpha", "\\1a", "\\2a", "\\3a", "\\4a"},
-        Fades = {"\\fad", "\\fade"},
-        Clips = {"\\iclip", "\\clip"},
-        ["Clips (Vect)"] = {"\\iclip (Vect)", "\\clip (Vect)"},
-        ["Clips (Rect)"] = {"\\iclip (Rect)", "\\clip (Rect)"}
-    }
+    compoundTags = {
+        Colors = {"color1","color2","color3","color4"},
+        Alphas = {"alpha", "alpha1", "alpha2", "alpha3", "alpha4"},
+        Fades = {"fade_simple", "fade"},
+        Clips = {"clip_vect", "clip_rect", "iclip_vect", "iclip_rect"},
+        ["Clips (Vect)"] = {"clip_vect", "iclip_vect"},
+        ["Clips (Rect)"] = {"clip_rect", "iclip_rect"},
+        ["\\move"] = {"move", "move_simple"}
+    },
+    tagList = {}
 }
-Nudger.__index = Nudger
 
+for name,ops in pairs(Nudger.supportedOps) do
+    Nudger.tagList[#Nudger.tagList+1] = ASS.toFriendlyName[name] or name
+end
+
+
+Nudger.__index = Nudger
 setmetatable(Nudger, {
   __call = function (cls, ...)
     return cls.new(...)
@@ -64,7 +69,7 @@ function Nudger.new(params)
     local self = setmetatable({}, Nudger)
     params = params or {}
     self.name = params.name or "Unnamed Nudger"
-    self.tag = params.tag or "\\pos"
+    self.tag = params.tag or "position"
     self.operation = params.operation or "Add"
     self.value = params.value or {}
     self.id = params.id or uuid()
@@ -79,42 +84,45 @@ function Nudger:validate()
 end
 
 function Nudger:nudge(sub, sel)
-    local tags = self.tag:sub(1,1)=="\\" and {self.tag} or self.compoundTags[self.tag]
-    local lines = LineCollection(sub,sel)
+    local tags = self.compoundTags[self.tag] or self.tag  
+    local lines, builtinOp = LineCollection(sub,sel), self.opList[self.operation]
 
     lines:runCallback(function(lines, line)
-        for _,tag in ipairs(tags) do
-            if self.opList[self.operation] then
-                line:modTag(tag, function(tags)
-                    for i=1,#tags,1 do
-                        tags[i][self.opList[self.operation]](tags[i],unpack(self.value))
-                    end
-                    return tags
-                end, self.noDefault)
+        local lineData = ASS.parse(line)
+        local numFound = #lineData:getTags(tags)
 
-            elseif self.operation=="Cycle" then
-                line:modTag(tag, function(tags)
-                    local edField = "l0.Nudge.cycleState"
-                    local ed = line:getExtraData(edField)
-                    if type(ed)=="table" then
-                        ed[self.id] = ed[self.id] and ed[self.id]<#self.value and ed[self.id]+1 or 1
-                    else ed={[self.id]=1} end
-                    line:setExtraData(edField,ed)
-
-                    for i=1,#tags,1 do
-                        tags[i]:set(unpack(self.value[ed[self.id]]))
-                    end
-                    return tags
-                end, self.noDefault)   
-            elseif self.operation=="Set Default" then
-                line:modTag(tag, function(tags)
-                    for i=1,#tags,1 do
-                        tags[i]:set(line:getDefaultTag(self.tag))
-                    end
-                    return tags
-                end, self.noDefault)
-            end
+        -- insert default tags if no matching tags are present
+        if numFound==0 and not self.noDefault then
+            lineData:insertDefaultTags(tags)
         end
+
+        if builtinOp then
+            lineData:modTags(tags, function(tag)
+                tag[builtinOp](tag,unpack(self.value))
+            end)
+
+        elseif self.operation=="Cycle" then
+            local edField = "l0.Nudge.cycleState"
+            local ed = line:getExtraData(edField)
+            if type(ed)=="table" then
+                ed[self.id] = ed[self.id] and ed[self.id]<#self.value and ed[self.id]+1 or 1
+            else ed={[self.id]=1} end
+            line:setExtraData(edField,ed)
+            
+            lineData:modTags(tags, function(tag)
+                tag:set(unpack(self.value[ed[self.id]]))
+            end)
+
+        elseif self.operation=="Set Default" and numFound>0 then
+            local defaults = lineData:getStyleDefaultTags()
+            
+            lineData:modTags(tags, function(tag)
+                tag:set(defaults.tags[tag.__tag.name]:get())
+                -- alternatively:  
+                -- return ASS:createTag(tag.__tag.name, defaults.tags[tag.__tag.name])
+            end)
+        end
+        lineData:commit()
     end)
     lines:replaceLines()
 end
@@ -133,20 +141,20 @@ local uName = {
 
 local Configuration = {
     default = {nudgers = {
-        {operation="Add", value={1,0}, id="d0dad24e-515e-40ab-a120-7b8d24ecbad0", name="Position Right (+1)", tag="\\pos"},
-        {operation="Add", value={-1,0}, id="0c6ff644-ef9c-405a-bb12-032694d432c0", name="Position Left (-1)", tag="\\pos"},
-        {operation="Add", value={0,1}, id="cb2ec6c1-a8c1-48b8-8a13-cafadf55ffdd", name="Position Up (+1)", tag="\\pos"},
-        {operation="Add", value={0,-1}, id="cb9c1a5b-6910-4fb2-b457-a9c72a392d90", name="Position Down (-1)", tag="\\pos"},
-        {operation="Cycle", value={{0.6},{0.8},{1},{1.2},{1.5},{2},{3},{4},{5},{8}}, id="c900ef51-88dd-413d-8380-cebb7a59c793", name="Cycle Blur", tag="\\blur"},
-        {operation="Cycle", value={{255},{0},{16},{48},{96},{128},{160},{192},{224}}, id="d338cbca-1575-4795-9b80-3680130cce62", name="Cycle Alpha", tag="\\alpha"},
-        {operation="Toggle", value={}, id="974c3af9-ef51-45f5-a992-4850cb006743", name="Toggle Bold", tag="\\b"},
-        {operation="Auto Cycle", value={}, id="aa74461a-477b-47de-bbf4-16ef1ee568f5", name="Cycle Wrap Styles", tag="\\q"},
-        {operation="Align Up", value={}, id="254bf380-22bc-457b-abb7-3d1f85b90eef", name="Align Up", tag="\\an"},
-        {operation="Align Down", value={}, id="260318dc-5bdd-4975-9feb-8c95b41e7b5b", name="Align Down", tag="\\an"},
-        {operation="Align Left", value={}, id="e6aeca35-d4e0-4ff4-81ac-8d3a853d5a9c", name="Align Left", tag="\\an"},
-        {operation="Align Right", value={}, id="dd80e1c5-7c07-478c-bc90-7c473c3abe49", name="Align Right", tag="\\an"},
-        {operation="Set", value={1}, id="18a27245-5306-4990-865c-ae7f0062083a", name="Add Edgeblur", tag="\\be"},
-        {operation="Set Default", value={1}, id="bb4967a7-fb8a-4907-b5e8-395ea67c0a52", name="Default Origin", tag="\\org"},
+        {operation="Add", value={1,0}, id="d0dad24e-515e-40ab-a120-7b8d24ecbad0", name="Position Right (+1)", tag="position"},
+        {operation="Add", value={-1,0}, id="0c6ff644-ef9c-405a-bb12-032694d432c0", name="Position Left (-1)", tag="position"},
+        {operation="Add", value={0,1}, id="cb2ec6c1-a8c1-48b8-8a13-cafadf55ffdd", name="Position Up (+1)", tag="position"},
+        {operation="Add", value={0,-1}, id="cb9c1a5b-6910-4fb2-b457-a9c72a392d90", name="Position Down (-1)", tag="position"},
+        {operation="Cycle", value={{0.6},{0.8},{1},{1.2},{1.5},{2},{3},{4},{5},{8}}, id="c900ef51-88dd-413d-8380-cebb7a59c793", name="Cycle Blur", tag="blur"},
+        {operation="Cycle", value={{255},{0},{16},{48},{96},{128},{160},{192},{224}}, id="d338cbca-1575-4795-9b80-3680130cce62", name="Cycle Alpha", tag="alpha"},
+        {operation="Toggle", value={}, id="974c3af9-ef51-45f5-a992-4850cb006743", name="Toggle Bold", tag="bold"},
+        {operation="Auto Cycle", value={}, id="aa74461a-477b-47de-bbf4-16ef1ee568f5", name="Cycle Wrap Styles", tag="wrapstyle"},
+        {operation="Align Up", value={}, id="254bf380-22bc-457b-abb7-3d1f85b90eef", name="Align Up", tag="align"},
+        {operation="Align Down", value={}, id="260318dc-5bdd-4975-9feb-8c95b41e7b5b", name="Align Down", tag="align"},
+        {operation="Align Left", value={}, id="e6aeca35-d4e0-4ff4-81ac-8d3a853d5a9c", name="Align Left", tag="align"},
+        {operation="Align Right", value={}, id="dd80e1c5-7c07-478c-bc90-7c473c3abe49", name="Align Right", tag="align"},
+        {operation="Set", value={1}, id="18a27245-5306-4990-865c-ae7f0062083a", name="Add Edgeblur", tag="blur_edges"},
+        {operation="Set Default", value={1}, id="bb4967a7-fb8a-4907-b5e8-395ea67c0a52", name="Default Origin", tag="origin"},
         {operation="Add HSV", value={0,0,0.1}, id="015cd09b-3c2b-458e-a65a-80b80bb951b1", name="Brightness Up", tag="Colors"},
         {operation="Add HSV", value={0,0,-0.1}, id="93f07885-c3f7-41bb-b319-0542e6fd52d7", name="Brightness Down", tag="Colors"},
         {operation="Invert Clip", value={}, id="5995dd81-dd27-44c4-926f-fa543641190e ", name="Invert Clips", tag="Clips", noDefault=true},
@@ -227,7 +235,7 @@ function Configuration:getDialog()
     for i,nu in ipairs(self.nudgers) do
         dialog = table.join(dialog, {
             {class="edit", name=uName.encode(nu.id,"name"), value=nu.name, x=0, y=i, width=1, height=1},
-            {class="dropdown", name=uName.encode(nu.id,"tag"), items=table.keys(Nudger.supportedOps), value=nu.tag, x=1, y=i, width=1, height=1},
+            {class="dropdown", name=uName.encode(nu.id,"tag"), items=Nudger.tagList, value=ASS.toFriendlyName[nu.tag] or nu.tag, x=1, y=i, width=1, height=1},
             {class="dropdown", name=uName.encode(nu.id,"operation"), items= table.keys(Nudger.opList), value=nu.operation, x=2, y=i, width=1, height=1},
             {class="edit", name=uName.encode(nu.id,"value"), value=getUnwrappedJson(nu.value), step=0.5, x=3, y=i, width=1, height=1},
             {class="checkbox", name=uName.encode(nu.id,"noDefault"), value=nu.noDefault, x=4, y=i, width=1, height=1},
@@ -240,7 +248,9 @@ end
 function Configuration:Update(res)
     for key,val in pairs(res) do
         local id,name = uName.decode(key)
-        if name=="value" then val=json.decode("["..val.."]") end
+        if name=="value" then val=json.decode("["..val.."]")
+        elseif name=="tag" then val=ASS.toTagName[val] or val end
+
         if name=="remove" and val==true then
             self:removeNudger(id)
         else

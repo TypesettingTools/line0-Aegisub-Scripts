@@ -28,9 +28,9 @@ local Nudger = {
         spacing=cmnOps, fontsize=cmnOps, k_fill=cmnOps, k_sweep_alt=cmnOps, k_sweep=cmnOps, k_bord=cmnOps, move=cmnOps, move_simple=cmnOps, origin=cmnOps,
         wrapstyle={"Auto Cycle","Cycle", "Set", "Set Default"}, fade_simple=cmnOps, fade=cmnOps, italic={"Toggle","Set", "Set Default"},
         reset=stringOps, fontname=stringOps, clip_vect=clipOpsVect, iclip_vect=clipOpsVect, clip_rect=clipOptsRect, iclip_rect=clipOptsRect,
-        unknown={"Remove"}, 
+        unknown={"Remove"}, junk={"Remove"}, 
         ["Clips (Vect)"]=clipOpsVect, ["Clips (Rect)"]=clipOptsRect, Clips=clipOpsVect,
-        ["Colors"]=colorOps, ["Alphas"]=cmnOps, ["Primary Color"]=colorOps, ["Fades"]=cmnOps, Comment={"Remove"}, ["Comments/Unknown Tags"]={"Remove"}
+        ["Colors"]=colorOps, ["Alphas"]=cmnOps, ["Primary Color"]=colorOps, ["Fades"]=cmnOps, Comment={"Remove"}, ["Comments/Junk"]={"Remove"}
     },
     compoundTags = {
         Colors = {"color1","color2","color3","color4"},
@@ -123,10 +123,12 @@ function Nudger:nudge(sub, sel)
             end)
         
         elseif self.operation=="Remove" then
-            if tags=="Comment" or tags=="Comments/Unknown Tags" then
+            if tags=="Comments/Junk" then
                 lineData:stripComments()
-            end
-            if tags~="Comment" then lineData.removeTags(tags) end
+                lineData:removeTags("junk")
+            elseif tags=="Comment" then
+                lineData:stripComments()
+            else lineData.removeTags(tags) end
         end
 
         lineData:commit()
@@ -165,6 +167,7 @@ local Configuration = {
         {operation="Add HSV", value={0,0,0.1}, id="015cd09b-3c2b-458e-a65a-80b80bb951b1", name="Brightness Up", tag="Colors"},
         {operation="Add HSV", value={0,0,-0.1}, id="93f07885-c3f7-41bb-b319-0542e6fd52d7", name="Brightness Down", tag="Colors"},
         {operation="Invert Clip", value={}, id="5995dd81-dd27-44c4-926f-fa543641190e ", name="Invert Clips", tag="Clips", noDefault=true},
+        {operation="Remove", value={}, id="4dfc33fd-3090-498b-8922-7e1eb4515257 ", name="Remove Comments & Junk", tag="Comments/Junk", noDefault=true},
     }}
 }
 Configuration.__index = Configuration

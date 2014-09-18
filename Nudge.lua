@@ -10,14 +10,14 @@ local ASSTags = require("l0.ASSTags")
 
 --------  Nudger Class -------------------
 
-local cmnOps = {"Add", "Multiply", "Power", "Cycle", "Set", "Set Default"}
-local colorOps, stringOps = table.join(cmnOps, {"Add HSV"}),  {"Append", "Prepend", "Replace", "Cycle", "Set", "Set Default"}
-local clipOpsVect = {"Add", "Multiply", "Power", "Set Default", "Invert Clip"}
+local cmnOps = {"Add", "Multiply", "Power", "Cycle", "Set", "Set Default", "Remove"}
+local colorOps, stringOps = table.join(cmnOps, {"Add HSV"}),  {"Append", "Prepend", "Replace", "Cycle", "Set", "Set Default", "Remove"}
+local clipOpsVect = {"Add", "Multiply", "Power", "Set Default", "Invert Clip", "Remove"}
 local clipOptsRect = table.join(cmnOps,{"Invert Clip"})
 local Nudger = {
     opList = {Add="add", Multiply="mul", Power="pow", Set="set", ["Align Up"]="up", ["Align Down"]="down", ["Align Left"]="left", ["Align Right"]="right", 
               Toggle="toggle", ["Auto Cycle"]="cycle", Cycle=false, ["Set Default"]=false, ["Add HSV"]="addHSV", Replace="replace", Append="append", Prepend="prepend",
-              ["Invert Clip"]="toggleInverse"},
+              ["Invert Clip"]="toggleInverse", Remove = false},
     supportedOps = {
         position=cmnOps, blur_edges=cmnOps, scale_x=cmnOps, scale_y=cmnOps, 
         align={"Align Up", "Align Down", "Align Left", "Align Right", "Auto Cycle", "Set", "Set Default", "Cycle"},
@@ -28,8 +28,9 @@ local Nudger = {
         spacing=cmnOps, fontsize=cmnOps, k_fill=cmnOps, k_sweep_alt=cmnOps, k_sweep=cmnOps, k_bord=cmnOps, move=cmnOps, move_simple=cmnOps, origin=cmnOps,
         wrapstyle={"Auto Cycle","Cycle", "Set", "Set Default"}, fade_simple=cmnOps, fade=cmnOps, italic={"Toggle","Set", "Set Default"},
         reset=stringOps, fontname=stringOps, clip_vect=clipOpsVect, iclip_vect=clipOpsVect, clip_rect=clipOptsRect, iclip_rect=clipOptsRect,
+        unknown={"Remove"}, 
         ["Clips (Vect)"]=clipOpsVect, ["Clips (Rect)"]=clipOptsRect, Clips=clipOpsVect,
-        ["Colors"]=colorOps, ["Alphas"]=cmnOps, ["Primary Color"]=colorOps, ["Fades"]=cmnOps
+        ["Colors"]=colorOps, ["Alphas"]=cmnOps, ["Primary Color"]=colorOps, ["Fades"]=cmnOps, Comment={"Remove"}, ["Comments/Unknown Tags"]={"Remove"}
     },
     compoundTags = {
         Colors = {"color1","color2","color3","color4"},
@@ -92,7 +93,7 @@ function Nudger:nudge(sub, sel)
         local numFound = #lineData:getTags(tags)
 
         -- insert default tags if no matching tags are present
-        if numFound==0 and not self.noDefault then
+        if numFound==0 and not self.noDefault and self.operation~="Remove" then
             lineData:insertDefaultTags(tags)
         end
 
@@ -115,13 +116,19 @@ function Nudger:nudge(sub, sel)
 
         elseif self.operation=="Set Default" and numFound>0 then
             local defaults = lineData:getStyleDefaultTags()
-            
             lineData:modTags(tags, function(tag)
                 tag:set(defaults.tags[tag.__tag.name]:get())
                 -- alternatively:  
                 -- return ASS:createTag(tag.__tag.name, defaults.tags[tag.__tag.name])
             end)
+        
+        elseif self.operation=="Remove" then
+            if tags=="Comment" or tags=="Comments/Unknown Tags" then
+                lineData:stripComments()
+            end
+            if tags~="Comment" then lineData.removeTags(tags) end
         end
+
         lineData:commit()
     end)
     lines:replaceLines()

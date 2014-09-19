@@ -7,6 +7,7 @@ local json = require("json")
 local l0Common = require("l0.Common")
 local LineCollection = require("a-mo.LineCollection")
 local ASSTags = require("l0.ASSTags")
+local Log = require("a-mo.Log")
 
 --------  Nudger Class -------------------
 
@@ -75,6 +76,8 @@ function Nudger.new(params)
     self.value = params.value or {}
     self.id = params.id or uuid()
     self.noDefault = params.noDefault or false
+    self.targetValue = params.targetValue or 0
+    self.targetName = params.targetName or "Tag Section"
     self:validate()
     return self
 end
@@ -85,22 +88,23 @@ function Nudger:validate()
 end
 
 function Nudger:nudge(sub, sel)
-    local tags = self.compoundTags[self.tag] or self.tag  
-    local lines, builtinOp = LineCollection(sub,sel), self.opList[self.operation]
+    local lines, tags = LineCollection(sub,sel), self.compoundTags[self.tag] or self.tag  
+    local relative, builtinOp = self.targetName=="Matched Tag", self.opList[self.operation]
+    local tagSect = self.targetValue~=0 and self.targetValue or nil
 
     lines:runCallback(function(lines, line)
         local lineData = ASS.parse(line)
-        local numFound = #lineData:getTags(tags)
+        local numFound = #lineData:getTags(tags, tagSect, tagSect, relative)
 
         -- insert default tags if no matching tags are present
-        if numFound==0 and not self.noDefault and self.operation~="Remove" then
-            lineData:insertDefaultTags(tags)
+        if numFound==0 and not self.noDefault and not relative and self.operation~="Remove" then
+            lineData:insertDefaultTags(tags, tagSect)
         end
 
         if builtinOp then
             lineData:modTags(tags, function(tag)
                 tag[builtinOp](tag,unpack(self.value))
-            end)
+            end, tagSect, tagSect, relative)
 
         elseif self.operation=="Cycle" then
             local edField = "l0.Nudge.cycleState"
@@ -112,7 +116,7 @@ function Nudger:nudge(sub, sel)
             
             lineData:modTags(tags, function(tag)
                 tag:set(unpack(self.value[ed[self.id]]))
-            end)
+            end, tagSect, tagSect, relative)
 
         elseif self.operation=="Set Default" and numFound>0 then
             local defaults = lineData:getStyleDefaultTags()
@@ -120,15 +124,15 @@ function Nudger:nudge(sub, sel)
                 tag:set(defaults.tags[tag.__tag.name]:get())
                 -- alternatively:  
                 -- return ASS:createTag(tag.__tag.name, defaults.tags[tag.__tag.name])
-            end)
+            end, tagSect, tagSect, relative)
         
         elseif self.operation=="Remove" then
             if tags=="Comments/Junk" then
                 lineData:stripComments()
-                lineData:removeTags("junk")
+                lineData:removeTags("junk", tagSect, tagSect, relative)
             elseif tags=="Comment" then
                 lineData:stripComments()
-            else lineData.removeTags(tags) end
+            else lineData:removeTags(tags, tagSect, tagSect, relative) end
         end
 
         lineData:commit()
@@ -166,8 +170,9 @@ local Configuration = {
         {operation="Set Default", value={1}, id="bb4967a7-fb8a-4907-b5e8-395ea67c0a52", name="Default Origin", tag="origin"},
         {operation="Add HSV", value={0,0,0.1}, id="015cd09b-3c2b-458e-a65a-80b80bb951b1", name="Brightness Up", tag="Colors"},
         {operation="Add HSV", value={0,0,-0.1}, id="93f07885-c3f7-41bb-b319-0542e6fd52d7", name="Brightness Down", tag="Colors"},
-        {operation="Invert Clip", value={}, id="5995dd81-dd27-44c4-926f-fa543641190e ", name="Invert Clips", tag="Clips", noDefault=true},
-        {operation="Remove", value={}, id="4dfc33fd-3090-498b-8922-7e1eb4515257 ", name="Remove Comments & Junk", tag="Comments/Junk", noDefault=true},
+        {operation="Invert Clip", value={}, id="e719120a-e45a-44d4-b76a-62943f47d2c5", name="Invert First Clip", tag="Clips", 
+         noDefault=true, targetName="Matched Tag", targetValue="1"},
+        {operation="Remove", value={}, id="4dfc33fd-3090-498b-8922-7e1eb4515257", name="Remove Comments & Junk", tag="Comments/Junk", noDefault=true},
     }}
 }
 Configuration.__index = Configuration
@@ -233,8 +238,10 @@ function Configuration:getDialog()
         {class="label", label="Override Tag", x=1, y=0, width=1, height=1},
         {class="label", label="Action", x=2, y=0, width=1, height=1},
         {class="label", label="Value", x=3, y=0, width=1, height=1},
-        {class="label", label="No Default", x=4, y=0, width=1, height=1},
-        {class="label", label="Remove", x=5, y=0, width=1, height=1},
+        {class="label", label="Target", x=4, y=0, width=1, height=1},
+        {class="label", label="Target #", x=5, y=0, width=1, height=1},
+        {class="label", label="No Default", x=6, y=0, width=1, height=1},
+        {class="label", label="Remove", x=7, y=0, width=1, height=1},
     }
 
     local function getUnwrappedJson(arr)
@@ -246,10 +253,12 @@ function Configuration:getDialog()
         dialog = table.join(dialog, {
             {class="edit", name=uName.encode(nu.id,"name"), value=nu.name, x=0, y=i, width=1, height=1},
             {class="dropdown", name=uName.encode(nu.id,"tag"), items=Nudger.tagList, value=ASS.toFriendlyName[nu.tag] or nu.tag, x=1, y=i, width=1, height=1},
-            {class="dropdown", name=uName.encode(nu.id,"operation"), items= table.keys(Nudger.opList), value=nu.operation, x=2, y=i, width=1, height=1},
+            {class="dropdown", name=uName.encode(nu.id,"operation"), items = table.keys(Nudger.opList), value=nu.operation, x=2, y=i, width=1, height=1},
             {class="edit", name=uName.encode(nu.id,"value"), value=getUnwrappedJson(nu.value), step=0.5, x=3, y=i, width=1, height=1},
-            {class="checkbox", name=uName.encode(nu.id,"noDefault"), value=nu.noDefault, x=4, y=i, width=1, height=1},
-            {class="checkbox", name=uName.encode(nu.id,"remove"), value=false, x=5, y=i, width=1, height=1}
+            {class="dropdown", name=uName.encode(nu.id,"targetName"), items={"Tag Section", "Matched Tag"}, value=nu.targetName, x=4, y=i, width=1, height=1},
+            {class="intedit", name=uName.encode(nu.id,"targetValue"), value=nu.targetValue, x=5, y=i, width=1, height=1},
+            {class="checkbox", name=uName.encode(nu.id,"noDefault"), value=nu.noDefault, x=6, y=i, width=1, height=1},
+            {class="checkbox", name=uName.encode(nu.id,"remove"), value=false, x=7, y=i, width=1, height=1}
         })
     end
     return dialog

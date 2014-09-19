@@ -1,6 +1,6 @@
 script_name="Nudge"
 script_description="Modifies override tags according to configuration."
-script_version="0.2.0"
+script_version="0.3.0"
 script_author="line0"
 
 local json = require("json")
@@ -156,7 +156,7 @@ local uName = {
 -----  Configuration Class ----------------
 
 local Configuration = {
-    default = {nudgers = {
+    default = {__version=script_version ,nudgers = {
         {operation="Add", value={1,0}, id="d0dad24e-515e-40ab-a120-7b8d24ecbad0", name="Position Right (+1)", tag="position"},
         {operation="Add", value={-1,0}, id="0c6ff644-ef9c-405a-bb12-032694d432c0", name="Position Left (-1)", tag="position"},
         {operation="Add", value={0,1}, id="cb2ec6c1-a8c1-48b8-8a13-cafadf55ffdd", name="Position Up (+1)", tag="position"},
@@ -204,6 +204,13 @@ function Configuration:load()
   else
     data = self.default
   end
+
+  -- version checking 
+  assert(tonumber(data.__version:sub(3,3))>=3, string.format(
+         [[Error: your configuration file version (%s) is incompatible with %s %s 
+         and I'm too lazy to add update routines for the 2 people that have been using the script so far. 
+         Please delete %s and reload your scripts.]]
+  , data.__version, script_name, script_version, self.fileName))
 
   self.nudgers = {}
   for _,val in ipairs(data.nudgers) do

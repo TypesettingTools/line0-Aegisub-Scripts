@@ -4,6 +4,7 @@ script_version="0.3.0"
 script_author="line0"
 
 local json = require("json")
+local util = require("aegisub.util")
 local l0Common = require("l0.Common")
 local LineCollection = require("a-mo.LineCollection")
 local ASSTags = require("l0.ASSTags")
@@ -58,23 +59,13 @@ setmetatable(Nudger, {
 })
 
 function Nudger.new(params)
-    local function uuid()
-        -- https://gist.github.com/jrus/3197011
-        math.randomseed(os.time())
-        local template ='xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
-        return string.gsub(template, '[xy]', function (c)
-            local v = (c == 'x') and math.random(0, 0xf) or math.random(8, 0xb)
-            return string.format('%x', v)
-        end)
-    end
-
     local self = setmetatable({}, Nudger)
     params = params or {}
     self.name = params.name or "Unnamed Nudger"
     self.tag = params.tag or "position"
     self.operation = params.operation or "Add"
     self.value = params.value or {}
-    self.id = params.id or uuid()
+    self.id = params.id or util.uuid()
     self.noDefault = params.noDefault or false
     self.targetValue = params.targetValue or 0
     self.targetName = params.targetName or "Tag Section"

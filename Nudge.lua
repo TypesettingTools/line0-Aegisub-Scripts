@@ -29,8 +29,8 @@ local Nudger = {
         spacing=cmnOps, fontsize=cmnOps, k_fill=cmnOps, k_sweep_alt=cmnOps, k_sweep=cmnOps, k_bord=cmnOps, move=cmnOps, move_simple=cmnOps, origin=cmnOps,
         wrapstyle={"Auto Cycle","Cycle", "Set", "Set Default"}, fade_simple=cmnOps, fade=cmnOps, italic={"Toggle","Set", "Set Default"},
         reset=stringOps, fontname=stringOps, clip_vect=clipOpsVect, iclip_vect=clipOpsVect, clip_rect=clipOptsRect, iclip_rect=clipOptsRect,
-        unknown={"Remove"}, junk={"Remove"}, 
-        ["Clips (Vect)"]=clipOpsVect, ["Clips (Rect)"]=clipOptsRect, Clips=clipOpsVect,
+        unknown={"Remove"}, junk={"Remove"},
+        ["Clips (Vect)"]=clipOpsVect, ["Clips (Rect)"]=clipOptsRect, Clips=clipOpsVect, ["All Tags"]={"Remove"}, 
         ["Colors"]=colorOps, ["Alphas"]=cmnOps, ["Primary Color"]=colorOps, ["Fades"]=cmnOps, Comment={"Remove"}, ["Comments/Junk"]={"Remove"}
     },
     compoundTags = {
@@ -40,7 +40,7 @@ local Nudger = {
         Clips = {"clip_vect", "clip_rect", "iclip_vect", "iclip_rect"},
         ["Clips (Vect)"] = {"clip_vect", "iclip_vect"},
         ["Clips (Rect)"] = {"clip_rect", "iclip_rect"},
-        ["\\move"] = {"move", "move_simple"}
+        ["\\move"] = {"move", "move_simple"},
     },
     tagList = {}
 }
@@ -132,7 +132,10 @@ function Nudger:nudge(sub, sel)
                 lineData:removeTags("junk", tagSect, tagSect, relative)
             elseif tags=="Comment" then
                 lineData:stripComments()
+            elseif tags=="All Tags" then
+                lineData:removeTags(nil, tagSect, tagSect, relative)
             else lineData:removeTags(tags, tagSect, tagSect, relative) end
+            lineData:cleanTags(1,false)
         end
 
         lineData:commit()

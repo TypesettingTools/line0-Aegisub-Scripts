@@ -30,7 +30,7 @@ local Nudger = {
         wrapstyle={"Auto Cycle","Cycle", "Set", "Set Default"}, fade_simple=cmnOps, fade=cmnOps, italic={"Toggle","Set", "Set Default"},
         reset=stringOps, fontname=stringOps, clip_vect=clipOpsVect, iclip_vect=clipOpsVect, clip_rect=clipOptsRect, iclip_rect=clipOptsRect,
         unknown={"Remove"}, junk={"Remove"},
-        ["Clips (Vect)"]=clipOpsVect, ["Clips (Rect)"]=clipOptsRect, Clips=clipOpsVect, ["All Tags"]={"Remove"}, 
+        ["Clips (Vect)"]=clipOpsVect, ["Clips (Rect)"]=clipOptsRect, Clips=clipOpsVect, ["Any Tag"]={"Remove"}, 
         ["Colors"]=colorOps, ["Alphas"]=cmnOps, ["Primary Color"]=colorOps, ["Fades"]=cmnOps, Comment={"Remove"}, ["Comments/Junk"]={"Remove"}
     },
     compoundTags = {
@@ -132,7 +132,7 @@ function Nudger:nudge(sub, sel)
                 lineData:removeTags("junk", tagSect, tagSect, relative)
             elseif tags=="Comment" then
                 lineData:stripComments()
-            elseif tags=="All Tags" then
+            elseif tags=="Any Tag" then
                 lineData:removeTags(nil, tagSect, tagSect, relative)
             else lineData:removeTags(tags, tagSect, tagSect, relative) end
             lineData:cleanTags(1,false)
@@ -176,6 +176,7 @@ local Configuration = {
         {operation="Invert Clip", value={}, id="e719120a-e45a-44d4-b76a-62943f47d2c5", name="Invert First Clip", tag="Clips", 
          noDefault=true, targetName="Matched Tag", targetValue="1"},
         {operation="Remove", value={}, id="4dfc33fd-3090-498b-8922-7e1eb4515257", name="Remove Comments & Junk", tag="Comments/Junk", noDefault=true},
+        {operation="Remove", value={}, id="bc642b90-8ebf-45e8-a160-98b4658721bd", name="Strip Tags", tag="Any Tag", noDefault=true},
     }}
 }
 Configuration.__index = Configuration

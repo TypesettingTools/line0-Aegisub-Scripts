@@ -253,11 +253,14 @@ function Configuration:getDialog()
         return json:sub(2,json:len()-1)
     end
 
+    local tags, operations = table.sort(Nudger.tagList), table.sort(table.keys(Nudger.opList))
+
     for i,nu in ipairs(self.nudgers) do
         dialog = table.join(dialog, {
             {class="edit", name=uName.encode(nu.id,"name"), value=nu.name, x=0, y=i, width=1, height=1},
-            {class="dropdown", name=uName.encode(nu.id,"tag"), items=Nudger.tagList, value=ASS.toFriendlyName[nu.tag] or nu.tag, x=1, y=i, width=1, height=1},
-            {class="dropdown", name=uName.encode(nu.id,"operation"), items = table.keys(Nudger.opList), value=nu.operation, x=2, y=i, width=1, height=1},
+            {class="dropdown", name=uName.encode(nu.id,"tag"), items=tags, value=ASS.toFriendlyName[nu.tag] or nu.tag, 
+             x=1, y=i, width=1, height=1},
+            {class="dropdown", name=uName.encode(nu.id,"operation"), items=operations, value=nu.operation, x=2, y=i, width=1, height=1},
             {class="edit", name=uName.encode(nu.id,"value"), value=getUnwrappedJson(nu.value), step=0.5, x=3, y=i, width=1, height=1},
             {class="dropdown", name=uName.encode(nu.id,"targetName"), items={"Tag Section", "Matched Tag"}, value=nu.targetName, x=4, y=i, width=1, height=1},
             {class="intedit", name=uName.encode(nu.id,"targetValue"), value=nu.targetValue, x=5, y=i, width=1, height=1},

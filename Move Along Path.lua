@@ -5,7 +5,8 @@ script_author="line0"
 
 local l0Common = require("l0.Common")
 local LineCollection = require("a-mo.LineCollection")
-local LineExtend = require("l0.LineExtend")
+local ASSTags = require("l0.ASSTags")
+local Log = require("a-mo.Log")
 local YUtils = require("YUtils")
 
 function showDialog(sub, sel)
@@ -51,46 +52,81 @@ function showDialog(sub, sel)
     if btn then process(sub,sel,res) end
 end
 
+function getLengthWithinBox(w, h, angle)
+    if w==0 or h==0 then return 0
+    elseif angle==0 then return w end
+
+    angle = math.rad(angle%90 or 0)
+    local A = math.atan2(w,h)
+    local a, b = angle<A and w or h, angle<A and math.tan(angle)*w or h/math.tan(angle)
+    return math.sqrt(a^2 + b^2)
+end
+
 function process(sub,sel,res)
+    aegisub.progress.task("Processing...")
+
     local lines = LineCollection(sub,sel)
-    -- get path and relative position from first line
-    local firstLine = lines.lines[#lines.lines]
-    local path = firstLine:getTags("clipVect")[1]
-    firstLine:removeTag("clipVect")
-    local posOff = path.commands[1]:get()
-     
-    local totalLength, totalDuration, currDistance, frzOff = path:getLength(), -lines.lines[1].duration, 0
+
     -- get total duration of the fbf lines
+    local totalDuration = -lines.lines[1].duration
     lines:runCallback(function(lines, line)
         totalDuration = totalDuration + line.duration
     end)
 
-    aegisub.progress.task("Processing...")
+    local startDist, path, posOff, angleOff, totalLength = 0
+    local finalLines = LineCollection(sub)
+
     lines:runCallback(function(lines, line, i)
-        -- calculate new position and angle, TODO: only run when required
-        local pos, frz = path:getPositionAtLength(currDistance), path:getAngleAtLength(currDistance)
-        if i==1 then frzOff=frz end
-        
-        if res.aniPos then line:modTag("position", function(tags)
-            if res.relPos then
-                tags[1]:add(pos:sub(posOff))
-            else tags[1]:set(pos) end
-            return tags
-        end, false) end
+        data = ASS.parse(line)
+        if i==1 then -- get path data and relative position/angle from first line
+            path = data:getTags("clip_vect")[1]
+            data:removeTags("clip_vect")
+            angleOff, posOff = path:getAngleAtLength(0), path.commands[1]:get()
+            totalLength = path:getLength()
+        end
 
-        if res.aniFrz then line:modTag("angleZ", function(tags)
-            for _,tag in ipairs(tags) do
-                if res.relFrz then
-                    tag:add(frz-frzOff)
-                else tag:set(frz) end
+        -- split line by characters
+        local charLines, charOff = data:splitAtIntervals(1,4,false), 0
+        for i=1,#charLines do
+            local charData = charLines[i].ASS
+            -- calculate new position and angle
+            local targetPos, angle = path:getPositionAtLength(startDist+charOff), path:getAngleAtLength(startDist+charOff)
+            if not targetPos then
+                break   -- stop if he have reached the end of the path
+            end 
+            local effTags = charData:getEffectiveTags(-1,true,true).tags
+
+            if res.aniPos then
+                local pos = effTags.position
+                if res.relPos then
+                    pos:add(targetPos:sub(posOff))
+                else pos:set(targetPos) end
+                charData:removeTags("position")
+                charData:insertTags(pos,1)
             end
-            return tags
-        end, false) end
 
-        currDistance = currDistance + (totalLength * (line.duration/totalDuration))
+            if res.aniFrz then
+                local frz = effTags.angle
+                if res.relFrz then
+                    frz:add(angle-angleOff)
+                else frz:set(angle) end
+                charData:removeTags("angle")
+                charData:insertTags(frz,1)
+            end
+
+            -- calculate how much "space" the character takes up on the line
+            -- and determine the distance offset for the next character
+            local metrics = charData:getMetrics()
+            charOff = charOff + getLengthWithinBox(metrics.width, metrics.box_height, angle)
+
+            charData:commit()
+            finalLines:addLine(charLines[i])
+        end
+        startDist = startDist + (totalLength * (line.duration/totalDuration))
         aegisub.progress.set(i*100/#lines.lines)
     end, true)
-    lines:replaceLines()
+    lines:deleteLines()
+    finalLines:insertLines()
 end
 
 aegisub.register_macro(script_name, script_description, showDialog)

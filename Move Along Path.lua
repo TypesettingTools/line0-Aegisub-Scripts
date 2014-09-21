@@ -53,13 +53,19 @@ function showDialog(sub, sel)
 end
 
 function getLengthWithinBox(w, h, angle)
-    if w==0 or h==0 then return 0
-    elseif angle==0 then return w end
+    angle = angle%180
+    angle =  math.rad(angle>90 and 180-angle or angle)
 
-    angle = math.rad(angle%90 or 0)
-    local A = math.atan2(w,h)
-    local a, b = angle<A and w or h, angle<A and math.tan(angle)*w or h/math.tan(angle)
-    return math.sqrt(a^2 + b^2)
+    if w==0 or h==0 then return 0
+    elseif angle==0 then return w
+    elseif angle==90 then return h end
+
+    local A = math.atan2(h,w)
+    if angle==A then return YUtils.math.distance(w,h)
+    else
+        local a,b = angle<A and w or h, angle<A and math.tan(angle)*w or h/math.tan(angle)
+        return YUtils.math.distance(a,b)
+    end
 end
 
 function process(sub,sel,res)

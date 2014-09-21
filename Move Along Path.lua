@@ -40,11 +40,6 @@ function showDialog(sub, sel)
             class="checkbox",
             name="aniFrz", label="\\frz",
             x=0, y=3, width=1, height=1, value=true
-        },
-        {
-            class="checkbox",
-            name="relFrz", label="",
-            x=1, y=3, width=1, height=1,
         }
     }
 
@@ -82,9 +77,12 @@ function process(sub,sel,res)
     local startDist, metricsCache, path, posOff, angleOff, totalLength = 0, {}
     local finalLines = LineCollection(sub)
     local alignOffset = {
-        [0] = function(w) return w end,    -- right
-        [1] = function() return 0 end,                       -- left
-        [2] = function(w) return w/2 end -- center
+        [0] = function(w,a) return math.cos(math.rad(a))*w end,    -- right
+        [1] = function() return 0 end,                             -- left
+        [2] = function(w,a) return math.cos(math.rad(a))*w/2 end,  -- center
+        [3] = function(w,a) return math.sin(math.rad(a))*w end,    -- bottom   -- actually, don't care about vertical alignment because text is rotated
+        [4] = function(w,a) return math.sin(math.rad(a))*w/2 end,  -- middle
+        [5] = function() return 0 end                              -- top
     }
 
     lines:runCallback(function(lines, line, i)
@@ -103,42 +101,33 @@ function process(sub,sel,res)
             -- calculate new position and angle
             local __atLength = startDist+charOff
             local targetPos, angle = path:getPositionAtLength(startDist+charOff), path:getAngleAtLength(startDist+charOff)
+            
             if not targetPos then
                 break   -- stop if he have reached the end of the path
             end
-
             -- get tags effective as of the first section (we know there won't be any tags after that)
             local effTags = charData.sections[1]:getEffectiveTags(true,true).tags
 
-            -- calculate final rotation first, because the metrics depend on it
-            local frz
+            -- calculate final rotation and write tags
             if res.aniFrz then
-                frz = effTags.angle
-                if res.relFrz then
-                    frz:add(angle-angleOff)
-                else frz:set(angle) end
+                effTags.angle:set(angle)
                 charData:removeTags("angle")
-                charData:insertTags(frz,1)
+                charData:insertTags(effTags.angle,1)
             end 
 
-            -- get font metrics and cache them
-            local metricsCacheKey = table.concat({charData.sections[2].value, effTags.fontname:get(),effTags.fontsize:get(), effTags.bold:getTagParams(),
-                 effTags.italic:getTagParams(), effTags.underline:getTagParams(), effTags.strikeout:getTagParams(), effTags.fontsize:get(), 
-                 effTags.scale_x:get(), effTags.scale_y:get(), effTags.spacing:get(), res.aniFrz and math.round(frz:get(),0) or nil})
-
-            local metrics = metricsCache[metricsCacheKey]
-            if not metrics then
-                metrics = charData:getMetrics()
-                metricsCache[metricsCacheKey] = metrics
-            end
+            -- get font metrics
+            local width = charData:getTextExtents()
 
             -- calculate how much "space" the character takes up on the line
             -- and determine the distance offset for the next character
-            local w, h = metrics.box_width, metrics.box_height  -- TODO: use horizontal metrics (.width) and make up some good vertical metrics
-            charOff = charOff + getLengthWithinBox(w, h, angle)
+            -- this currently only uses horizontal metrics so it breaks if you disable rotation animation
+            local w, h = width, width  
+            charOff = charOff + getLengthWithinBox(w, h, angle) 
 
+            __tpos = targetPos:copy()
             if res.aniPos then
-                targetPos:add(alignOffset[effTags.align:get()%3](w),0)
+                local an = effTags.align:get()
+                targetPos:add(alignOffset[an%3](w,angle), alignOffset[an%3](h,angle+90))
                 local pos = effTags.position
                 if res.relPos then
                     pos:add(targetPos:sub(posOff))
@@ -150,8 +139,8 @@ function process(sub,sel,res)
             charData:commit()
 
             -- debug logging
-            charData:insertSections(ASSLineCommentSection(string.format("BoxW: %d BoxH: %d Angle: %d charOffAfter: %d atLength: %d shape: %s",
-            metrics.box_width, metrics.box_height, angle, charOff, __atLength, metrics.shape)))
+            charData:insertSections(ASSLineCommentSection(string.format("Width: %d Angle: %d charOffAfter: %d atLength: %d posAtLength: (%d, %d)",
+            width, angle, charOff, __atLength, __tpos:get())))
             charData:commit()
             finalLines:addLine(charLines[i])
         end

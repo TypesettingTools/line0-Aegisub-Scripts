@@ -79,8 +79,13 @@ function process(sub,sel,res)
         totalDuration = totalDuration + line.duration
     end)
 
-    local startDist, path, posOff, angleOff, totalLength = 0
+    local startDist, metricsCache, path, posOff, angleOff, totalLength = 0, {}
     local finalLines = LineCollection(sub)
+    local alignOffset = {
+        [0] = function(w) return w end,    -- right
+        [1] = function() return 0 end,                       -- left
+        [2] = function(w) return w/2 end -- center
+    }
 
     lines:runCallback(function(lines, line, i)
         data = ASS.parse(line)
@@ -96,13 +101,44 @@ function process(sub,sel,res)
         for i=1,#charLines do
             local charData = charLines[i].ASS
             -- calculate new position and angle
+            local __atLength = startDist+charOff
             local targetPos, angle = path:getPositionAtLength(startDist+charOff), path:getAngleAtLength(startDist+charOff)
             if not targetPos then
                 break   -- stop if he have reached the end of the path
+            end
+
+            -- get tags effective as of the first section (we know there won't be any tags after that)
+            local effTags = charData.sections[1]:getEffectiveTags(true,true).tags
+
+            -- calculate final rotation first, because the metrics depend on it
+            local frz
+            if res.aniFrz then
+                frz = effTags.angle
+                if res.relFrz then
+                    frz:add(angle-angleOff)
+                else frz:set(angle) end
+                charData:removeTags("angle")
+                charData:insertTags(frz,1)
             end 
-            local effTags = charData:getEffectiveTags(-1,true,true).tags
+
+            -- get font metrics and cache them
+            local metricsCacheKey = table.concat({charData.sections[2].value, effTags.fontname:get(),effTags.fontsize:get(), effTags.bold:getTagParams(),
+                 effTags.italic:getTagParams(), effTags.underline:getTagParams(), effTags.strikeout:getTagParams(), effTags.fontsize:get(), 
+                 effTags.scale_x:get(), effTags.scale_y:get(), effTags.spacing:get(), res.aniFrz and math.round(frz:get(),0) or nil})
+
+            local metrics = metricsCache[metricsCacheKey]
+            if not metrics then
+                metrics = charData:getMetrics()
+                metricsCache[metricsCacheKey] = metrics
+            end
+
+            -- calculate how much "space" the character takes up on the line
+            -- and determine the distance offset for the next character
+            local w, h = metrics.box_width, metrics.box_height  -- TODO: use horizontal metrics (.width) and make up some good vertical metrics
+            charOff = charOff + getLengthWithinBox(w, h, angle)
 
             if res.aniPos then
+                targetPos:add(alignOffset[effTags.align:get()%3](w),0)
                 local pos = effTags.position
                 if res.relPos then
                     pos:add(targetPos:sub(posOff))
@@ -111,20 +147,11 @@ function process(sub,sel,res)
                 charData:insertTags(pos,1)
             end
 
-            if res.aniFrz then
-                local frz = effTags.angle
-                if res.relFrz then
-                    frz:add(angle-angleOff)
-                else frz:set(angle) end
-                charData:removeTags("angle")
-                charData:insertTags(frz,1)
-            end
+            charData:commit()
 
-            -- calculate how much "space" the character takes up on the line
-            -- and determine the distance offset for the next character
-            local metrics = charData:getMetrics()
-            charOff = charOff + getLengthWithinBox(metrics.width, metrics.box_height, angle)
-
+            -- debug logging
+            charData:insertSections(ASSLineCommentSection(string.format("BoxW: %d BoxH: %d Angle: %d charOffAfter: %d atLength: %d shape: %s",
+            metrics.box_width, metrics.box_height, angle, charOff, __atLength, metrics.shape)))
             charData:commit()
             finalLines:addLine(charLines[i])
         end

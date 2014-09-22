@@ -99,7 +99,6 @@ function process(sub,sel,res)
         for i=1,#charLines do
             local charData = charLines[i].ASS
             -- calculate new position and angle
-            local __atLength = startDist+charOff
             local targetPos, angle = path:getPositionAtLength(startDist+charOff), path:getAngleAtLength(startDist+charOff)
             
             if not targetPos then
@@ -124,7 +123,6 @@ function process(sub,sel,res)
             local w, h = width, width  
             charOff = charOff + getLengthWithinBox(w, h, angle) 
 
-            __tpos = targetPos:copy()
             if res.aniPos then
                 local an = effTags.align:get()
                 targetPos:add(alignOffset[an%3](w,angle), alignOffset[an%3](h,angle+90))
@@ -136,11 +134,6 @@ function process(sub,sel,res)
                 charData:insertTags(pos,1)
             end
 
-            charData:commit()
-
-            -- debug logging
-            charData:insertSections(ASSLineCommentSection(string.format("Width: %d Angle: %d charOffAfter: %d atLength: %d posAtLength: (%d, %d)",
-            width, angle, charOff, __atLength, __tpos:get())))
             charData:commit()
             finalLines:addLine(charLines[i])
         end

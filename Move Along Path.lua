@@ -40,6 +40,19 @@ function showDialog(sub, sel)
             class="checkbox",
             name="aniFrz", label="Animate Rotation",
             x=0, y=5, width=4, height=1, value=true
+        },
+        {
+            class="checkbox",
+            name="flipFrz", label="Rotate final lines by 180°",
+            x=4, y=5, width=4, height=1, value=false
+        },
+        {
+            class="label", label="Options:",
+            x=0, y=7, width=4, height=1, value=false
+        },
+        {
+            class="checkbox", name="reverseLine", label="Reverse Line Contents",
+            x=4, y=7, width=4, height=1, value=false
         }
     }
 
@@ -101,6 +114,8 @@ function process(sub,sel,res)
             totalLength = path:getLength()
         end
 
+        if res.reverseLine then data:reverse() end
+
         -- split line by characters
         local charLines, charOff = data:splitAtIntervals(1,4,false), 0
         for i=1,#charLines do
@@ -116,7 +131,7 @@ function process(sub,sel,res)
 
             -- calculate final rotation and write tags
             if res.aniFrz then
-                effTags.angle:set(angle)
+                effTags.angle:set((angle + (res.flipFrz and 180 or 0)%360))
                 charData:removeTags("angle")
                 charData:insertTags(effTags.angle,1)
             end 

@@ -96,7 +96,7 @@ function process(sub,sel,res)
         if i==1 then -- get path data and relative position/angle from first line
             path = data:getTags({"clip_vect","iclip_vect"})[1]
             assert(path,"Error: couldn't find \\clip containing path in first line, aborting.")
-            data:removeTags("clip_vect")
+            data:removeTags("clip_vect","iclip_vect")
             angleOff, posOff = path:getAngleAtLength(0), path.commands[1]:get()
             totalLength = path:getLength()
         end
@@ -150,8 +150,9 @@ function process(sub,sel,res)
         startDist = util.interpolate(time*framePct, 0, totalLength)
         aegisub.progress.set(i*100/lineCnt)
     end, true)
-    lines:deleteLines()
     finalLines:insertLines()
+    lines:deleteLines()
+
 end
 
 aegisub.register_macro(script_name, script_description, showDialog)

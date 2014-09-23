@@ -34,7 +34,7 @@ function showDialog(sub, sel)
         },
         {
             class="checkbox", name="cfrMode", label="CFR mode (ignores frame timings)",
-            x=4, y=3, width=4, height=1, value=false
+            x=4, y=3, width=4, height=1, value=true
         },
         {
             class="checkbox",

@@ -146,13 +146,12 @@ function process(sub,sel,res)
         end
 
         local framePct = res.cfrMode and 1 or lineCnt*line.duration/totalDuration
-        local time = ((i-1)^res.accel)/((lineCnt-1)^res.accel)
+        local time = (i^res.accel)/(lineCnt^res.accel)
         startDist = util.interpolate(time*framePct, 0, totalLength)
         aegisub.progress.set(i*100/lineCnt)
     end, true)
-    finalLines:insertLines()
     lines:deleteLines()
-
+    finalLines:insertLines()
 end
 
 aegisub.register_macro(script_name, script_description, showDialog)

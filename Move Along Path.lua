@@ -1,6 +1,6 @@
 script_name="Move Along Path"
-script_description=""
-script_version="0.0.1"
+script_description="Moves text along a path specified in a \\clip. Currently only works on fbf lines."
+script_version="0.1.0"
 script_author="line0"
 
 local l0Common = require("l0.Common")

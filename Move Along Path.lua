@@ -8,38 +8,38 @@ local LineCollection = require("a-mo.LineCollection")
 local ASSTags = require("l0.ASSTags")
 local Log = require("a-mo.Log")
 local YUtils = require("YUtils")
+local util = require("aegisub.util")
 
 function showDialog(sub, sel)
     local dlg = {
         {
-            class="label",
-            label="Select which tags are to be animated\nalong the path specified as a \\clip:",
-            x=0, y=0, width=2, height=1,
+            class="label", label="Select which tags are to be animated along the path specified as a \\clip:",
+            x=0, y=0, width=8, height=1,
         },
         {
-            class="label",
-            label="Tag                 ",
-            x=0, y=1, width=1, height=1,
+            class="checkbox", name="aniPos", label="Animate Position:",
+            x=0, y=1, width=4, height=1, value=true
         },
         {
-            class="label",
-            label="Relative",
-            x=1, y=1, width=1, height=1,
+            class="label", label="Acceleration:",
+            x=4, y=1, width=3, height=1,
+        },
+        {
+            class="floatedit", name="accel", 
+            x=7, y=1, width=1, height=1, value=1.0, step=0.1
+        },
+        {
+            class="checkbox", name="relPos", label="Offset existing position",
+            x=4, y=2, width=4, height=1, value=false
+        },
+        {
+            class="checkbox", name="cfrMode", label="CFR mode (ignores frame timings)",
+            x=4, y=3, width=4, height=1, value=false
         },
         {
             class="checkbox",
-            name="aniPos", label="\\pos",
-            x=0, y=2, width=1, height=1, value=true
-        },
-        {
-            class="checkbox",
-            name="relPos", label="",
-            x=1, y=2, width=1, height=1,
-        },
-        {
-            class="checkbox",
-            name="aniFrz", label="\\frz",
-            x=0, y=3, width=1, height=1, value=true
+            name="aniFrz", label="Animate Rotation",
+            x=0, y=5, width=4, height=1, value=true
         }
     }
 
@@ -75,20 +75,27 @@ function process(sub,sel,res)
     end)
 
     local startDist, metricsCache, path, posOff, angleOff, totalLength = 0, {}
-    local finalLines = LineCollection(sub)
+    local finalLines, lineCnt = LineCollection(sub), #lines.lines
     local alignOffset = {
         [0] = function(w,a) return math.cos(math.rad(a))*w end,    -- right
         [1] = function() return 0 end,                             -- left
         [2] = function(w,a) return math.cos(math.rad(a))*w/2 end,  -- center
-        [3] = function(w,a) return math.sin(math.rad(a))*w end,    -- bottom   -- actually, don't care about vertical alignment because text is rotated
-        [4] = function(w,a) return math.sin(math.rad(a))*w/2 end,  -- middle
-        [5] = function() return 0 end                              -- top
     }
+
+    -- currently unused because gets too few hits in test case scenearios
+    --[[
+    local posAtLengthCache = {}
+    function posAtLengthCache:insert(key, val)
+        self[key] = val
+        return val
+    end
+    ]]--
 
     lines:runCallback(function(lines, line, i)
         data = ASS.parse(line)
         if i==1 then -- get path data and relative position/angle from first line
-            path = data:getTags("clip_vect")[1]
+            path = data:getTags({"clip_vect","iclip_vect"})[1]
+            assert(path,"Error: couldn't find \\clip containing path in first line, aborting.")
             data:removeTags("clip_vect")
             angleOff, posOff = path:getAngleAtLength(0), path.commands[1]:get()
             totalLength = path:getLength()
@@ -97,12 +104,12 @@ function process(sub,sel,res)
         -- split line by characters
         local charLines, charOff = data:splitAtIntervals(1,4,false), 0
         for i=1,#charLines do
-            local charData = charLines[i].ASS
+            local charData, length = charLines[i].ASS, startDist+charOff
             -- calculate new position and angle
-            local targetPos, angle = path:getPositionAtLength(startDist+charOff), path:getAngleAtLength(startDist+charOff)
-            
+            local targetPos, angle = path:getPositionAtLength(length,true), path:getAngleAtLength(length,true)
+            -- stop processing this frame if he have reached the end of the path
             if not targetPos then
-                break   -- stop if he have reached the end of the path
+                break   
             end
             -- get tags effective as of the first section (we know there won't be any tags after that)
             local effTags = charData.sections[1]:getEffectiveTags(true,true).tags
@@ -137,8 +144,11 @@ function process(sub,sel,res)
             charData:commit()
             finalLines:addLine(charLines[i])
         end
-        startDist = startDist + (totalLength * (line.duration/totalDuration))
-        aegisub.progress.set(i*100/#lines.lines)
+
+        local framePct = res.cfrMode and 1 or lineCnt*line.duration/totalDuration
+        local time = ((i-1)^res.accel)/((lineCnt-1)^res.accel)
+        startDist = util.interpolate(time*framePct, 0, totalLength)
+        aegisub.progress.set(i*100/lineCnt)
     end, true)
     lines:deleteLines()
     finalLines:insertLines()

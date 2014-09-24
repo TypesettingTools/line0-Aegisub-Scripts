@@ -60,9 +60,9 @@ function showDialog(sub, sel)
     if btn then process(sub,sel,res) end
 end
 
-function getLengthWithinBox(w, h, angle)
+function getLengthWithinBox(w, h, angle)   -- currently unused because only horizontal metrics are being used
     angle = angle%180
-    angle =  math.rad(angle>90 and 180-angle or angle)
+    angle = math.rad(angle>90 and 180-angle or angle)
 
     if w==0 or h==0 then return 0
     elseif angle==0 then return w
@@ -137,17 +137,16 @@ function process(sub,sel,res)
             end 
 
             -- get font metrics
-            local width = charData:getTextExtents()
+            local w = charData:getTextExtents()
 
             -- calculate how much "space" the character takes up on the line
             -- and determine the distance offset for the next character
-            -- this currently only uses horizontal metrics so it breaks if you disable rotation animation
-            local w, h = width, width  
-            charOff = charOff + getLengthWithinBox(w, h, angle) 
+            -- this currently only uses horizontal metrics so it breaks if you disable rotation animation  
+            charOff = charOff + w
 
             if res.aniPos then
                 local an = effTags.align:get()
-                targetPos:add(alignOffset[an%3](w,angle), alignOffset[an%3](h,angle+90))
+                targetPos:add(alignOffset[an%3](w,angle), alignOffset[an%3](w,angle+90))
                 local pos = effTags.position
                 if res.relPos then
                     pos:add(targetPos:sub(posOff))

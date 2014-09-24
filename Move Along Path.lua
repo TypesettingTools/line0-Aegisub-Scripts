@@ -88,7 +88,7 @@ function process(sub,sel,res)
     end)
 
     local startDist, metricsCache, path, posOff, angleOff, totalLength = 0, {}
-    local finalLines, lineCnt = LineCollection(sub), #lines.lines
+    local finalLines, lineCnt, finalLineCnt = LineCollection(sub), #lines.lines, 0
     local alignOffset = {
         [0] = function(w,a) return math.cos(math.rad(a))*w end,    -- right
         [1] = function() return 0 end,                             -- left
@@ -155,6 +155,7 @@ function process(sub,sel,res)
             end
 
             charData:commit()
+            charLines[i].number, finalLineCnt = sel[#sel]+finalLineCnt, finalLineCnt+1
             finalLines:addLine(charLines[i])
         end
 
@@ -163,8 +164,8 @@ function process(sub,sel,res)
         startDist = util.interpolate(time*framePct, 0, totalLength)
         aegisub.progress.set(i*100/lineCnt)
     end, true)
-    lines:deleteLines()
     finalLines:insertLines()
+    lines:deleteLines()
 end
 
 aegisub.register_macro(script_name, script_description, showDialog)

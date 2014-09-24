@@ -120,8 +120,10 @@ function process(sub,sel,res)
         local charLines, charOff = data:splitAtIntervals(1,4,false), 0
         for i=1,#charLines do
             local charData, length = charLines[i].ASS, startDist+charOff
+            -- get font metrics
+            local w = charData:getTextExtents()
             -- calculate new position and angle
-            local targetPos, angle = path:getPositionAtLength(length,true), path:getAngleAtLength(length,true)
+            local targetPos, angle = path:getPositionAtLength(length,true), path:getAngleAtLength(length+w/2,true) or path:getAngleAtLength(length,true)
             -- stop processing this frame if he have reached the end of the path
             if not targetPos then
                 break   
@@ -135,9 +137,6 @@ function process(sub,sel,res)
                 charData:removeTags("angle")
                 charData:insertTags(effTags.angle,1)
             end 
-
-            -- get font metrics
-            local w = charData:getTextExtents()
 
             -- calculate how much "space" the character takes up on the line
             -- and determine the distance offset for the next character

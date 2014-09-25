@@ -107,7 +107,7 @@ function process(sub,sel,res)
     ]]--
 
     lines:runCallback(function(lines, line, i)
-        data = ASS.parse(line)
+        local data, orgText = ASS.parse(line), line.text
         if i==1 then -- get path data and relative position/angle from first line
             path = data:getTags({"clip_vect","iclip_vect"})[1]
             assert(path,"Error: couldn't find \\clip containing path in first line, aborting.")
@@ -162,7 +162,7 @@ function process(sub,sel,res)
             charLines[j]:setExtraData(script_namespace..".settings", res)
             charLines[j]:setExtraData(script_namespace..".id", id)
             if j==1 then 
-                charLines[1]:setExtraData(script_namespace..".orgLine", line.text)
+                charLines[1]:setExtraData(script_namespace..".orgLine", orgText)
             end
             finalLines:addLine(charLines[j])
         end

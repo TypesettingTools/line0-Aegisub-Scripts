@@ -2,9 +2,11 @@ script_name="Move Along Path"
 script_description="Moves text along a path specified in a \\clip. Currently only works on fbf lines."
 script_version="0.1.0"
 script_author="line0"
+script_namespace="l0.MoveAlongPath"
 
 local l0Common = require("l0.Common")
 local LineCollection = require("a-mo.LineCollection")
+local Line = require("a-mo.Line")
 local ASSTags = require("l0.ASSTags")
 local Log = require("a-mo.Log")
 local YUtils = require("YUtils")
@@ -79,7 +81,7 @@ end
 function process(sub,sel,res)
     aegisub.progress.task("Processing...")
 
-    local lines = LineCollection(sub,sel)
+    local lines, id = LineCollection(sub,sel), util.uuid()
 
     -- get total duration of the fbf lines
     local totalDuration = -lines.lines[1].duration
@@ -118,8 +120,8 @@ function process(sub,sel,res)
 
         -- split line by characters
         local charLines, charOff = data:splitAtIntervals(1,4,false), 0
-        for i=1,#charLines do
-            local charData, length = charLines[i].ASS, startDist+charOff
+        for j=1,#charLines do
+            local charData, length = charLines[j].ASS, startDist+charOff
             -- get font metrics
             local w = charData:getTextExtents()
             -- calculate new position and angle
@@ -155,8 +157,14 @@ function process(sub,sel,res)
             end
 
             charData:commit()
-            charLines[i].number, finalLineCnt = sel[#sel]+finalLineCnt, finalLineCnt+1
-            finalLines:addLine(charLines[i])
+            charLines[j].number, finalLineCnt = sel[#sel]+finalLineCnt, finalLineCnt+1
+            charLines[j].extra = {}
+            charLines[j]:setExtraData(script_namespace..".settings", res)
+            charLines[j]:setExtraData(script_namespace..".id", id)
+            if j==1 then 
+                charLines[1]:setExtraData(script_namespace..".orgLine", line.text)
+            end
+            finalLines:addLine(charLines[j])
         end
 
         local framePct = res.cfrMode and 1 or lineCnt*line.duration/totalDuration
@@ -168,6 +176,45 @@ function process(sub,sel,res)
     lines:deleteLines()
 end
 
-aegisub.register_macro(script_name, script_description, showDialog)
+function hasClip(sub, sel, active)
+    local firstLine = Line(sub[sel[1]])
+    local data = ASS.parse(firstLine)
+    if #data:getTags({"clip_vect","iclip_vect"}) <1 then
+        return false, "No \\clip or \\iclip containing the path found in first line of the selection."
+    else return true end
+end
+
+function hasUndoData(sub, sel, active)
+    for i=1,#sel do
+        if sub[sel[i]].extra and sub[sel[i]].extra[script_namespace..".id"] then
+            return true
+        end
+    end
+    return false
+end
+
+function undo(sub, sel)
+    local ids, toDelete, j = {}, {}, 1
+    for i=1,#sel do
+        ids[sub[sel[i]].extra and sub[sel[i]].extra[script_namespace..".id"]] = true
+    end
+    sel = {}
+    for i=1,#sub do
+        if sub[i].extra and ids[sub[i].extra[script_namespace..".id"]] then
+            if sub[i].extra[script_namespace..".orgLine"] then 
+                sel[j], j = i, j+1
+            else toDelete[#toDelete+1]=i end
+        end
+    end
+    local lines = LineCollection(sub,sel)
+    lines:runCallback(function(lines,line,i)
+        line.text = line:getExtraData(script_namespace..".orgLine")
+    end)
+    lines:replaceLines()
+    sub.delete(toDelete)
+end
+
+aegisub.register_macro(script_name.."/"..script_name, script_description, showDialog, hasClip)
+aegisub.register_macro(script_name.."/Undo", script_description, undo, hasUndoData)
     
     

@@ -158,12 +158,8 @@ function process(sub,sel,res)
 
             charData:commit()
             charLines[j].number, finalLineCnt = sel[#sel]+finalLineCnt, finalLineCnt+1
-            charLines[j].extra = {}
-            charLines[j]:setExtraData(script_namespace..".settings", res)
-            charLines[j]:setExtraData(script_namespace..".id", id)
-            if j==1 then 
-                charLines[1]:setExtraData(script_namespace..".orgLine", orgText)
-            end
+            local extra = {settings = res, id = id, orgLine = j==1 and orgText or nil}
+            charLines[j]:setExtraData(script_namespace, extra)
             finalLines:addLine(charLines[j])
         end
 
@@ -186,7 +182,7 @@ end
 
 function hasUndoData(sub, sel, active)
     for i=1,#sel do
-        if sub[sel[i]].extra and sub[sel[i]].extra[script_namespace..".id"] then
+        if sub[sel[i]].extra and sub[sel[i]].extra[script_namespace] then
             return true
         end
     end
@@ -196,19 +192,22 @@ end
 function undo(sub, sel)
     local ids, toDelete, j = {}, {}, 1
     for i=1,#sel do
-        ids[sub[sel[i]].extra and sub[sel[i]].extra[script_namespace..".id"]] = true
+        local extra = sub[sel[i]].extra and json.decode(sub[sel[i]].extra[script_namespace])
+        ids[extra and extra.id] = true
     end
     sel = {}
     for i=1,#sub do
-        if sub[i].extra and ids[sub[i].extra[script_namespace..".id"]] then
-            if sub[i].extra[script_namespace..".orgLine"] then 
+        local extra = sub[i].extra and json.decode(sub[i].extra[script_namespace] or "")
+        if extra and ids[extra.id] then
+            if extra.orgLine then 
                 sel[j], j = i, j+1
             else toDelete[#toDelete+1]=i end
         end
     end
     local lines = LineCollection(sub,sel)
     lines:runCallback(function(lines,line,i)
-        line.text = line:getExtraData(script_namespace..".orgLine")
+        line.text = line:getExtraData(script_namespace).orgLine
+        line.extra[script_namespace]=nil
     end)
     lines:replaceLines()
     sub.delete(toDelete)

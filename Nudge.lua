@@ -150,8 +150,8 @@ local Configuration = {
     default = {__version=script_version ,nudgers = {
         {operation="Add", value={1,0}, id="d0dad24e-515e-40ab-a120-7b8d24ecbad0", name="Position Right (+1)", tag="position"},
         {operation="Add", value={-1,0}, id="0c6ff644-ef9c-405a-bb12-032694d432c0", name="Position Left (-1)", tag="position"},
-        {operation="Add", value={0,1}, id="cb2ec6c1-a8c1-48b8-8a13-cafadf55ffdd", name="Position Up (+1)", tag="position"},
-        {operation="Add", value={0,-1}, id="cb9c1a5b-6910-4fb2-b457-a9c72a392d90", name="Position Down (-1)", tag="position"},
+        {operation="Add", value={0,-1}, id="cb2ec6c1-a8c1-48b8-8a13-cafadf55ffdd", name="Position Up (-1)", tag="position"},
+        {operation="Add", value={0,+1}, id="cb9c1a5b-6910-4fb2-b457-a9c72a392d90", name="Position Down (+1)", tag="position"},
         {operation="Cycle", value={{0.6},{0.8},{1},{1.2},{1.5},{2},{3},{4},{5},{8}}, id="c900ef51-88dd-413d-8380-cebb7a59c793", name="Cycle Blur", tag="blur"},
         {operation="Cycle", value={{255},{0},{16},{48},{96},{128},{160},{192},{224}}, id="d338cbca-1575-4795-9b80-3680130cce62", name="Cycle Alpha", tag="alpha"},
         {operation="Toggle", value={}, id="974c3af9-ef51-45f5-a992-4850cb006743", name="Toggle Bold", tag="bold"},

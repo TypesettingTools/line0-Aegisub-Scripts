@@ -107,6 +107,10 @@ function process(sub,sel,res)
     ]]--
 
     lines:runCallback(function(lines, line, i)
+        if aegisub.progress.is_cancelled() then
+            aegisub.cancel()
+        end
+
         local data, orgText = ASS.parse(line), line.text
         if i==1 then -- get path data and relative position/angle from first line
             path = data:getTags({"clip_vect","iclip_vect"})[1]

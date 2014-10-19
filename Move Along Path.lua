@@ -135,13 +135,12 @@ function process(sub,sel,res)
                 break   
             end
             -- get tags effective as of the first section (we know there won't be any tags after that)
-            local effTags = charData.sections[1]:getEffectiveTags(true,true).tags
+            local effTags = charData.sections[1]:getEffectiveTags(true,true,false).tags
 
             -- calculate final rotation and write tags
             if res.aniFrz then
-                effTags.angle:set((angle + (res.flipFrz and 180 or 0)%360))
                 charData:removeTags("angle")
-                charData:insertTags(effTags.angle,1)
+                charData:insertTags(ASS:createTag("angle",(angle + (res.flipFrz and 180 or 0))%360),1)
             end 
 
             -- calculate how much "space" the character takes up on the line
@@ -152,12 +151,12 @@ function process(sub,sel,res)
             if res.aniPos then
                 local an = effTags.align:get()
                 targetPos:add(alignOffset[an%3](w,angle), alignOffset[an%3](w,angle+90))
-                local pos = effTags.position
                 if res.relPos then
-                    pos:add(targetPos:sub(posOff))
-                else pos:set(targetPos) end
+                    targetPos:sub(posOff)
+                    targetPos:add(effTags.position)
+                end
                 charData:removeTags("position")
-                charData:insertTags(pos,1)
+                charData:insertTags(targetPos,1)
             end
 
             charData:commit()

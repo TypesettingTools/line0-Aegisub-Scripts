@@ -140,7 +140,8 @@ function process(sub,sel,res)
             -- calculate final rotation and write tags
             if res.aniFrz then
                 charData:removeTags("angle")
-                charData:insertTags(ASS:createTag("angle",(angle + (res.flipFrz and 180 or 0))%360),1)
+                if res.flipFrz then angle:add(180) end
+                charData:insertTags(angle,1)
             end 
 
             -- calculate how much "space" the character takes up on the line
@@ -150,7 +151,7 @@ function process(sub,sel,res)
 
             if res.aniPos then
                 local an = effTags.align:get()
-                targetPos:add(alignOffset[an%3](w,angle), alignOffset[an%3](w,angle+90))
+                targetPos:add(alignOffset[an%3](w,angle.value), alignOffset[an%3](w,angle.value+90))
                 if res.relPos then
                     targetPos:sub(posOff)
                     targetPos:add(effTags.position)
@@ -160,10 +161,12 @@ function process(sub,sel,res)
             end
 
             charData:commit()
-            charLines[j].number, finalLineCnt = sel[#sel]+finalLineCnt, finalLineCnt+1
-            local extra = {settings = res, id = id, orgLine = j==1 and orgText or nil}
-            charLines[j]:setExtraData(script_namespace, extra)
-            finalLines:addLine(charLines[j])
+            if charData:getLineBounds(true).w ~= 0 then
+                charLines[j].number, finalLineCnt = sel[#sel]+finalLineCnt, finalLineCnt+1
+                local extra = {settings = res, id = id, orgLine = j==1 and orgText or nil}
+                charLines[j]:setExtraData(script_namespace, extra)
+                finalLines:addLine(charLines[j])
+            end
         end
 
         local framePct = res.cfrMode and 1 or lineCnt*line.duration/totalDuration

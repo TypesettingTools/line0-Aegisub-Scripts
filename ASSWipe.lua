@@ -53,15 +53,17 @@ end
 function process(sub, sel, res) 
     local lines, linesToDelete, delCnt = LineCollection(sub,sel), {}, 0
     local debugError, lineCnt = false, #lines.lines
-    local tagNames = table.insert(res.filterClips and ASS.tagTypes.clips or {},
+    local tagNames = table.insert(res.filterClips and ASS.tagNames.clips or {},
                                   res.removeJunk and "junk")
     local stats = {bytes=0, junk=0, clips=0, start=os.time(), cleaned=0}
-
-    aegisub.progress.task(string.format("Cleaning %d lines...", lineCnt))
 
     lines:runCallback(function(lines, line, i)
         if aegisub.progress.is_cancelled() then
             aegisub.cancel()
+        end
+
+        if i%10==0 then
+            aegisub.progress.task(string.format("Cleaning %d of %d lines...", i, lineCnt))
         end
 
         local data, oldText = ASS.parse(line), line.text

@@ -179,6 +179,7 @@ local Configuration = {
          noDefault=true, targetName="Matched Tag", targetValue="1"},
         {operation="Remove", value={}, id="4dfc33fd-3090-498b-8922-7e1eb4515257", name="Remove Comments & Junk", tag="Comments/Junk", noDefault=true},
         {operation="Remove", value={}, id="bc642b90-8ebf-45e8-a160-98b4658721bd", name="Strip Tags", tag="Any Tag", noDefault=true},
+        {operation="Convert To Drawing", value={false}, id="9cf44e64-9ce9-402e-8097-9e189014c9c1", name="Clips -> Drawing", tag="Clips", noDefault=true},
     }}
 }
 Configuration.__index = Configuration

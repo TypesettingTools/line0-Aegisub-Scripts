@@ -14,12 +14,12 @@ local Log = require("a-mo.Log")
 
 local cmnOps = {"Add", "Multiply", "Power", "Cycle", "Set", "Set Default", "Remove"}
 local colorOps, stringOps = table.join(cmnOps, {"Add HSV"}),  {"Append", "Prepend", "Replace", "Cycle", "Set", "Set Default", "Remove"}
-local clipOpsVect = {"Add", "Multiply", "Power", "Set Default", "Invert Clip", "Remove"}
-local clipOptsRect = table.join(cmnOps,{"Invert Clip"})
+local clipOpsVect = {"Add", "Multiply", "Power", "Set Default", "Invert Clip", "Remove", "Convert To Drawing"}
+local clipOptsRect = table.join(cmnOps,{"Invert Clip", "Convert To Drawing"})
 local Nudger = {
     opList = {Add="add", Multiply="mul", Power="pow", Set="set", ["Align Up"]="up", ["Align Down"]="down", ["Align Left"]="left", ["Align Right"]="right", 
               Toggle="toggle", ["Auto Cycle"]="cycle", Cycle=false, ["Set Default"]=false, ["Add HSV"]="addHSV", Replace="replace", Append="append", Prepend="prepend",
-              ["Invert Clip"]="toggleInverse", Remove = false},
+              ["Invert Clip"]="toggleInverse", Remove = false, ["Convert To Drawing"]=false},
     supportedOps = {
         position=cmnOps, blur_edges=cmnOps, scale_x=cmnOps, scale_y=cmnOps, 
         align={"Align Up", "Align Down", "Align Left", "Align Right", "Auto Cycle", "Set", "Set Default", "Cycle"},
@@ -85,10 +85,11 @@ function Nudger:nudge(sub, sel)
 
     lines:runCallback(function(lines, line)
         local lineData = ASS.parse(line)
-        local numFound = #lineData:getTags(tags, tagSect, tagSect, relative)
+        local foundTags = lineData:getTags(tags, tagSect, tagSect, relative)
+        local foundCnt = #foundTags
 
         -- insert default tags if no matching tags are present
-        if numFound==0 and not self.noDefault and not relative and self.operation~="Remove" then
+        if foundCnt==0 and not self.noDefault and not relative and self.operation~="Remove" then
             lineData:insertDefaultTags(tags, tagSect)
         end
 
@@ -109,7 +110,7 @@ function Nudger:nudge(sub, sel)
                 tag:set(unpack(self.value[ed[self.id]]))
             end, tagSect, tagSect, relative)
 
-        elseif self.operation=="Set Default" and numFound>0 then
+        elseif self.operation=="Set Default" and foundCnt>0 then
             local defaults = lineData:getStyleDefaultTags()
             lineData:modTags(tags, function(tag)
                 tag:set(defaults.tags[tag.__tag.name]:get())
@@ -127,6 +128,16 @@ function Nudger:nudge(sub, sel)
                 lineData:removeTags(nil, tagSect, tagSect, relative)
             else lineData:removeTags(tags, tagSect, tagSect, relative) end
             lineData:cleanTags(1,false)
+
+        elseif self.operation=="Convert To Drawing" then
+            local drawing, pos
+            lineData:modTags(tags, function(tag)
+                drawing, pos = tag:getDrawing(true)
+                return self.value[1]==true
+            end, tagSect, tagSect, relative)
+
+            lineData:insertSections(drawing)
+            lineData:replaceTags(pos)
         end
 
         lineData:commit()

@@ -17,6 +17,7 @@ Requirements
 - Aegisub 3.2.0+
 - [Aegisub-Motion](https://github.com/torque/Aegisub-Motion) 1.0.0+
 - [LuaJSON](https://github.com/harningt/luajson) (shipped with Aegisub-Motion)
+- [Yutils](https://github.com/Youka/Yutils)
 - Includes from this repo: LineExtend, ASSTags, Common
 
 Release Packages ship everything but Aegisub-Motion.
@@ -71,6 +72,7 @@ Operations
  - **Append/Prepend:**: appends/prepends the specified string to string type tags (*\fs*, *\r*)
  - **Replace**: replaces in string type tags using regular expressions **(NOT lua expressions)**. First value is the string or pattern to match,  second value the replacement string.
  - **Invert Clip**: Changes *\clip* to *\iclip* and vice versa
+ - **Convert To Drawing**: Converts clips to drawings. Set the *value* to *true* to keep the clips.
  
 Supported Operations by Tag
 ---------------------------
@@ -137,6 +139,67 @@ Fades       |       ✔       |  ✔  |  ✔  |   ✔  |       |        |     | 
 Prim. Color |       ✔       |  ✔  |  ✔  |   ✔  |       |        |  ✔  |       |                |        |
 
 
+
+Tag        | ConvToDrawing |     |     |      |       |        |     |       |                |        |
+-----------|---------------|-----|-----|------|-------|--------|-----|-------|----------------|---------
+\1a         |               |     |     |      |       |        |     |       |                |        |
+\2a         |               |     |     |      |       |        |     |       |                |        |
+\3a         |               |     |     |      |       |        |     |       |                |        |
+\4a         |               |     |     |      |       |        |     |       |                |        |
+\1c         |               |     |     |      |       |        |     |       |                |        |
+\2c         |               |     |     |      |       |        |     |       |                |        |
+\3c         |               |     |     |      |       |        |     |       |                |        |
+\4c         |               |     |     |      |       |        |     |       |                |        |
+\alpha      |               |     |     |      |       |        |     |       |                |        |
+\an         |               |     |     |      |       |        |     |       |                |        |
+\b          |               |     |     |      |       |        |     |       |                |        |
+\be         |               |     |     |      |       |        |     |       |                |        |
+\blur       |               |     |     |      |       |        |     |       |                |        |
+\bord       |               |     |     |      |       |        |     |       |                |        |
+\c          |               |     |     |      |       |        |     |       |                |        |
+\clip       |       ✔       |     |     |      |       |        |     |       |                |        |
+\clip(Vect) |       ✔       |     |     |      |       |        |     |       |                |        |
+\clip(Rect) |       ✔       |     |     |      |       |        |     |       |                |        |
+\fad        |               |     |     |      |       |        |     |       |                |        |
+\fade       |               |     |     |      |       |        |     |       |                |        |
+\fax        |               |     |     |      |       |        |     |       |                |        |
+\fay        |               |     |     |      |       |        |     |       |                |        |
+\fe         |               |     |     |      |       |        |     |       |                |        |
+\fn         |               |     |     |      |       |        |     |       |                |        |
+\frx        |               |     |     |      |       |        |     |       |                |        |
+\fry        |               |     |     |      |       |        |     |       |                |        |
+\frz        |               |     |     |      |       |        |     |       |                |        |
+\fs         |               |     |     |      |       |        |     |       |                |        |
+\fscx       |               |     |     |      |       |        |     |       |                |        |
+\fscy       |               |     |     |      |       |        |     |       |                |        |
+\fsp        |               |     |     |      |       |        |     |       |                |        |
+\k          |               |     |     |      |       |        |     |       |                |        |
+\K          |               |     |     |      |       |        |     |       |                |        |
+\kf         |               |     |     |      |       |        |     |       |                |        |
+\ko         |               |     |     |      |       |        |     |       |                |        |
+\i          |               |     |     |      |       |        |     |       |                |        |
+\iclip      |       ✔       |     |     |      |       |        |     |       |                |        |
+\iclip(Vect)|       ✔       |     |     |      |       |        |     |       |                |        |
+\iclip(Rect)|       ✔       |     |     |      |       |        |     |       |                |        |
+\move       |               |     |     |      |       |        |     |       |                |        |
+\org        |               |     |     |      |       |        |     |       |                |        |
+\pos        |               |     |     |      |       |        |     |       |                |        |
+\q          |               |     |     |      |       |        |     |       |                |        |
+\r          |               |     |     |      |       |        |     |       |                |        |
+\t          |               |     |     |      |       |        |     |       |                |        |
+\u          |               |     |     |      |       |        |     |       |                |        |
+\xbord      |               |     |     |      |       |        |     |       |                |        |
+\ybord      |               |     |     |      |       |        |     |       |                |        |
+\xshad      |               |     |     |      |       |        |     |       |                |        |
+\yshad      |               |     |     |      |       |        |     |       |                |        |
+            |               |     |     |      |       |        |     |       |                |        |
+Alphas      |               |     |     |      |       |        |     |       |                |        |
+Clips       |       ✔       |     |     |      |       |        |     |       |                |        |
+Clips (Vect)|       ✔       |     |     |      |       |        |     |       |                |        |
+Clips (Rect)|       ✔       |     |     |      |       |        |     |       |                |        |
+Colors      |               |     |     |      |       |        |     |       |                |        |
+Fades       |               |     |     |      |       |        |     |       |                |        |
+Prim. Color |               |     |     |      |       |        |     |       |                |        |
 
 -------------------------------
 

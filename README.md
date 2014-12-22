@@ -72,7 +72,7 @@ Operations
  - **Append/Prepend:**: appends/prepends the specified string to string type tags (*\fs*, *\r*)
  - **Replace**: replaces in string type tags using regular expressions **(NOT lua expressions)**. First value is the string or pattern to match,  second value the replacement string.
  - **Invert Clip**: Changes *\clip* to *\iclip* and vice versa
- - **Convert To Drawing**: Converts clips to drawings. Set the *value* to *true* to keep the clips.
+ - **Convert To Drawing**: Converts clips to drawings. Set the *first value* to *true* to keep the clips and the *second value* to *true* to keep the previous position.
  
 Supported Operations by Tag
 ---------------------------

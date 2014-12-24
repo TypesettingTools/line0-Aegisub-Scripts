@@ -7,6 +7,7 @@ local LineCollection = require("a-mo.LineCollection")
 local ASSTags = require("l0.ASSTags")
 local Log = require("a-mo.Log")
 local ConfigHandler = require("a-mo.ConfigHandler")
+local ASSInspector = require("ASSInspector.Inspector")
 
 local reportMsg = [[
 Done. Processed %d lines in %d seconds.
@@ -50,7 +51,8 @@ function showDialog(sub, sel, res)
     end
 end
 
-function process(sub, sel, res) 
+function process(sub, sel, res)
+    local assi = ASSInspector(sub)
     local lines, linesToDelete, delCnt = LineCollection(sub,sel), {}, 0
     local debugError, lineCnt = false, #lines.lines
     local tagNames = table.insert(res.filterClips and ASS.tagNames.clips or {},
@@ -67,7 +69,7 @@ function process(sub, sel, res)
         end
 
         local data, oldText = ASS.parse(line), line.text
-        local oldBounds = data:getLineBounds(false)
+        local oldBounds = data:getLineBounds(assi, false)
 
         if res.removeInvisible and oldBounds.w == 0 then
             -- remove invisible lines
@@ -76,19 +78,19 @@ function process(sub, sel, res)
         else
             -- clean tags
             data:cleanTags(res.cleanLevel)
-            local newBounds = data:getLineBounds()
+            local newBounds = data:getLineBounds(assi)
 
             if res.filterClips or res.removeJunk then
                 data:modTags(tagNames, function(tag)
                     -- remove junk
-                    if tag.instanceOf[ASSUnknown] then 
+                    if tag.instanceOf[ASSUnknown] then
                         stats.junk = stats.junk + 1
                         return false
                     end
 
                     -- filter clips
                     tag.disabled = true
-                    if data:getLineBounds():equal(newBounds) then 
+                    if data:getLineBounds(assi):equal(newBounds) then
                         stats.clips = stats.clips + 1
                         return false
                     else tag.disabled = false end
@@ -96,15 +98,15 @@ function process(sub, sel, res)
             end
 
             data:commit()
-            
+
             if oldText~=line.text then
                 if not newBounds:equal(oldBounds) then
                     debugError = true
                     Log.warn("Cleaning affected output on line #%d, rolling back...", line.humanizedNumber)
                     Log.warn("—— Before: %s\n—— After: %s\n—— Style: %s\n", oldText, line.text, line.styleRef.name)
                     line.text = oldText
-                else 
-                    stats.cleaned, stats.bytes = stats.cleaned+1, stats.bytes + #oldText - #line.text 
+                else
+                    stats.cleaned, stats.bytes = stats.cleaned+1, stats.bytes + #oldText - #line.text
                 end
                 aegisub.progress.set(100*i/lineCnt)
             end

@@ -7,6 +7,7 @@ local LineCollection = require("a-mo.LineCollection")
 local ASSTags = require("l0.ASSTags")
 local Log = require("a-mo.Log")
 local ConfigHandler = require("a-mo.ConfigHandler")
+local l0Common = require("l0.Common")
 
 local reportMsg = [[
 Done. Processed %d lines in %d seconds.
@@ -23,23 +24,32 @@ local cleanLevelHint = [[
 3: deduplicate tags globally,
 4: remove tags matching the style defaults and otherwise ineffective tags]]
 
+local defaultSortOrder = [[
+\an, \pos, \move, \org, \fscx, \fscy, \frz, \fry, \frx, \fax, \fay, \fn, \fs, \fsp, \b, \i, \u, \s, \bord, \xbord, \ybord, 
+\shad, \xshad, \yshad, \1c, \2c, \3c, \4c, \alpha, \1a, \2a, \3a, \4a, \blur, \be, \fad, \fade, clip_rect, iclip_rect, 
+clip_vect, iclip_vect, \q, \p, \k, \kf, \K, \ko, junk, unknown
+]]
+
 function showDialog(sub, sel, res)
     local dlg = {
         main = {
-            cleanLevelLabel =  { class="label",    x=0, y=0, width=1, height=1, label="Tag cleanup level: "},
-            cleanLevel =       { class="intedit",  x=1, y=0, width=1, height=1, min=0, max=4, value=4, config=true,
-                                hint=cleanLevelHint },
-            tagsToKeepLabel =  { class="label",    x=4, y=0, width=1, height=1, label="Keep default tags: "},
-            tagsToKeep =       { class="textbox",  x=4, y=1, width=10, height=4, value="\\pos", config=true,
-                                 hint="Don't remove these tags even if they match the style defaults for the line."},
---          reorderGlobal =    { class="checkbox", x=0, y=1, width=2, height=1, value=true, config=true, label="Reorder global tags",
---                               hint="Moves global tags such as \\pos and \\fad to the front.", name="reorderGlobal" },
-            filterClips =      { class="checkbox", x=0, y=1, width=2, height=1, value=true, config=true, label="Filter clips",
-                                 hint="Removes clips that don't affect the rendered output." },
-            removeInvisible =  { class="checkbox", x=0, y=2, width=2, height=1, value=true, config=true, label="Remove invisible lines",
-                                 hint="Deletes lines that don't generate any visible output." },
-            removeJunk =       { class="checkbox", x=0, y=3, width=2, height=1, value=true, config=true, label="Remove junk from tag sections",
-                                 hint="Removes any 'in-line comments' and things not starting with a \\ from tag sections." }
+            cleanLevelLabel =   { class="label",    x=0, y=0, width=1, height=1, label="Tag cleanup level: "},
+            cleanLevel =        { class="intedit",  x=1, y=0, width=1, height=1, min=0, max=4, value=4, config=true,
+                                 hint=cleanLevelHint },
+            tagsToKeepLabel =   { class="label",    x=4, y=0, width=1, height=1, label="Keep default tags: "},
+            tagsToKeep =        { class="textbox",  x=4, y=1, width=10, height=2, value="\\pos", config=true,
+                                  hint="Don't remove these tags even if they match the style defaults for the line."},
+--          reorderGlobal =     { class="checkbox", x=0, y=1, width=2, height=1, value=true, config=true, label="Reorder global tags",
+--                                hint="Moves global tags such as \\pos and \\fad to the front.", name="reorderGlobal" },
+            filterClips =       { class="checkbox", x=0, y=1, width=2, height=1, value=true, config=true, label="Filter clips",
+                                  hint="Removes clips that don't affect the rendered output." },
+            removeInvisible =   { class="checkbox", x=0, y=2, width=2, height=1, value=true, config=true, label="Remove invisible lines",
+                                  hint="Deletes lines that don't generate any visible output." },
+            removeJunk =        { class="checkbox", x=0, y=3, width=2, height=1, value=true, config=true, label="Remove junk from tag sections",
+                                  hint="Removes any 'in-line comments' and things not starting with a \\ from tag sections." },
+            tagSortOrderLabel = { class="label",   x=4, y=3, width=1, height=1, label="Tag sort order: "},
+            tagSortOrder =      { class="textbox", x=4, y=4, width=10, height=3, value=defaultSortOrder, config=true, 
+                                  hint="Determines the order cleaned tags will be ordered inside a tag section. Resets always go first, transforms last."}
         }
     }
     local options = ConfigHandler(dlg, "ASSWipe.json", false, script_version)
@@ -60,12 +70,9 @@ function process(sub, sel, res)
                                   res.removeJunk and "junk")
     local stats = {bytes=0, junk=0, clips=0, start=os.time(), cleaned=0}
     
-    -- create a proper tag name list from user input which may be override tag names or mixed
-    local tagsToKeep = {}
-    for name in res.tagsToKeep:gmatch("[^,%s]+") do
-        tagsToKeep[#tagsToKeep+1] = name
-    end
-    tagsToKeep = ASS:getTagNames(tagsToKeep)
+    -- create proper tag name lists from user input which may be override tag names or mixed
+    res.tagsToKeep, res.tagSortOrder = ASS:getTagNames(res.tagsToKeep:split(",%s")), 
+                                       ASS:getTagNames(res.tagSortOrder:split(",%s"))
 
     lines:runCallback(function(lines, line, i)
         if aegisub.progress.is_cancelled() then
@@ -85,7 +92,7 @@ function process(sub, sel, res)
             stats.bytes = stats.bytes + #line.raw + 1
         else
             -- clean tags
-            data:cleanTags(res.cleanLevel, true, tagsToKeep)
+            data:cleanTags(res.cleanLevel, true, res.tagsToKeep, res.tagSortOrder)
             local newBounds = data:getLineBounds()
 
             if res.filterClips or res.removeJunk then

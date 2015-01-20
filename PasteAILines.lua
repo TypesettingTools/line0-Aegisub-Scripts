@@ -27,9 +27,9 @@ local dlg = {
         offsetModeLabel =   { class="label",    x=1, y=8,  width=1, height=1,
                               label="Mode: "                                                          },
         offsetMode =        { class="dropdown", x=2, y=8,  width=1, height=1, value="auto", config=true,
-                              items={"auto","value"}                                                  },
+                              items={"auto","offset", "unique"}                                       },
         offsetValueLabel =  { class="label",    x=1, y=9,  width=1, height=1,
-                              label="Value: "                                                         },
+                              label="Offset: "                                                         },
         offsetValue =       { class="intedit",  x=2, y=9,  width=1, height=1, value=0,      config=true},
         setStyle =          { class="checkbox", x=0, y=10, width=2, height=1, value=false,  config=true,
                               label="Set Style"                                                       },
@@ -69,7 +69,8 @@ function pasteAILines(sub,sel,res)
     if res.copyTimes or res.offsetLayers then
         lines:runCallback(function(_, line)
             endTime, startTime = math.max(endTime, line.end_time), math.min(startTime or line.start_time, line.start_time)
-            if res.offsetMode=="auto" then maxLayer = math.max(maxLayer, line.layer) end
+            if res.offsetMode=="auto" or res.offsetMode=="unique" then
+                maxLayer = math.max(maxLayer, line.layer) end
         end, true)
     end
 
@@ -84,7 +85,7 @@ function pasteAILines(sub,sel,res)
                                       end_time=res.copyTimes and endTime or 0}
 
         if res.offsetLayers then
-            aiLine.layer = aiLine.layer + res.offsetValue + maxLayer
+            aiLine.layer = (res.offsetMode=="unique" and lineCnt-i+1 or aiLine.layer) + res.offsetValue + maxLayer
         end
 
         -- trim drawings by moving the top left coordinate of the bounding box to the drawing origin

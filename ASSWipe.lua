@@ -25,8 +25,8 @@ local cleanLevelHint = [[
 4: remove tags matching the style defaults and otherwise ineffective tags]]
 
 local defaultSortOrder = [[
-\an, \pos, \move, \org, \fscx, \fscy, \frz, \fry, \frx, \fax, \fay, \fn, \fs, \fsp, \b, \i, \u, \s, \bord, \xbord, \ybord, 
-\shad, \xshad, \yshad, \1c, \2c, \3c, \4c, \alpha, \1a, \2a, \3a, \4a, \blur, \be, \fad, \fade, clip_rect, iclip_rect, 
+\an, \pos, \move, \org, \fscx, \fscy, \frz, \fry, \frx, \fax, \fay, \fn, \fs, \fsp, \b, \i, \u, \s, \bord, \xbord, \ybord,
+\shad, \xshad, \yshad, \1c, \2c, \3c, \4c, \alpha, \1a, \2a, \3a, \4a, \blur, \be, \fad, \fade, clip_rect, iclip_rect,
 clip_vect, iclip_vect, \q, \p, \k, \kf, \K, \ko, junk, unknown
 ]]
 
@@ -48,7 +48,7 @@ function showDialog(sub, sel, res)
             removeJunk =        { class="checkbox", x=0, y=3, width=2, height=1, value=true, config=true, label="Remove junk from tag sections",
                                   hint="Removes any 'in-line comments' and things not starting with a \\ from tag sections." },
             tagSortOrderLabel = { class="label",   x=4, y=3, width=1, height=1, label="Tag sort order: "},
-            tagSortOrder =      { class="textbox", x=4, y=4, width=10, height=3, value=defaultSortOrder, config=true, 
+            tagSortOrder =      { class="textbox", x=4, y=4, width=10, height=3, value=defaultSortOrder, config=true,
                                   hint="Determines the order cleaned tags will be ordered inside a tag section. Resets always go first, transforms last."}
         }
     }
@@ -63,15 +63,15 @@ function showDialog(sub, sel, res)
     end
 end
 
-function process(sub, sel, res) 
+function process(sub, sel, res)
     local lines, linesToDelete, delCnt = LineCollection(sub,sel), {}, 0
     local debugError, lineCnt = false, #lines.lines
     local tagNames = table.insert(res.filterClips and ASS.tagNames.clips or {},
                                   res.removeJunk and "junk")
     local stats = {bytes=0, junk=0, clips=0, start=os.time(), cleaned=0}
-    
+
     -- create proper tag name lists from user input which may be override tag names or mixed
-    res.tagsToKeep, res.tagSortOrder = ASS:getTagNames(res.tagsToKeep:split(",%s")), 
+    res.tagsToKeep, res.tagSortOrder = ASS:getTagNames(res.tagsToKeep:split(",%s")),
                                        ASS:getTagNames(res.tagSortOrder:split(",%s"))
 
     lines:runCallback(function(lines, line, i)
@@ -98,14 +98,14 @@ function process(sub, sel, res)
             if res.filterClips or res.removeJunk then
                 data:modTags(tagNames, function(tag)
                     -- remove junk
-                    if tag.instanceOf[ASSUnknown] then 
+                    if tag.instanceOf[ASSUnknown] then
                         stats.junk = stats.junk + 1
                         return false
                     end
 
                     -- filter clips
                     tag.disabled = true
-                    if data:getLineBounds():equal(newBounds) then 
+                    if data:getLineBounds():equal(newBounds) then
                         stats.clips = stats.clips + 1
                         return false
                     else tag.disabled = false end
@@ -113,15 +113,15 @@ function process(sub, sel, res)
             end
 
             data:commit()
-            
+
             if oldText~=line.text then
                 if not newBounds:equal(oldBounds) then
                     debugError = true
                     Log.warn("Cleaning affected output on line #%d, rolling back...", line.humanizedNumber)
                     Log.warn("—— Before: %s\n—— After: %s\n—— Style: %s\n", oldText, line.text, line.styleRef.name)
                     line.text = oldText
-                else 
-                    stats.cleaned, stats.bytes = stats.cleaned+1, stats.bytes + #oldText - #line.text 
+                else
+                    stats.cleaned, stats.bytes = stats.cleaned+1, stats.bytes + #oldText - #line.text
                 end
                 aegisub.progress.set(100*i/lineCnt)
             end
@@ -135,7 +135,7 @@ function process(sub, sel, res)
              delCnt, 100*delCnt/lineCnt, stats.clips, stats.junk, stats.bytes/1000)
 
     if debugError then
-        Log.warn([[However, ASSWipe possibly encountered bugs while cleaning. 
+        Log.warn([[However, ASSWipe possibly encountered bugs while cleaning.
                    Affected lines have been rolled back to their previous state.
                    Please copy the whole log window contents and send them to line0.]])
     end

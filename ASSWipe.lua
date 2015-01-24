@@ -165,7 +165,7 @@ function process(sub, sel, res)
     end
 
     lines:replaceLines()
-    sub.delete(linesToDelete)
+    lines:deleteLines(linesToDelete)
 
     if debugError then Log.dump{"Styles:", lines.styles, "Configuration:", res} end
     Log.warn(reportMsg, lineCnt, os.time()-stats.start, stats.cleaned, 100*stats.cleaned/lineCnt,
@@ -176,6 +176,8 @@ function process(sub, sel, res)
                    Affected lines have been rolled back to their previous state.
                    Please copy the whole log window contents and send them to line0.]])
     end
+
+    return lines:getSelection()
 end
 
 aegisub.register_macro(script_name, script_description, showDialog)

@@ -76,17 +76,13 @@ function pasteAILines(sub,sel,res)
 
     local aiLinesRaw, aiLines = res.aiLinesRaw:split("\n"), LineCollection(sub)
     local firstSel, sel, lineCnt = sel[1], {}, #aiLinesRaw
-    for i=lineCnt,1,-1 do
-        sel[i] = firstSel+i-1
-        local aiLine = ASS:createLine{aiLinesRaw[i], lines, number=firstSel+lineCnt-i-1,
+    for i=1,lineCnt do
+        local aiLine = ASS:createLine{aiLinesRaw[i], lines, number=firstSel+lineCnt-i+1,
                                       style=res.setStyle and res.styleName or nil,
                                       actor=res.removeActor and "" or nil,
                                       start_time=res.copyTimes and startTime or 0,
                                       end_time=res.copyTimes and endTime or 0}
 
-        if res.offsetLayers then
-            aiLine.layer = (res.offsetMode=="unique" and lineCnt-i+1 or aiLine.layer) + res.offsetValue + maxLayer
-        end
 
         -- trim drawings by moving the top left coordinate of the bounding box to the drawing origin
         if res.trimDrawing then
@@ -99,10 +95,24 @@ function pasteAILines(sub,sel,res)
             aiLine.ASS:commit()
         end
 
-        aiLines:addLine(aiLine)
+        aiLines:addLine(aiLine, nil, true, true)
+    end
+
+    -- process layer numbers
+    if res.offsetLayers then
+        local minAiLayer
+        aiLines:runCallback(function(_, line, i)
+            if res.offsetMode == "auto" then
+                -- AI2ASS always exports from highest->lowest layer and we process them in reverse
+                minAiLayer = minAiLayer or line.layer
+                line.layer = line.layer - minAiLayer + res.offsetValue + maxLayer + 1
+            elseif res.offsetMode =="unique" then
+                line.layer = lineCnt-i + res.offsetValue + maxLayer + 1
+            else line.layer = line.layer + res.offsetValue end
+        end, true)
     end
     aiLines:insertLines()
-    return sel
+    return aiLines:getSelection()
 end
 
 aegisub.register_macro(script_name.."/Open Menu", script_description, showDialog)

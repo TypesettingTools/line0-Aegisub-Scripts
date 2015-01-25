@@ -17,21 +17,21 @@ local colorOps, stringOps = table.join(cmnOps, {"Add HSV"}),  {"Append", "Prepen
 local clipOpsVect = {"Add", "Multiply", "Power", "Set Default", "Invert Clip", "Remove", "Convert To Drawing"}
 local clipOptsRect = table.join(cmnOps,{"Invert Clip", "Convert To Drawing"})
 local Nudger = {
-    opList = {Add="add", Multiply="mul", Power="pow", Set="set", ["Align Up"]="up", ["Align Down"]="down", ["Align Left"]="left", ["Align Right"]="right", 
+    opList = {Add="add", Multiply="mul", Power="pow", Set="set", ["Align Up"]="up", ["Align Down"]="down", ["Align Left"]="left", ["Align Right"]="right",
               Toggle="toggle", ["Auto Cycle"]="cycle", Cycle=false, ["Set Default"]=false, ["Add HSV"]="addHSV", Replace="replace", Append="append", Prepend="prepend",
               ["Invert Clip"]="toggleInverse", Remove = false, ["Convert To Drawing"]=false},
     supportedOps = {
-        position=cmnOps, blur_edges=cmnOps, scale_x=cmnOps, scale_y=cmnOps, 
+        position=cmnOps, blur_edges=cmnOps, scale_x=cmnOps, scale_y=cmnOps,
         align={"Align Up", "Align Down", "Align Left", "Align Right", "Auto Cycle", "Set", "Set Default", "Cycle"},
         angle=cmnOps, angle_y=cmnOps, angle_x=cmnOps, outline=cmnOps, outline_x=cmnOps, outline_y=cmnOps,
-        shadow=cmnOps, shadow_x=cmnOps, shadow_y=cmnOps, alpha=cmnOps, alpha1=cmnOps, 
+        shadow=cmnOps, shadow_x=cmnOps, shadow_y=cmnOps, alpha=cmnOps, alpha1=cmnOps,
         alpha2=cmnOps, alpha3=cmnOps, alpha4=cmnOps, color1=colorOps, color2=colorOps, color3=colorOps, color4=colorOps,
         blur=cmnOps, shear_x=cmnOps, shear_y=cmnOps, bold=table.join(cmnOps,{"Toggle"}), underline={"Toggle","Set", "Set Default"},
         spacing=cmnOps, fontsize=cmnOps, k_fill=cmnOps, k_sweep_alt=cmnOps, k_sweep=cmnOps, k_bord=cmnOps, move=cmnOps, move_simple=cmnOps, origin=cmnOps,
         wrapstyle={"Auto Cycle","Cycle", "Set", "Set Default"}, fade_simple=cmnOps, fade=cmnOps, italic={"Toggle","Set", "Set Default"},
         reset=stringOps, fontname=stringOps, clip_vect=clipOpsVect, iclip_vect=clipOpsVect, clip_rect=clipOptsRect, iclip_rect=clipOptsRect,
         unknown={"Remove"}, junk={"Remove"},
-        ["Clips (Vect)"]=clipOpsVect, ["Clips (Rect)"]=clipOptsRect, Clips=clipOpsVect, ["Any Tag"]={"Remove"}, 
+        ["Clips (Vect)"]=clipOpsVect, ["Clips (Rect)"]=clipOptsRect, Clips=clipOpsVect, ["Any Tag"]={"Remove"},
         ["Colors"]=colorOps, ["Alphas"]=cmnOps, ["Primary Color"]=colorOps, ["Fades"]=cmnOps, Comment={"Remove"}, ["Comments/Junk"]={"Remove"}
     },
     compoundTags = {
@@ -79,7 +79,7 @@ function Nudger:validate()
 end
 
 function Nudger:nudge(sub, sel)
-    local lines, tags = LineCollection(sub,sel), self.compoundTags[self.tag] or self.tag  
+    local lines, tags = LineCollection(sub,sel), self.compoundTags[self.tag] or self.tag
     local relative, builtinOp = self.targetName=="Matched Tag", self.opList[self.operation]
     local tagSect = self.targetValue~=0 and self.targetValue or nil
 
@@ -105,7 +105,7 @@ function Nudger:nudge(sub, sel)
                 ed[self.id] = ed[self.id] and ed[self.id]<#self.value and ed[self.id]+1 or 1
             else ed={[self.id]=1} end
             line:setExtraData(edField,ed)
-            
+
             lineData:modTags(tags, function(tag)
                 tag:set(unpack(self.value[ed[self.id]]))
             end, tagSect, tagSect, relative)
@@ -114,10 +114,10 @@ function Nudger:nudge(sub, sel)
             local defaults = lineData:getStyleDefaultTags()
             lineData:modTags(tags, function(tag)
                 tag:set(defaults.tags[tag.__tag.name]:get())
-                -- alternatively:  
+                -- alternatively:
                 -- return ASS:createTag(tag.__tag.name, defaults.tags[tag.__tag.name])
             end, tagSect, tagSect, relative)
-        
+
         elseif self.operation=="Remove" then
             if tags=="Comments/Junk" then
                 lineData:stripComments()
@@ -175,7 +175,7 @@ local Configuration = {
         {operation="Set Default", value={1}, id="bb4967a7-fb8a-4907-b5e8-395ea67c0a52", name="Default Origin", tag="origin"},
         {operation="Add HSV", value={0,0,0.1}, id="015cd09b-3c2b-458e-a65a-80b80bb951b1", name="Brightness Up", tag="Colors"},
         {operation="Add HSV", value={0,0,-0.1}, id="93f07885-c3f7-41bb-b319-0542e6fd52d7", name="Brightness Down", tag="Colors"},
-        {operation="Invert Clip", value={}, id="e719120a-e45a-44d4-b76a-62943f47d2c5", name="Invert First Clip", tag="Clips", 
+        {operation="Invert Clip", value={}, id="e719120a-e45a-44d4-b76a-62943f47d2c5", name="Invert First Clip", tag="Clips",
          noDefault=true, targetName="Matched Tag", targetValue="1"},
         {operation="Remove", value={}, id="4dfc33fd-3090-498b-8922-7e1eb4515257", name="Remove Comments & Junk", tag="Comments/Junk", noDefault=true},
         {operation="Remove", value={}, id="bc642b90-8ebf-45e8-a160-98b4658721bd", name="Strip Tags", tag="Any Tag", noDefault=true},
@@ -208,10 +208,10 @@ function Configuration:load()
     data = self.default
   end
 
-  -- version checking 
+  -- version checking
   assert(tonumber(data.__version:sub(3,3))>=3, string.format(
-         [[Error: your configuration file version (%s) is incompatible with %s %s 
-         and I'm too lazy to add update routines for the 2 people that have been using the script so far. 
+         [[Error: your configuration file version (%s) is incompatible with %s %s
+         and I'm too lazy to add update routines for the 2 people that have been using the script so far.
          Please delete %s and reload your scripts.]]
   , data.__version, script_name, script_version, self.fileName))
 
@@ -268,7 +268,7 @@ function Configuration:getDialog()
     for i,nu in ipairs(self.nudgers) do
         dialog = table.join(dialog, {
             {class="edit", name=uName.encode(nu.id,"name"), value=nu.name, x=0, y=i, width=1, height=1},
-            {class="dropdown", name=uName.encode(nu.id,"tag"), items=tags, value=ASS.toFriendlyName[nu.tag] or nu.tag, 
+            {class="dropdown", name=uName.encode(nu.id,"tag"), items=tags, value=ASS.toFriendlyName[nu.tag] or nu.tag,
              x=1, y=i, width=1, height=1},
             {class="dropdown", name=uName.encode(nu.id,"operation"), items=operations, value=nu.operation, x=2, y=i, width=1, height=1},
             {class="edit", name=uName.encode(nu.id,"value"), value=getUnwrappedJson(nu.value), step=0.5, x=3, y=i, width=1, height=1},
@@ -319,7 +319,7 @@ function Configuration:run(noReload)
         self:save()
     else self:load()
     end
-end    
+end
 -------------------------------------------
 
 local config = Configuration("nudge.json")

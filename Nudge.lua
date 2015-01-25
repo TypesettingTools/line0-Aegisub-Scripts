@@ -19,7 +19,7 @@ local clipOptsRect = table.join(cmnOps,{"Invert Clip", "Convert To Drawing"})
 local Nudger = {
     opList = {Add="add", Multiply="mul", Power="pow", Set="set", ["Align Up"]="up", ["Align Down"]="down", ["Align Left"]="left", ["Align Right"]="right",
               Toggle="toggle", ["Auto Cycle"]="cycle", Cycle=false, ["Set Default"]=false, ["Add HSV"]="addHSV", Replace="replace", Append="append", Prepend="prepend",
-              ["Invert Clip"]="toggleInverse", Remove = false, ["Convert To Drawing"]=false},
+              ["Invert Clip"]="toggleInverse", Remove = false, ["Convert To Drawing"]=false, ["Set Comment"]=false, ["Unset Comment"]=false, ["Toggle Comment"]=false},
     supportedOps = {
         position=cmnOps, blur_edges=cmnOps, scale_x=cmnOps, scale_y=cmnOps,
         align={"Align Up", "Align Down", "Align Left", "Align Right", "Auto Cycle", "Set", "Set Default", "Cycle"},
@@ -32,7 +32,8 @@ local Nudger = {
         reset=stringOps, fontname=stringOps, clip_vect=clipOpsVect, iclip_vect=clipOpsVect, clip_rect=clipOptsRect, iclip_rect=clipOptsRect,
         unknown={"Remove"}, junk={"Remove"},
         ["Clips (Vect)"]=clipOpsVect, ["Clips (Rect)"]=clipOptsRect, Clips=clipOpsVect, ["Any Tag"]={"Remove"},
-        ["Colors"]=colorOps, ["Alphas"]=cmnOps, ["Primary Color"]=colorOps, ["Fades"]=cmnOps, Comment={"Remove"}, ["Comments/Junk"]={"Remove"}
+        ["Colors"]=colorOps, ["Alphas"]=cmnOps, ["Primary Color"]=colorOps, ["Fades"]=cmnOps, Comment={"Remove"}, ["Comments/Junk"]={"Remove"},
+        Line={"Set Comment", "Unset Comment", "Toggle Comment"}
     },
     compoundTags = {
         Colors = {"color1","color2","color3","color4"},
@@ -41,7 +42,7 @@ local Nudger = {
         Clips = {"clip_vect", "clip_rect", "iclip_vect", "iclip_rect"},
         ["Clips (Vect)"] = {"clip_vect", "iclip_vect"},
         ["Clips (Rect)"] = {"clip_rect", "iclip_rect"},
-        ["\\move"] = {"move", "move_simple"},
+        ["\\move"] = {"move", "move_simple"}
     },
     tagList = {}
 }
@@ -93,7 +94,12 @@ function Nudger:nudge(sub, sel)
             lineData:insertDefaultTags(tags, tagSect)
         end
 
-        if builtinOp then
+        if tags=="Line" then
+            local op = self.operation
+            if op=="Unset Comment" then line.comment=false
+            elseif op=="Set Comment" then line.comment=true
+            elseif op=="Toggle Comment" then line.comment = not line.comment end
+        elseif builtinOp then
             lineData:modTags(tags, function(tag)
                 tag[builtinOp](tag,unpack(self.value))
             end, tagSect, tagSect, relative)

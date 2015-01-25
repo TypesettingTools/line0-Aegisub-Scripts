@@ -80,7 +80,7 @@ function Nudger:validate()
 end
 
 function Nudger:nudge(sub, sel)
-    local lines, tags = LineCollection(sub,sel), self.compoundTags[self.tag] or self.tag
+    local lines, tags = LineCollection(sub, sel, function() return true end), self.compoundTags[self.tag] or self.tag
     local relative, builtinOp = self.targetName=="Matched Tag", self.opList[self.operation]
     local tagSect = self.targetValue~=0 and self.targetValue or nil
 

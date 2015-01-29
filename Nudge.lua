@@ -9,17 +9,19 @@ local l0Common = require("l0.Common")
 local LineCollection = require("a-mo.LineCollection")
 local ASSTags = require("l0.ASSTags")
 local Log = require("a-mo.Log")
+local clipboard = require("aegisub.clipboard")
 
 --------  Nudger Class -------------------
 
-local cmnOps = {"Add", "Multiply", "Power", "Cycle", "Set", "Set Default", "Remove"}
+local cmnOps = {"Add", "Multiply", "Power", "Cycle", "Set", "Set Default", "Remove", "Copy", "Paste Over", "Paste Into"}
 local colorOps, stringOps = table.join(cmnOps, {"Add HSV"}),  {"Append", "Prepend", "Replace", "Cycle", "Set", "Set Default", "Remove"}
-local clipOpsVect = {"Add", "Multiply", "Power", "Set Default", "Invert Clip", "Remove", "Convert To Drawing"}
+local clipOpsVect = {"Add", "Multiply", "Power", "Set Default", "Invert Clip", "Remove", "Convert To Drawing", "Copy", "Paste Over", "Paste Into"}
 local clipOptsRect = table.join(cmnOps,{"Invert Clip", "Convert To Drawing"})
 local Nudger = {
     opList = {Add="add", Multiply="mul", Power="pow", Set="set", ["Align Up"]="up", ["Align Down"]="down", ["Align Left"]="left", ["Align Right"]="right",
               Toggle="toggle", ["Auto Cycle"]="cycle", Cycle=false, ["Set Default"]=false, ["Add HSV"]="addHSV", Replace="replace", Append="append", Prepend="prepend",
-              ["Invert Clip"]="toggleInverse", Remove = false, ["Convert To Drawing"]=false, ["Set Comment"]=false, ["Unset Comment"]=false, ["Toggle Comment"]=false},
+              ["Invert Clip"]="toggleInverse", Remove = false, ["Convert To Drawing"]=false, ["Set Comment"]=false, ["Unset Comment"]=false, ["Toggle Comment"]=false,
+              ["Copy"]=false, ["Paste Over"]=false, ["Paste Into"]=false},
     supportedOps = {
         position=cmnOps, blur_edges=cmnOps, scale_x=cmnOps, scale_y=cmnOps,
         align={"Align Up", "Align Down", "Align Left", "Align Right", "Auto Cycle", "Set", "Set Default", "Cycle"},
@@ -103,6 +105,22 @@ function Nudger:nudge(sub, sel)
             lineData:modTags(tags, function(tag)
                 tag[builtinOp](tag,unpack(self.value))
             end, tagSect, tagSect, relative)
+
+        elseif self.operation=="Copy" then
+            local tagStr = {}
+            lineData:modTags(tags, function(tag)
+                tagStr[#tagStr+1] = tag:getTagString()
+            end, tagSect, tagSect, relative)
+            clipboard.set(table.concat(tagStr))
+
+        elseif self.operation=="Paste Over" then
+            local tags = ASSLineTagSection(clipboard.get())
+            lineData:replaceTags(tags, tagSect, tagSect, relative)
+
+        elseif self.operation=="Paste Into" then
+            local global, normal = ASSTagList(ASSLineTagSection(clipboard.get())):filterTags(nil, {global=true})
+            lineData:insertTags(normal, tagSect, -1, not relative)
+            lineData:replaceTags(global)
 
         elseif self.operation=="Cycle" then
             local edField = "l0.Nudge.cycleState"

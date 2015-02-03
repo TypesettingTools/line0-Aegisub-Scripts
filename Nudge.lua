@@ -15,29 +15,31 @@ local clipboard = require("aegisub.clipboard")
 
 local cmnOps = {"Add", "Multiply", "Power", "Cycle", "Set", "Set Default", "Remove", "Copy", "Paste Over", "Paste Into"}
 local colorOps, stringOps = table.join(cmnOps, {"Add HSV"}),  {"Append", "Prepend", "Replace", "Cycle", "Set", "Set Default", "Remove"}
-local clipOpsVect = {"Add", "Multiply", "Power", "Set Default", "Invert Clip", "Remove", "Convert To Drawing", "Copy", "Paste Over", "Paste Into"}
+local drawingOps = {"Add", "Multiply", "Power", "Remove", "Copy", "Paste Over", "Paste Into", "Expand"}
+local clipOpsVect = table.join(drawingOps, {"Invert Clip", "Convert To Drawing", "Set Default"})
 local clipOptsRect = table.join(cmnOps,{"Invert Clip", "Convert To Drawing"})
 local Nudger = {
-    opList = {Add="add", Multiply="mul", Power="pow", Set="set", ["Align Up"]="up", ["Align Down"]="down", ["Align Left"]="left", ["Align Right"]="right",
+    operations = {Add="add", Multiply="mul", Power="pow", Set="set", ["Align Up"]="up", ["Align Down"]="down", ["Align Left"]="left", ["Align Right"]="right",
               Toggle="toggle", ["Auto Cycle"]="cycle", Cycle=false, ["Set Default"]=false, ["Add HSV"]="addHSV", Replace="replace", Append="append", Prepend="prepend",
               ["Invert Clip"]="toggleInverse", Remove = false, ["Convert To Drawing"]=false, ["Set Comment"]=false, ["Unset Comment"]=false, ["Toggle Comment"]=false,
-              ["Copy"]=false, ["Paste Over"]=false, ["Paste Into"]=false},
-    supportedOps = {
-        position=cmnOps, blur_edges=cmnOps, scale_x=cmnOps, scale_y=cmnOps,
-        align={"Align Up", "Align Down", "Align Left", "Align Right", "Auto Cycle", "Set", "Set Default", "Cycle"},
-        angle=cmnOps, angle_y=cmnOps, angle_x=cmnOps, outline=cmnOps, outline_x=cmnOps, outline_y=cmnOps,
-        shadow=cmnOps, shadow_x=cmnOps, shadow_y=cmnOps, alpha=cmnOps, alpha1=cmnOps,
-        alpha2=cmnOps, alpha3=cmnOps, alpha4=cmnOps, color1=colorOps, color2=colorOps, color3=colorOps, color4=colorOps,
-        blur=cmnOps, shear_x=cmnOps, shear_y=cmnOps, bold=table.join(cmnOps,{"Toggle"}), underline={"Toggle","Set", "Set Default"},
-        spacing=cmnOps, fontsize=cmnOps, k_fill=cmnOps, k_sweep_alt=cmnOps, k_sweep=cmnOps, k_bord=cmnOps, move=cmnOps, move_simple=cmnOps, origin=cmnOps,
-        wrapstyle={"Auto Cycle","Cycle", "Set", "Set Default"}, fade_simple=cmnOps, fade=cmnOps, italic={"Toggle","Set", "Set Default"},
-        reset=stringOps, fontname=stringOps, clip_vect=clipOpsVect, iclip_vect=clipOpsVect, clip_rect=clipOptsRect, iclip_rect=clipOptsRect,
-        unknown={"Remove"}, junk={"Remove"},
-        ["Clips (Vect)"]=clipOpsVect, ["Clips (Rect)"]=clipOptsRect, Clips=clipOpsVect, ["Any Tag"]={"Remove", "Copy", "Paste Over", "Paste Into"},
-        ["Colors"]=colorOps, ["Alphas"]=cmnOps, ["Primary Color"]=colorOps, ["Fades"]=cmnOps, Comment={"Remove"}, ["Comments/Junk"]={"Remove"},
-        Line={"Set Comment", "Unset Comment", "Toggle Comment"}
+              ["Copy"]=false, ["Paste Over"]=false, ["Paste Into"]=false, Expand=false, ["Convert To Clip"]=false},
+    targets = {
+        tags = { position=cmnOps, blur_edges=cmnOps, scale_x=cmnOps, scale_y=cmnOps,
+            align={"Align Up", "Align Down", "Align Left", "Align Right", "Auto Cycle", "Set", "Set Default", "Cycle"},
+            angle=cmnOps, angle_y=cmnOps, angle_x=cmnOps, outline=cmnOps, outline_x=cmnOps, outline_y=cmnOps,
+            shadow=cmnOps, shadow_x=cmnOps, shadow_y=cmnOps, alpha=cmnOps, alpha1=cmnOps,
+            alpha2=cmnOps, alpha3=cmnOps, alpha4=cmnOps, color1=colorOps, color2=colorOps, color3=colorOps, color4=colorOps,
+            blur=cmnOps, shear_x=cmnOps, shear_y=cmnOps, bold=table.join(cmnOps,{"Toggle"}), underline={"Toggle","Set", "Set Default"},
+            spacing=cmnOps, fontsize=cmnOps, k_fill=cmnOps, k_sweep_alt=cmnOps, k_sweep=cmnOps, k_bord=cmnOps, move=cmnOps, move_simple=cmnOps, origin=cmnOps,
+            wrapstyle={"Auto Cycle","Cycle", "Set", "Set Default"}, fade_simple=cmnOps, fade=cmnOps, italic={"Toggle","Set", "Set Default"},
+            reset=stringOps, fontname=stringOps, clip_vect=clipOpsVect, iclip_vect=clipOpsVect, clip_rect=clipOptsRect, iclip_rect=clipOptsRect,
+            unknown={"Remove"}, junk={"Remove"}, ["Clips (Vect)"]=clipOpsVect, ["Clips (Rect)"]=clipOptsRect, Clips=clipOpsVect, ["Any Tag"]={"Remove", "Copy", "Paste Over", "Paste Into"},
+            ["Colors"]=colorOps, ["Alphas"]=cmnOps, ["Primary Color"]=colorOps, ["Fades"]=cmnOps, Comment={"Remove"}, ["Comments/Junk"]={"Remove"},
+        },
+        line = {Line={"Set Comment", "Unset Comment", "Toggle Comment"}, Text={"Convert To Drawing", "Expand", "Convert To Clip"},
+                Drawing=drawingOps, Contents={"Convert To Drawing", "Expand"}}
     },
-    compoundTags = {
+    compoundTargets = {
         Colors = {"color1","color2","color3","color4"},
         Alphas = {"alpha", "alpha1", "alpha2", "alpha3", "alpha4"},
         Fades = {"fade_simple", "fade"},
@@ -45,13 +47,14 @@ local Nudger = {
         ["Clips (Vect)"] = {"clip_vect", "iclip_vect"},
         ["Clips (Rect)"] = {"clip_rect", "iclip_rect"},
         ["\\move"] = {"move", "move_simple"},
-        ["Any Tag"] = ASS.tagNames.all
-    },
-    tagList = {}
+        ["Any Tag"] = ASS.tagNames.all,
+        Contents = {"Text", "Drawing"}
+    }
 }
 
-for name,ops in pairs(Nudger.supportedOps) do
-    Nudger.tagList[#Nudger.tagList+1] = ASS.toFriendlyName[name] or name
+Nudger.targetList = table.keys(Nudger.targets.line)
+for name,ops in pairs(Nudger.targets.tags) do
+    Nudger.targetList[#Nudger.targetList+1] = ASS.toFriendlyName[name] or name
 end
 
 
@@ -79,90 +82,174 @@ end
 
 function Nudger:validate()
     -- do we need to check the other values?
-    assert(table.find(self.supportedOps[self.tag],self.operation), string.format("Error: Operation %s not supported for tag %s.\n",self.operation,self.tag))
+    local ops = self.targets.tags[self.tag] or self.targets.line[self.tag]
+    assertEx(table.find(ops, self.operation), "Operation %s not supported for tag %s.", self.operation, self.tag)
 end
 
-function Nudger:nudge(sub, sel)
-    local lines, tags = LineCollection(sub, sel, function() return true end), self.compoundTags[self.tag] or self.tag
-    local relative, builtinOp = self.targetName=="Matched Tag", self.opList[self.operation]
+function Nudger:nudgeTags(lineData, lines, line, targets)
     local tagSect = self.targetValue~=0 and self.targetValue or nil
+    local relative, builtinOp = self.targetName=="Matched Tag", self.operations[self.operation]
 
-    lines:runCallback(function(lines, line)
-        local lineData = ASS.parse(line)
-        local foundTags = lineData:getTags(tags, tagSect, tagSect, relative)
-        local foundCnt = #foundTags
+    local foundTags = lineData:getTags(targets, tagSect, tagSect, relative)
+    local foundCnt = #foundTags
 
-        -- insert default tags if no matching tags are present
-        if foundCnt==0 and not self.noDefault and not relative and self.operation~="Remove" then
-            lineData:insertDefaultTags(tags, tagSect)
-        end
+    -- insert default tags if no matching tags are present
+    if foundCnt==0 and not self.noDefault and not relative and self.operation~="Remove" then
+        lineData:insertDefaultTags(targets, tagSect)
+    end
 
-        if tags=="Line" then
-            local op = self.operation
-            if op=="Unset Comment" then line.comment=false
-            elseif op=="Set Comment" then line.comment=true
-            elseif op=="Toggle Comment" then line.comment = not line.comment end
-        elseif builtinOp then
-            lineData:modTags(tags, function(tag)
-                tag[builtinOp](tag,unpack(self.value))
-            end, tagSect, tagSect, relative)
+    if builtinOp then
+        lineData:modTags(targets, function(tag)
+            tag[builtinOp](tag,unpack(self.value))
+        end, tagSect, tagSect, relative)
 
-        elseif self.operation=="Copy" then
-            local tagStr = {}
-            lineData:modTags(tags, function(tag)
-                tagStr[#tagStr+1] = tag:getTagString()
-            end, tagSect, tagSect, relative)
-            clipboard.set(table.concat(tagStr))
+    elseif self.operation=="Copy" then
+        local tagStr = {}
+        lineData:modTags(targets, function(tag)
+            tagStr[#tagStr+1] = tag:getTagString()
+        end, tagSect, tagSect, relative)
+        clipboard.set(table.concat(tagStr))
 
-        elseif self.operation=="Paste Over" then
-            local pasteTags = ASSTagList(ASSLineTagSection(clipboard.get())):filterTags(tags)
-            lineData:replaceTags(pasteTags, tagSect, tagSect, relative)
+    elseif self.operation=="Paste Over" then
+        local pasteTags = ASSTagList(ASSLineTagSection(clipboard.get())):filterTags(targets)
+        lineData:replaceTags(pasteTags, tagSect, tagSect, relative)
 
-        elseif self.operation=="Paste Into" then
-            local pasteTags = ASSTagList(ASSLineTagSection(clipboard.get()))
-            local global, normal = pasteTags:filterTags(tags, {global=true})
-            lineData:insertTags(normal, tagSect, -1, not relative)
-            lineData:replaceTags(global)
+    elseif self.operation=="Paste Into" then
+        local pasteTags = ASSTagList(ASSLineTagSection(clipboard.get()))
+        local global, normal = pasteTags:filterTags(targets, {global=true})
+        lineData:insertTags(normal, tagSect, -1, not relative)
+        lineData:replaceTags(global)
 
-        elseif self.operation=="Cycle" then
-            local edField = "l0.Nudge.cycleState"
-            local ed = line:getExtraData(edField)
-            if type(ed)=="table" then
-                ed[self.id] = ed[self.id] and ed[self.id]<#self.value and ed[self.id]+1 or 1
-            else ed={[self.id]=1} end
-            line:setExtraData(edField,ed)
+    elseif self.operation=="Cycle" then
+        local edField = "l0.Nudge.cycleState"
+        local ed = line:getExtraData(edField)
+        if type(ed)=="table" then
+            ed[self.id] = ed[self.id] and ed[self.id]<#self.value and ed[self.id]+1 or 1
+        else ed={[self.id]=1} end
+        line:setExtraData(edField,ed)
 
-            lineData:modTags(tags, function(tag)
-                tag:set(unpack(self.value[ed[self.id]]))
-            end, tagSect, tagSect, relative)
+        lineData:modTags(targets, function(tag)
+            tag:set(unpack(self.value[ed[self.id]]))
+        end, tagSect, tagSect, relative)
 
-        elseif self.operation=="Set Default" and foundCnt>0 then
-            local defaults = lineData:getStyleDefaultTags()
-            lineData:modTags(tags, function(tag)
-                tag:set(defaults.tags[tag.__tag.name]:get())
-                -- alternatively:
-                -- return ASS:createTag(tag.__tag.name, defaults.tags[tag.__tag.name])
-            end, tagSect, tagSect, relative)
+    elseif self.operation=="Set Default" and foundCnt>0 then
+        local defaults = lineData:getStyleDefaultTags()
+        lineData:modTags(targets, function(tag)
+            tag:set(defaults.tags[tag.__tag.name]:get())
+        end, tagSect, tagSect, relative)
 
-        elseif self.operation=="Remove" then
-            if tags=="Comments/Junk" then
-                lineData:stripComments()
-                lineData:removeTags("junk", tagSect, tagSect, relative)
-            elseif tags=="Comment" then
-                lineData:stripComments()
-            else lineData:removeTags(tags, tagSect, tagSect, relative) end
-            lineData:cleanTags(1,false)
+    elseif self.operation=="Remove" then
+        if targets=="Comments/Junk" then
+            lineData:stripComments()
+            lineData:removeTags("junk", tagSect, tagSect, relative)
+        elseif targets=="Comment" then
+            lineData:stripComments()
+        else lineData:removeTags(targets, tagSect, tagSect, relative) end
+        lineData:cleanTags(1,false)
 
-        elseif self.operation=="Convert To Drawing" then
+    elseif self.operation=="Expand" then
+        lineData:modTags(targets, function(tag)
+            tag:expand(self.value[1], self.value[2])
+        end, tagSect, tagSect, relative)
+
+    elseif self.operation=="Convert To Drawing" then
             local keepPos, drawing, pos = not self.value[2]
-            lineData:modTags(tags, function(tag)
+            lineData:modTags(targets, function(tag)
                 drawing, pos = tag:getDrawing(keepPos)
                 return self.value[1]==true
             end, tagSect, tagSect, relative)
 
             lineData:insertSections(drawing)
             if pos then lineData:replaceTags(pos) end
+    end
+end
+
+function Nudger:nudgeLines(lineData, lines, line, targets)
+    local op, relative, tagSect  = self.operation, self.targetName=="Matched Tag", self.targetValue~=0 and self.targetValue or nil
+
+    if targets["Line"] then
+        if op=="Unset Comment" then line.comment=false
+        elseif op=="Set Comment" then line.comment=true
+        elseif op=="Toggle Comment" then line.comment = not line.comment end
+    end
+
+    if targets["Text"] then
+        if op=="Convert To Clip" then
+            local toConvert
+            lineData:callback(function(sect)
+                toConvert = sect:convertToDrawing()
+                return false
+            end, ASSLineTextSection, 1, 1, true)
+            if toConvert then
+                lineData:replaceTags(toConvert:getClip())
+            end
+        else
+            lineData:callback(function(sect)
+                if op=="Convert To Drawing" then sect:convertToDrawing()
+                elseif op=="Expand" then sect:expand(self.value[1], self.value[2]) end
+            end, ASSLineTextSection, tagSect, tagSect, relative)
         end
+    end
+
+    if targets["Drawing"] or targets["Text"] then
+        local targetSections = {targets["Drawing"] and ASSLineDrawingSection, targets["Text"] and ASSLineTextSection}
+        if op=="Copy" then
+            local sectStr = {}
+            lineData:callback(function(sect)
+                sectStr[#sectStr+1] = sect:getString()
+            end, targetSections, tagSect, tagSect, relative)
+            clipboard.set(table.concat(sect))
+        elseif op=="Paste Over" then
+            local sectStr = clipboard.get()
+            lineData:callback(function(sect)
+                if sect.class == ASSLineTextSection then
+                    sect.value = sectStr
+                else return ASSLineDrawingSection{str=sectStr} end
+            end, targetSections, tagSect, tagSect, relative)
+        elseif op=="Paste Into" then
+            local sectStr = clipboard.get()
+            if targets["Drawing"] and sectStr:match("m%s+[%-%d%.]+%s+[%-%d%.]+") then
+                lineData:insertSections(ASSLineDrawingSection{str=sectStr})
+            elseif targets["Text"] then
+                lineData:insertSections(ASSLineTextSection(sectStr))
+            end
+        end
+    end
+
+    if targets["Drawing"] then
+        local builtinOp = self.operations[self.operation]
+        lineData:callback(function(sect)
+            if builtinOp then
+                sect[builtinOp](sect,unpack(self.value))
+            elseif op=="Expand" then
+                sect:expand(self.value[1], self.value[2])
+            end
+        end, ASSLineDrawingSection, tagSect, tagSect, relative)
+    end
+
+end
+
+function Nudger:nudge(sub, sel)
+    local targets, tagTargets, lineTargets = self.compoundTargets[self.tag], {}, {}
+    if targets then
+        for i=1,#targets do
+            if ASS.tagMap[targets[i]] then tagTargets[#tagTargets+1]=targets[i]
+            else
+                lineTargets[#lineTargets+1]=targets[i]
+                lineTargets[targets[i]]=true
+            end
+        end
+    elseif ASS.tagMap[self.tag]
+        then tagTargets[1] = self.tag
+    else
+        lineTargets[1], lineTargets[self.tag] = self.tag, true
+    end
+
+    local lines = LineCollection(sub, sel, function() return true end)
+        lines:runCallback(function(lines, line)
+        local lineData = ASS.parse(line)
+        if #tagTargets>0 then self:nudgeTags(lineData, lines, line, tagTargets) end
+        if #lineTargets>0 then self:nudgeLines(lineData, lines, line, lineTargets) end
 
         lineData:commit()
     end)
@@ -287,7 +374,7 @@ function Configuration:getDialog()
         return json:sub(2,json:len()-1)
     end
 
-    local tags, operations = table.sort(Nudger.tagList), table.sort(table.keys(Nudger.opList))
+    local tags, operations = table.sort(Nudger.targetList), table.sort(table.keys(Nudger.operations))
 
     for i,nu in ipairs(self.nudgers) do
         dialog = table.join(dialog, {

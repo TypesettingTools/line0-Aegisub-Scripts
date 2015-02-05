@@ -147,7 +147,7 @@ function process(sub, sel, res)
                     Log.warn("Cleaning affected output on line #%d, rolling back...", line.humanizedNumber)
                     Log.warn("—— Before: %s\n—— After: %s\n—— Style: %s\n", oldText, line.text, line.styleRef.name)
                     line.text = oldText
-                else
+                elseif #line.text < #oldText then
                     stats.cleaned, stats.bytes = stats.cleaned+1, stats.bytes + #oldText - #line.text
                 end
                 aegisub.progress.set(100*i/lineCnt)

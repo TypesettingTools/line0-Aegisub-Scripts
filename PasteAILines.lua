@@ -1,16 +1,22 @@
 script_name="Paste AI Lines"
 script_description="Convenience macro for pasting full lines exported by AI2ASS."
-script_version="0.0.1"
+script_version="0.1.0"
 script_author="line0"
-config_file="PasteAILines.json"
 
-local LineCollection = require("a-mo.LineCollection")
-local util = require("aegisub.util")
-local clipboard = require("aegisub.clipboard")
-local l0Common = require("l0.Common")
-local ASSTags = require("l0.ASSTags")
-local Log = require("a-mo.Log")
-local ConfigHandler = require("a-mo.ConfigHandler")
+local config_file = "PasteAILines.json"
+local DependencyControl = require("l0.DependencyControl")
+local version = DependencyControl{
+    configFile = config_file,
+    {
+        "aegisub.util", "aegisub.clipboard",
+        {"a-mo.LineCollection", version="1.0.1", url="https://github.com/torque/Aegisub-Motion"},
+        {"a-mo.ConfigHandler", version="1.1.1", url="https://github.com/torque/Aegisub-Motion"},
+        {"a-mo.Log", url="https://github.com/torque/Aegisub-Motion"},
+        {"l0.ASSFoundation", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"},
+        {"l0.Common", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"}
+    }
+}
+local util, clipboard, LineCollection, ConfigHandler, Log, ASS, Common = version:requireModules()
 
 local dlg = {
     main = {
@@ -89,7 +95,7 @@ function pasteAILines(sub,sel,res)
             local off
             aiLine.ASS:callback(function(sect)
                 off = sect:alignToOrigin(res.trimAlign)
-            end, ASSLineDrawingSection)
+            end, ASS.Section.Drawing)
             -- set alignment and position accordingly
             aiLine.ASS:replaceTags{ASS:createTag("align", res.trimAlign), ASS:createTag("position", off)}
             aiLine.ASS:commit()
@@ -115,5 +121,7 @@ function pasteAILines(sub,sel,res)
     return aiLines:getSelection()
 end
 
-aegisub.register_macro(script_name.."/Open Menu", script_description, showDialog)
-aegisub.register_macro(script_name.."/Paste from Clipboard", script_description, runSilently)
+version:registerMacros{
+    {"Open Menu", nil, showDialog}, 
+    {"Paste from Clipboard", nil, runSilently}
+}

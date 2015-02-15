@@ -33,7 +33,7 @@ function showDialog(sub, sel)
             x=4, y=1, width=3, height=1,
         },
         {
-            class="floatedit", name="accel", 
+            class="floatedit", name="accel",
             x=7, y=1, width=1, height=1, value=1.0, step=0.1
         },
         {
@@ -138,7 +138,7 @@ function process(sub,sel,res)
             local targetPos, angle = path:getPositionAtLength(length,true), path:getAngleAtLength(length+w/2,true) or path:getAngleAtLength(length,true)
             -- stop processing this frame if he have reached the end of the path
             if not targetPos then
-                break   
+                break
             end
             -- get tags effective as of the first section (we know there won't be any tags after that)
             local effTags = charData.sections[1]:getEffectiveTags(true,true,false).tags
@@ -148,11 +148,11 @@ function process(sub,sel,res)
                 charData:removeTags("angle")
                 if res.flipFrz then angle:add(180) end
                 charData:insertTags(angle,1)
-            end 
+            end
 
             -- calculate how much "space" the character takes up on the line
             -- and determine the distance offset for the next character
-            -- this currently only uses horizontal metrics so it breaks if you disable rotation animation  
+            -- this currently only uses horizontal metrics so it breaks if you disable rotation animation
             charOff = charOff + w
 
             if res.aniPos then
@@ -211,7 +211,7 @@ function undo(sub, sel)
     for i=1,#sub do
         local extra = sub[i].extra and json.decode(sub[i].extra[script_namespace] or "")
         if extra and ids[extra.id] then
-            if extra.orgLine then 
+            if extra.orgLine then
                 sel[j], j = i, j+1
             else toDelete[#toDelete+1]=i end
         end

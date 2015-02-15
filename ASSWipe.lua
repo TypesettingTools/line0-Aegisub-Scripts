@@ -1,13 +1,20 @@
 script_name="ASSWipe"
-script_description="Cleans up tags."
-script_version="0.0.1"
+script_description="Performs script cleanup, removes unnecessary tags and lines."
+script_version="0.1.0"
 script_author="line0"
 
-local LineCollection = require("a-mo.LineCollection")
-local ASSTags = require("l0.ASSTags")
-local Log = require("a-mo.Log")
-local ConfigHandler = require("a-mo.ConfigHandler")
-local l0Common = require("l0.Common")
+local DependencyControl = require "l0.DependencyControl"
+local version = DependencyControl{
+    configFile = config_file,
+    {
+        {"a-mo.LineCollection", version="1.0.1", url="https://github.com/torque/Aegisub-Motion"},
+        {"a-mo.ConfigHandler", version="1.1.1", url="https://github.com/torque/Aegisub-Motion"},
+        {"a-mo.Log", url="https://github.com/torque/Aegisub-Motion"},
+        {"l0.ASSFoundation", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"},
+        {"l0.Common", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"}
+    }
+}
+local LineCollection, ConfigHandler, Log, ASS, Common = version:requireModules()
 
 local reportMsg = [[
 Done. Processed %d lines in %d seconds.
@@ -100,7 +107,7 @@ function process(sub, sel, res)
             aegisub.progress.task(string.format("Cleaning %d of %d lines...", i, lineCnt))
         end
 
-        local data, oldText = ASS.parse(line), line.text
+        local data, oldText = ASS:parse(line), line.text
         local oldBounds = data:getLineBounds(false)
 
         if res.removeInvisible and oldBounds.w == 0 then
@@ -180,4 +187,4 @@ function process(sub, sel, res)
     return lines:getSelection()
 end
 
-aegisub.register_macro(script_name, script_description, showDialog)
+version:registerMacro(showDialog)

@@ -3,13 +3,17 @@ script_description="Modifies override tags according to configuration."
 script_version="0.3.0"
 script_author="line0"
 
-local json = require("json")
-local util = require("aegisub.util")
-local l0Common = require("l0.Common")
-local LineCollection = require("a-mo.LineCollection")
-local ASSTags = require("l0.ASSTags")
-local Log = require("a-mo.Log")
-local clipboard = require("aegisub.clipboard")
+local DependencyControl = require "l0.DependencyControl"
+local util, clipboard, json, LineCollection, Log, ASS, Common = DependencyControl{
+    configFile = config_file,
+    {
+        "aegisub.util", "aegisub.clipboard", "json",
+        {"a-mo.LineCollection", version="1.0.1", url="https://github.com/torque/Aegisub-Motion"},
+        {"a-mo.Log", url="https://github.com/torque/Aegisub-Motion"},
+        {"l0.ASSFoundation", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"},
+        {"l0.Common", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"}
+    }
+}:requireModules()
 
 --------  Nudger Class -------------------
 
@@ -111,11 +115,11 @@ function Nudger:nudgeTags(lineData, lines, line, targets)
         clipboard.set(table.concat(tagStr))
 
     elseif self.operation=="Paste Over" then
-        local pasteTags = ASSTagList(ASSLineTagSection(clipboard.get())):filterTags(targets)
+        local pasteTags = ASS.TagList(ASS.Section.Tag(clipboard.get())):filterTags(targets)
         lineData:replaceTags(pasteTags, tagSect, tagSect, relative)
 
     elseif self.operation=="Paste Into" then
-        local pasteTags = ASSTagList(ASSLineTagSection(clipboard.get()))
+        local pasteTags = ASS.TagList(ASS.Section.Tag(clipboard.get()))
         local global, normal = pasteTags:filterTags(targets, {global=true})
         lineData:insertTags(normal, tagSect, -1, not relative)
         lineData:replaceTags(global)
@@ -179,7 +183,7 @@ function Nudger:nudgeLines(lineData, lines, line, targets)
             lineData:callback(function(sect)
                 toConvert = sect:convertToDrawing()
                 return false
-            end, ASSLineTextSection, 1, 1, true)
+            end, ASS.Section.Text, 1, 1, true)
             if toConvert then
                 lineData:replaceTags(toConvert:getClip())
             end
@@ -187,12 +191,12 @@ function Nudger:nudgeLines(lineData, lines, line, targets)
             lineData:callback(function(sect)
                 if op=="Convert To Drawing" then sect:convertToDrawing()
                 elseif op=="Expand" then sect:expand(self.value[1], self.value[2]) end
-            end, ASSLineTextSection, tagSect, tagSect, relative)
+            end, ASS.Section.Text, tagSect, tagSect, relative)
         end
     end
 
     if targets["Drawing"] or targets["Text"] then
-        local targetSections = {targets["Drawing"] and ASSLineDrawingSection, targets["Text"] and ASSLineTextSection}
+        local targetSections = {targets["Drawing"] and ASS.Section.Drawing, targets["Text"] and ASS.Section.Text}
         if op=="Copy" then
             local sectStr = {}
             lineData:callback(function(sect)
@@ -202,16 +206,16 @@ function Nudger:nudgeLines(lineData, lines, line, targets)
         elseif op=="Paste Over" then
             local sectStr = clipboard.get()
             lineData:callback(function(sect)
-                if sect.class == ASSLineTextSection then
+                if sect.class == ASS.Section.Text then
                     sect.value = sectStr
-                else return ASSLineDrawingSection{str=sectStr} end
+                else return ASS.Section.Drawing{str=sectStr} end
             end, targetSections, tagSect, tagSect, relative)
         elseif op=="Paste Into" then
             local sectStr = clipboard.get()
             if targets["Drawing"] and sectStr:match("m%s+[%-%d%.]+%s+[%-%d%.]+") then
-                lineData:insertSections(ASSLineDrawingSection{str=sectStr})
+                lineData:insertSections(ASS.Section.Drawing{str=sectStr})
             elseif targets["Text"] then
-                lineData:insertSections(ASSLineTextSection(sectStr))
+                lineData:insertSections(ASS.Section.Text(sectStr))
             end
         end
     end
@@ -224,7 +228,7 @@ function Nudger:nudgeLines(lineData, lines, line, targets)
             elseif op=="Expand" then
                 sect:expand(self.value[1], self.value[2])
             end
-        end, ASSLineDrawingSection, tagSect, tagSect, relative)
+        end, ASS.Section.Drawing, tagSect, tagSect, relative)
     end
 
 end
@@ -247,7 +251,7 @@ function Nudger:nudge(sub, sel)
 
     local lines = LineCollection(sub, sel, function() return true end)
         lines:runCallback(function(lines, line)
-        local lineData = ASS.parse(line)
+        local lineData = ASS:parse(line)
         if #tagTargets>0 then self:nudgeTags(lineData, lines, line, tagTargets) end
         if #lineTargets>0 then self:nudgeLines(lineData, lines, line, lineTargets) end
 

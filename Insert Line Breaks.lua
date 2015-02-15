@@ -3,12 +3,16 @@ script_description="Inserts hard line breaks after n characters, but tries to av
 script_version="0.0.1"
 script_author="line0"
 
-local LineCollection = require("a-mo.LineCollection")
-local util = require("aegisub.util")
-local unicode = require("aegisub.unicode")
-local l0Common = require("l0.Common")
-local ASSTags = require("l0.ASSTags")
-local re = require("aegisub.re")
+local DependencyControl = require("l0.DependencyControl")
+local version = DependencyControl{
+    {
+        "aegisub.util", "aegisub.re", "aegisub.unicode",
+        {"a-mo.LineCollection", version="1.0.1", url="https://github.com/torque/Aegisub-Motion"},
+        {"l0.ASSFoundation", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"},
+        {"l0.Common", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"}
+    }
+}
+local util, re, unicode, LineCollection, ASS, Common = version:requireModules()
 
 function showDialog(sub, sel)
     local dlg = {
@@ -34,7 +38,7 @@ function insertLineBreaks(sub,sel,res)
     local lines = LineCollection(sub,sel)
     local curCnt, expr = res.charLimit, re.compile("\\s(?!.*\\s)")
     lines:runCallback(function(lines, line)
-        local data = ASS.parse(line)
+        local data = ASS:parse(line)
         data:callback(function(section)
             local j, n, len, split = 1, 1, unicode.len(section.value), {}
             while j<=len do
@@ -62,9 +66,9 @@ function insertLineBreaks(sub,sel,res)
                 n=n+1
             end
             section.value = table.concat(split)
-        end,ASSLineTextSection)
+        end, ASS.Section.Text)
         data:commit()
     end)
     lines:replaceLines()
 end
-aegisub.register_macro(script_name, script_description, showDialog)
+version:registerMacro(showDialog)

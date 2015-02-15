@@ -2,15 +2,21 @@ script_name="Move Along Path"
 script_description="Moves text along a path specified in a \\clip. Currently only works on fbf lines."
 script_version="0.1.0"
 script_author="line0"
-script_namespace="l0.MoveAlongPath"
 
-local l0Common = require("l0.Common")
-local LineCollection = require("a-mo.LineCollection")
-local Line = require("a-mo.Line")
-local ASSTags = require("l0.ASSTags")
-local Log = require("a-mo.Log")
-local YUtils = require("YUtils")
-local util = require("aegisub.util")
+local DependencyControl = require("l0.DependencyControl")
+local version = DependencyControl{
+    namespace = "l0.MoveAlongPath",
+    {
+        "aegisub.util",
+        {"a-mo.LineCollection", version="1.0.1", url="https://github.com/torque/Aegisub-Motion"},
+        {"a-mo.Line", version="1.0.0", url="https://github.com/TypesettingCartel/Aegisub-Motion"},
+        {"a-mo.Log", url="https://github.com/torque/Aegisub-Motion"},
+        {"l0.ASSFoundation", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"},
+        {"l0.Common", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"},
+        {"YUtils"}
+    }
+}
+local util, LineCollection, Line, Log, ASS, Common, YUtils = version:requireModules()
 
 function showDialog(sub, sel)
     local dlg = {
@@ -111,12 +117,12 @@ function process(sub,sel,res)
             aegisub.cancel()
         end
 
-        local data, orgText = ASS.parse(line), line.text
+        local data, orgText = ASS:parse(line), line.text
         if i==1 then -- get path data and relative position/angle from first line
             path = data:getTags({"clip_vect","iclip_vect"})[1]
             assert(path,"Error: couldn't find \\clip containing path in first line, aborting.")
             data:removeTags({"clip_vect","iclip_vect"})
-            angleOff, posOff = path:getAngleAtLength(0), path.commands[1]:get()
+            angleOff, posOff = path:getAngleAtLength(0), path.contours[1].commands[1]:get()
             totalLength = path:getLength()
         end
 
@@ -164,7 +170,7 @@ function process(sub,sel,res)
             if charData:getLineBounds(true).w ~= 0 then
                 charLines[j].number, finalLineCnt = sel[#sel]+finalLineCnt, finalLineCnt+1
                 local extra = {settings = res, id = id, orgLine = j==1 and orgText or nil}
-                charLines[j]:setExtraData(script_namespace, extra)
+                charLines[j]:setExtraData(version.namespace, extra)
                 finalLines:addLine(charLines[j])
             end
         end
@@ -180,7 +186,7 @@ end
 
 function hasClip(sub, sel, active)
     local firstLine = Line(sub[sel[1]])
-    local data = ASS.parse(firstLine)
+    local data = ASS:parse(firstLine)
     if #data:getTags({"clip_vect","iclip_vect"}) <1 then
         return false, "No \\clip or \\iclip containing the path found in first line of the selection."
     else return true end
@@ -219,7 +225,7 @@ function undo(sub, sel)
     sub.delete(toDelete)
 end
 
-aegisub.register_macro(script_name.."/"..script_name, script_description, showDialog, hasClip)
-aegisub.register_macro(script_name.."/Undo", script_description, undo, hasUndoData)
-    
-    
+version:registerMacros{
+    {script_name, nil, showDialog, hasClip},
+    {"Undo", nil, undo, hasUndoData}
+}

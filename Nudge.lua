@@ -1,19 +1,24 @@
 script_name="Nudge"
-script_description="Modifies override tags according to configuration."
-script_version="0.3.0"
+script_description="Provides configurable and hotkeyable tag/line modification macros."
+script_version="0.3.1"
 script_author="line0"
 
 local DependencyControl = require "l0.DependencyControl"
-local util, clipboard, json, LineCollection, Log, ASS, Common = DependencyControl{
-    configFile = config_file,
+local version = DependencyControl{
+    namespace = "l0.Nudge",
+    feed = "https://raw.githubusercontent.com/TypesettingCartel/line0-Aegisub-Scripts/master/DependencyControl.json",
     {
         "aegisub.util", "aegisub.clipboard", "json",
         {"a-mo.LineCollection", version="1.0.1", url="https://github.com/torque/Aegisub-Motion"},
         {"a-mo.Log", url="https://github.com/torque/Aegisub-Motion"},
-        {"l0.ASSFoundation", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"},
-        {"l0.Common", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"}
+        {"l0.ASSFoundation", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
+         feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
+        {"l0.ASSFoundation.Common", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
+         feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"}
     }
-}:requireModules()
+}
+
+local util, clipboard, json, LineCollection, Log, ASS, Common = version:requireModules()
 
 --------  Nudger Class -------------------
 
@@ -307,7 +312,7 @@ setmetatable(Configuration, {
 
 function Configuration.new(fileName)
   local self = setmetatable({}, Configuration)
-  self.fileName = aegisub.decode_path('?user/' .. fileName)
+  self.fileName = aegisub.decode_path(fileName)
   self.nudgers = {}
   self:load()
   return self
@@ -437,7 +442,7 @@ function Configuration:run(noReload)
 end
 -------------------------------------------
 
-local config = Configuration("nudge.json")
+local config = Configuration(version:getConfigFileName())
 
 aegisub.register_macro(script_name .. "/Configure Nudge", script_description, function()
     config:run()

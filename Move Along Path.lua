@@ -1,18 +1,21 @@
 script_name="Move Along Path"
 script_description="Moves text along a path specified in a \\clip. Currently only works on fbf lines."
-script_version="0.1.0"
+script_version="0.1.1"
 script_author="line0"
 
 local DependencyControl = require("l0.DependencyControl")
 local version = DependencyControl{
     namespace = "l0.MoveAlongPath",
+    feed = "https://raw.githubusercontent.com/TypesettingCartel/line0-Aegisub-Scripts/master/DependencyControl.json",
     {
         "aegisub.util",
         {"a-mo.LineCollection", version="1.0.1", url="https://github.com/torque/Aegisub-Motion"},
         {"a-mo.Line", version="1.0.0", url="https://github.com/TypesettingCartel/Aegisub-Motion"},
         {"a-mo.Log", url="https://github.com/torque/Aegisub-Motion"},
-        {"l0.ASSFoundation", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"},
-        {"l0.Common", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"},
+        {"l0.ASSFoundation", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
+         feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
+        {"l0.ASSFoundation.Common", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
+         feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"}
         {"YUtils"}
     }
 }

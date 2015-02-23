@@ -1,17 +1,21 @@
 -- TODO: calc scale
 script_name="Vertical Text"
 script_description="Splits a line into vertical text."
-script_version="0.0.1"
+script_version="0.1.0"
 script_author="line0"
 
 local DependencyControl = require("l0.DependencyControl")
 local version = DependencyControl{
+    namespace = "l0.VerticalText",
+    feed = "https://raw.githubusercontent.com/TypesettingCartel/line0-Aegisub-Scripts/master/DependencyControl.json",
     {
         {"a-mo.LineCollection", version="1.0.1", url="https://github.com/torque/Aegisub-Motion"},
         {"a-mo.Log", url="https://github.com/torque/Aegisub-Motion"},
-        {"l0.ASSFoundation", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"},
-        {"l0.Common", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"},
-        {"YUtils"}
+        {"l0.ASSFoundation", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
+         feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
+        {"l0.ASSFoundation.Common", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
+         feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
+        "YUtils"
     }
 }
 local LineCollection, Log, ASS, Common, YUtils = version:requireModules()

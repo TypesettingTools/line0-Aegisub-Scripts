@@ -13,7 +13,7 @@ local version = DependencyControl{
         {"a-mo.Log", url="https://github.com/torque/Aegisub-Motion"},
         {"l0.ASSFoundation", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
          feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
-        {"l0.Common", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
+        {"l0.ASSFoundation.Common", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
          feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"}
     }
 }

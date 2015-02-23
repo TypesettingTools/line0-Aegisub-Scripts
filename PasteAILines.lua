@@ -1,19 +1,21 @@
 script_name="Paste AI Lines"
 script_description="Convenience macro for pasting full lines exported by AI2ASS."
-script_version="0.1.0"
+script_version="0.1.1"
 script_author="line0"
 
-local config_file = "PasteAILines.json"
 local DependencyControl = require("l0.DependencyControl")
 local version = DependencyControl{
-    configFile = config_file,
+    namespace = "l0.PasteAILines",
+    feed = "https://raw.githubusercontent.com/TypesettingCartel/line0-Aegisub-Scripts/master/DependencyControl.json",
     {
         "aegisub.util", "aegisub.clipboard",
         {"a-mo.LineCollection", version="1.0.1", url="https://github.com/torque/Aegisub-Motion"},
         {"a-mo.ConfigHandler", version="1.1.1", url="https://github.com/torque/Aegisub-Motion"},
         {"a-mo.Log", url="https://github.com/torque/Aegisub-Motion"},
-        {"l0.ASSFoundation", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"},
-        {"l0.Common", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"}
+        {"l0.ASSFoundation", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
+         feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
+        {"l0.ASSFoundation.Common", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
+         feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"}
     }
 }
 local util, clipboard, LineCollection, ConfigHandler, Log, ASS, Common = version:requireModules()
@@ -50,7 +52,7 @@ local dlg = {
 }
 
 function showDialog(sub, sel)
-    local options = ConfigHandler(dlg, config_file, false, script_version)
+    local options = ConfigHandler(dlg, version:getConfigFileName(), false, script_version)
     dlg.main.aiLinesRaw.text = clipboard:get()
     options:read()
     options:updateInterface("main")

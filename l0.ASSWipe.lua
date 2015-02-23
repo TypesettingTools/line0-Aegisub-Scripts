@@ -1,6 +1,6 @@
 script_name="ASSWipe"
 script_description="Performs script cleanup, removes unnecessary tags and lines."
-script_version="0.1.1"
+script_version="0.1.2"
 script_author="line0"
 
 local DependencyControl = require "l0.DependencyControl"
@@ -79,7 +79,7 @@ function showDialog(sub, sel, res)
                                   hint="Determines the order cleaned tags will be ordered inside a tag section. Resets always go first, transforms last."}
         }
     }
-    local options = ConfigHandler(dlg, version:getConfigFileName(), false, script_version)
+    local options = ConfigHandler(dlg, version.configFile, false, script_version)
     options:read()
     options:updateInterface("main")
     local btn, res = aegisub.dialog.display(dlg.main)

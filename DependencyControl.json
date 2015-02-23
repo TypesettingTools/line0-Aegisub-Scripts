@@ -14,14 +14,14 @@
       "description": "Performs script cleanup, removes unnecessary tags and lines.",
       "channels": {
         "master": {
-          "version": "0.1.1",
+          "version": "0.1.2",
           "released": "2015-02-23",
           "default": true,
           "files": [
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "62B10225E88C44C6C3494D538FB4712E99590C12"
+              "sha1": "53AEAD91845FAB1C7EA681D10AA66A268409600F"
             }
           ],
           "requiredModules": [
@@ -67,6 +67,9 @@
         "0.1.1": [
           "Add update feeds",
           "Use default config file name. (rename ASSWipe.json -> config/l0.ASSWipe.json to restore your existing configuration)"
+        ],
+        "0.1.2": [
+          "Fix double expanding of config file name, which caused it turn out invalid."
         ]
       }
     },

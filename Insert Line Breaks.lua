@@ -1,15 +1,19 @@
 script_name="Insert Line Breaks"
 script_description="Inserts hard line breaks after n characters, but tries to avoid breaking up words."
-script_version="0.0.1"
+script_version="0.1.0"
 script_author="line0"
 
 local DependencyControl = require("l0.DependencyControl")
 local version = DependencyControl{
+    namespace = "l0.InsertLineBreaks",
+    feed = "https://raw.githubusercontent.com/TypesettingCartel/line0-Aegisub-Scripts/master/DependencyControl.json",
     {
         "aegisub.util", "aegisub.re", "aegisub.unicode",
         {"a-mo.LineCollection", version="1.0.1", url="https://github.com/torque/Aegisub-Motion"},
-        {"l0.ASSFoundation", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"},
-        {"l0.Common", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"}
+        {"l0.ASSFoundation", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
+         feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
+        {"l0.ASSFoundation.Common", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
+         feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"}
     }
 }
 local util, re, unicode, LineCollection, ASS, Common = version:requireModules()

@@ -1,17 +1,20 @@
 script_name="ASSWipe"
 script_description="Performs script cleanup, removes unnecessary tags and lines."
-script_version="0.1.0"
+script_version="0.1.1"
 script_author="line0"
 
 local DependencyControl = require "l0.DependencyControl"
 local version = DependencyControl{
-    configFile = config_file,
+    namespace = "l0.ASSWipe",
+    feed = "https://raw.githubusercontent.com/TypesettingCartel/line0-Aegisub-Scripts/master/DependencyControl.json",
     {
         {"a-mo.LineCollection", version="1.0.1", url="https://github.com/torque/Aegisub-Motion"},
         {"a-mo.ConfigHandler", version="1.1.1", url="https://github.com/torque/Aegisub-Motion"},
         {"a-mo.Log", url="https://github.com/torque/Aegisub-Motion"},
-        {"l0.ASSFoundation", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"},
-        {"l0.Common", version="0.1.0", url="https://github.com/TypesettingCartel/ASSFoundation"}
+        {"l0.ASSFoundation", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
+         feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
+        {"l0.Common", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
+         feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"}
     }
 }
 local LineCollection, ConfigHandler, Log, ASS, Common = version:requireModules()
@@ -76,7 +79,7 @@ function showDialog(sub, sel, res)
                                   hint="Determines the order cleaned tags will be ordered inside a tag section. Resets always go first, transforms last."}
         }
     }
-    local options = ConfigHandler(dlg, "ASSWipe.json", false, script_version)
+    local options = ConfigHandler(dlg, version:getConfigFileName(), false, script_version)
     options:read()
     options:updateInterface("main")
     local btn, res = aegisub.dialog.display(dlg.main)

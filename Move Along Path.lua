@@ -15,8 +15,8 @@ local version = DependencyControl{
         {"l0.ASSFoundation", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
          feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
         {"l0.ASSFoundation.Common", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
-         feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"}
-        {"YUtils"}
+         feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
+        "YUtils"
     }
 }
 local util, LineCollection, Line, Log, ASS, Common, YUtils = version:requireModules()

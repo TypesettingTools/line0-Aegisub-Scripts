@@ -3,7 +3,7 @@
   "name": "line0's Aegisub Scripts",
   "description": "Main repository for all of line0's automation macros.",
   "baseUrl": "https://github.com/TypesettingCartel/line0-Aegisub-Scripts",
-  "fileBaseUrl": "https://raw.githubusercontent.com/TypesettingCartel/line0-Aegisub-Scripts/@{channel}/@{namespacePath}",
+  "fileBaseUrl": "https://raw.githubusercontent.com/TypesettingCartel/line0-Aegisub-Scripts/@{channel}/@{namespace}",
   "url": "@{baseUrl}",
   "maintainer": "line0",
   "macros": {

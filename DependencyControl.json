@@ -21,7 +21,7 @@
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "53AEAD91845FAB1C7EA681D10AA66A268409600F"
+              "sha1": "2CC041C0F07B7F6386E564A89BD9808A3E63B7B0"
             }
           ],
           "requiredModules": [
@@ -69,7 +69,7 @@
           "Use default config file name. (rename ASSWipe.json -> config/l0.ASSWipe.json to restore your existing configuration)"
         ],
         "0.1.2": [
-          "Fix double expanding of config file name, which caused it turn out invalid."
+          "Fix double expanding of config file name, which caused it to turn out invalid."
         ]
       }
     },
@@ -87,7 +87,7 @@
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "1F06D3E40F13C4D3004B93AA38C6FEE96B4402B5"
+              "sha1": "217C43E4CFD86A67BFF7F123FF33225A4E6C1EDA"
             }
           ],
           "requiredModules": [
@@ -147,7 +147,7 @@
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "6A245EC0EAF4238C5CC47318091A565ABA903AF9"
+              "sha1": "68C1689941C4CC09061058B341954CD1F29C292D"
             }
           ],
           "requiredModules": [
@@ -212,7 +212,7 @@
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "DB1F451C24287EA8A40769B90ABAE27D99E866E7"
+              "sha1": "37124687CED991E730542B56EF00DF0E4FC594FB"
             }
           ],
           "requiredModules": [
@@ -277,7 +277,7 @@
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "1A68DEFBC5F9C9F74C7C62724C31FA24A2BE8CD7"
+              "sha1": "EC906956759E3780EF1E5EF755DE108CB1FCB366"
             }
           ],
           "requiredModules": [
@@ -333,7 +333,7 @@
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "FE92AF0110C48F62D0D04BBEB04E7B64F7F08A8A"
+              "sha1": "A2DBE38515BC63AE904829C8F15EDCAB196B93D7"
             }
           ],
           "requiredModules": [

@@ -2,10 +2,10 @@ script_name="Insert Line Breaks"
 script_description="Inserts hard line breaks after n characters, but tries to avoid breaking up words."
 script_version="0.1.0"
 script_author="line0"
+script_namespace="l0.InsertLineBreaks"
 
 local DependencyControl = require("l0.DependencyControl")
 local version = DependencyControl{
-    namespace = "l0.InsertLineBreaks",
     feed = "https://raw.githubusercontent.com/TypesettingCartel/line0-Aegisub-Scripts/master/DependencyControl.json",
     {
         "aegisub.util", "aegisub.re", "aegisub.unicode",
@@ -25,7 +25,7 @@ function showDialog(sub, sel)
             x=0, y=0, width=1, height=1
         },
         {
-            class="intedit", name="charLimit", 
+            class="intedit", name="charLimit",
             x=1, y=0, width=1, height=1, value=35
         },
         {

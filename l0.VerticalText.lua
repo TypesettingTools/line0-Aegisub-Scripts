@@ -3,10 +3,10 @@ script_name="Vertical Text"
 script_description="Splits a line into vertical text."
 script_version="0.1.0"
 script_author="line0"
+script_namespace="l0.VerticalText"
 
 local DependencyControl = require("l0.DependencyControl")
 local version = DependencyControl{
-    namespace = "l0.VerticalText",
     feed = "https://raw.githubusercontent.com/TypesettingCartel/line0-Aegisub-Scripts/master/DependencyControl.json",
     {
         {"a-mo.LineCollection", version="1.0.1", url="https://github.com/torque/Aegisub-Motion"},
@@ -76,11 +76,11 @@ function process(sub,sel,res)
             local an, frz = charData:insertTags(effTags.align,1):get(), effTags.angle:get()
             charOff = charOff + math.abs(math.cos(math.rad(frz)))*ascender
 
-            effTags.position:add(0, charOff + alignOffset(metrics.typeBounds.height-math.max(metrics.typeBounds[2]-metrics.descent,0), frz) 
+            effTags.position:add(0, charOff + alignOffset(metrics.typeBounds.height-math.max(metrics.typeBounds[2]-metrics.descent,0), frz)
                                             + alignOffset(metrics.width, frz+90))
             charData:removeTags("position")
             charData:insertTags(effTags.position,1)
-            
+
             -- set position for the next character
             local spacing = 0.2*avgMetrics[fontName].h*effTags.fontsize:get()/100
             charOff = charOff + math.abs(math.cos(math.rad(frz)))*(metrics.typeBounds.height + spacing + descender)

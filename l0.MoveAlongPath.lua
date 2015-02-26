@@ -2,10 +2,10 @@ script_name="Move Along Path"
 script_description="Moves text along a path specified in a \\clip. Currently only works on fbf lines."
 script_version="0.1.1"
 script_author="line0"
+script_namespace="l0.MoveAlongPath"
 
 local DependencyControl = require("l0.DependencyControl")
 local version = DependencyControl{
-    namespace = "l0.MoveAlongPath",
     feed = "https://raw.githubusercontent.com/TypesettingCartel/line0-Aegisub-Scripts/master/DependencyControl.json",
     {
         "aegisub.util",

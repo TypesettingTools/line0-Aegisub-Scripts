@@ -2,10 +2,10 @@ script_name="Paste AI Lines"
 script_description="Convenience macro for pasting full lines exported by AI2ASS."
 script_version="0.1.1"
 script_author="line0"
+script_namespace="l0.PasteAILines"
 
 local DependencyControl = require("l0.DependencyControl")
 local version = DependencyControl{
-    namespace = "l0.PasteAILines",
     feed = "https://raw.githubusercontent.com/TypesettingCartel/line0-Aegisub-Scripts/master/DependencyControl.json",
     {
         "aegisub.util", "aegisub.clipboard",
@@ -124,6 +124,6 @@ function pasteAILines(sub,sel,res)
 end
 
 version:registerMacros{
-    {"Open Menu", nil, showDialog}, 
+    {"Open Menu", nil, showDialog},
     {"Paste from Clipboard", nil, runSilently}
 }

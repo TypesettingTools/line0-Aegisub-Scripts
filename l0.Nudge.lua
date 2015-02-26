@@ -2,10 +2,10 @@ script_name="Nudge"
 script_description="Provides configurable and hotkeyable tag/line modification macros."
 script_version="0.3.1"
 script_author="line0"
+script_namespace="l0.Nudge"
 
 local DependencyControl = require "l0.DependencyControl"
 local version = DependencyControl{
-    namespace = "l0.Nudge",
     feed = "https://raw.githubusercontent.com/TypesettingCartel/line0-Aegisub-Scripts/master/DependencyControl.json",
     {
         "aegisub.util", "aegisub.clipboard", "json",

@@ -1,6 +1,6 @@
 script_name="Nudge"
 script_description="Provides configurable and hotkeyable tag/line modification macros."
-script_version="0.3.1"
+script_version="0.3.2"
 script_author="line0"
 script_namespace="l0.Nudge"
 

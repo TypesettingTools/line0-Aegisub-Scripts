@@ -1,6 +1,6 @@
 script_name="ASSWipe"
 script_description="Performs script cleanup, removes unnecessary tags and lines."
-script_version="0.1.2"
+script_version="0.1.3"
 script_author="line0"
 script_namespace="l0.ASSWipe"
 

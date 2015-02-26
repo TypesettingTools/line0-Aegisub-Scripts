@@ -1,6 +1,6 @@
 script_name="Insert Line Breaks"
 script_description="Inserts hard line breaks after n characters, but tries to avoid breaking up words."
-script_version="0.1.0"
+script_version="0.1.1"
 script_author="line0"
 script_namespace="l0.InsertLineBreaks"
 

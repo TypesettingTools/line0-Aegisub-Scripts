@@ -1,6 +1,6 @@
 script_name="Paste AI Lines"
 script_description="Convenience macro for pasting full lines exported by AI2ASS."
-script_version="0.1.1"
+script_version="0.1.2"
 script_author="line0"
 script_namespace="l0.PasteAILines"
 

@@ -14,14 +14,14 @@
       "description": "Performs script cleanup, removes unnecessary tags and lines.",
       "channels": {
         "master": {
-          "version": "0.1.2",
-          "released": "2015-02-23",
+          "version": "0.1.3",
+          "released": "2015-02-26",
           "default": true,
           "files": [
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "2CC041C0F07B7F6386E564A89BD9808A3E63B7B0"
+              "sha1": "A7BD1C7F0E776BA3010B1448F22DE6528F73B077"
             }
           ],
           "requiredModules": [
@@ -64,46 +64,45 @@
           "Sync with ASSFoundation changes",
           "Start versioning with DependencyControl"
         ],
-        "0.1.1": [
-          "Add update feeds",
-          "Use default config file name. (rename ASSWipe.json -> config/l0.ASSWipe.json to restore your existing configuration)"
-        ],
-        "0.1.2": [
-          "Fix double expanding of config file name, which caused it to turn out invalid."
+        "0.1.3": [
+          "Enabled auto-update using DependencyControl",
+          "Changed config file to \\config\\l0.ASSWipe.json (rename ASSWipe.json to restore your existing configuration)",
+          "DependencyControl compatibility fixes"
         ]
       }
     },
-    "l0.Nudge": {
+    "l0.InsertLineBreaks": {
       "url": "@{baseUrl}#@{namespace}",
       "author": "line0",
-      "name": "Nudge",
-      "description": "Provides configurable and hotkeyable tag/line modification macros.",
+      "name": "Insert Line Breaks",
+      "description": "Inserts hard line breaks after n characters, but tries to avoid breaking up words.",
       "channels": {
         "master": {
-          "version": "0.3.1",
+          "version": "0.1.1",
           "default": true,
-          "released": "2015-02-23",
+          "released": "2015-02-26",
           "files": [
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "217C43E4CFD86A67BFF7F123FF33225A4E6C1EDA"
+              "sha1": "543C46FAABC80D3BFCC55D8BB7EC762DB5888ECA"
             }
           ],
           "requiredModules": [
-            "aegisub.util",
-            "aegisub.clipboard",
-            "json",
+            {
+              "moduleName": "aegisub.util"
+            },
+            {
+              "moduleName": "aegisub.re"
+            },
+            {
+              "moduleName": "aegisub.unicode"
+            },
             {
               "moduleName": "a-mo.LineCollection",
               "name": "Aegisub-Motion (LineCollection)",
               "url": "https://github.com/torque/Aegisub-Motion",
               "version": "1.0.1"
-            },
-            {
-              "moduleName": "a-mo.Log",
-              "name": "Aegisub-Motion (Log)",
-              "url": "https://github.com/torque/Aegisub-Motion"
             },
             {
               "moduleName": "l0.ASSFoundation",
@@ -123,13 +122,13 @@
         }
       },
       "changelog": {
-        "0.3.0": [
+        "0.0.1": [
           "Sync with ASSFoundation changes",
           "Start versioning with DependencyControl"
         ],
-        "0.3.1": [
-          "Add update feeds",
-          "Use default config file name. (rename nudge.json -> config/l0.Nudge.json to restore your existing configuration)"
+        "0.1.1": [
+          "Enabled auto-update using DependencyControl",
+          "DependencyControl compatibility fixes"
         ]
       }
     },
@@ -140,20 +139,26 @@
       "description": "Moves text along a path specified in a \\clip. Currently only works on fbf lines.",
       "channels": {
         "master": {
-          "version": "0.1.1",
+          "version": "0.1.2",
           "default": true,
-          "released": "2015-02-23",
+          "released": "2015-02-26",
           "files": [
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "68C1689941C4CC09061058B341954CD1F29C292D"
+              "sha1": "0B4E0511116355D4A11C2EC75DF7EEAD0E14DE9F"
             }
           ],
           "requiredModules": [
-            "aegisub.util",
-            "aegisub.clipboard",
-            "YUtils",
+            {
+              "moduleName": "aegisub.util"
+            },
+            {
+              "moduleName": "aegisub.clipboard"
+            },
+            {
+              "moduleName": "YUtils"
+            },
             {
               "moduleName": "a-mo.LineCollection",
               "name": "Aegisub-Motion (LineCollection)",
@@ -193,8 +198,76 @@
           "Sync with ASSFoundation changes",
           "Start versioning with DependencyControl"
         ],
-        "0.1.1": [
-          "Add update feeds"
+        "0.1.2": [
+          "Enabled auto-update using DependencyControl",
+          "DependencyControl compatibility fixes"
+        ]
+      }
+    },
+    "l0.Nudge": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "line0",
+      "name": "Nudge",
+      "description": "Provides configurable and hotkeyable tag/line modification macros.",
+      "channels": {
+        "master": {
+          "version": "0.3.2",
+          "default": true,
+          "released": "2015-02-26",
+          "files": [
+            {
+              "name": ".lua",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "466235323E3A0CD84163F415DE40D90ED2E1B51F"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "aegisub.util"
+            },
+            {
+              "moduleName": "aegisub.clipboard"
+            },
+            {
+              "moduleName": "json"
+            },
+            {
+              "moduleName": "a-mo.LineCollection",
+              "name": "Aegisub-Motion (LineCollection)",
+              "url": "https://github.com/torque/Aegisub-Motion",
+              "version": "1.0.1"
+            },
+            {
+              "moduleName": "a-mo.Log",
+              "name": "Aegisub-Motion (Log)",
+              "url": "https://github.com/torque/Aegisub-Motion"
+            },
+            {
+              "moduleName": "l0.ASSFoundation",
+              "name": "ASSFoundation",
+              "url": "https://github.com/TypesettingCartel/ASSFoundation",
+              "version": "0.1.1",
+              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
+            },
+            {
+              "moduleName": "l0.ASSFoundation.Common",
+              "name": "ASSFoundation (Common)",
+              "url": "https://github.com/TypesettingCartel/ASSFoundation",
+              "version": "0.1.1",
+              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "0.3.0": [
+          "Sync with ASSFoundation changes",
+          "Start versioning with DependencyControl"
+        ],
+        "0.3.2": [
+          "Enabled auto-update using DependencyControl",
+          "Changed config file to \\config\\l0.Nudge.json (rename nudge.json to restore your existing configuration)",
+          "DependencyControl compatibility fixes"
         ]
       }
     },
@@ -205,19 +278,23 @@
       "description": "Convenience macro for pasting full lines exported by AI2ASS.",
       "channels": {
         "master": {
-          "version": "0.1.1",
+          "version": "0.1.2",
           "default": true,
-          "released": "2015-02-23",
+          "released": "2015-02-26",
           "files": [
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "37124687CED991E730542B56EF00DF0E4FC594FB"
+              "sha1": "2CEA0F2ECBA3A08C109AC5668EBC1F43FC6CAA1F"
             }
           ],
           "requiredModules": [
-            "aegisub.util",
-            "aegisub.clipboard",
+            {
+              "moduleName": "aegisub.util"
+            },
+            {
+              "moduleName": "aegisub.clipboard"
+            },
             {
               "moduleName": "a-mo.LineCollection",
               "name": "Aegisub-Motion (LineCollection)",
@@ -257,9 +334,10 @@
           "Sync with ASSFoundation changes",
           "Start versioning with DependencyControl"
         ],
-        "0.1.1": [
-          "Add update feeds",
-          "Use default config file name. (rename PasteAILines.json -> config/l0.PasteAILines.json to restore your existing configuration)"
+        "0.1.2": [
+          "Enabled auto-update using DependencyControl",
+          "Changed config file to \\config\\l0.PasteAILines.json (rename PasteAILines.json to restore your existing configuration)",
+          "DependencyControl compatibility fixes"
         ]
       }
     },
@@ -270,18 +348,20 @@
       "description": "Splits a line into vertical text.",
       "channels": {
         "master": {
-          "version": "0.1.0",
+          "version": "0.1.1",
           "default": true,
-          "released": "2015-02-23",
+          "released": "2015-02-26",
           "files": [
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "EC906956759E3780EF1E5EF755DE108CB1FCB366"
+              "sha1": "9CF5EA6396B37DB1533B5DC143D004D5E2DB7A4F"
             }
           ],
           "requiredModules": [
-            "YUtils",
+            {
+              "moduleName": "YUtils"
+            },
             {
               "moduleName": "a-mo.LineCollection",
               "name": "Aegisub-Motion (LineCollection)",
@@ -314,62 +394,9 @@
         "0.0.1": [
           "initial commit"
         ],
-        "0.1.0": [
-          "Add update feeds"
-        ]
-      }
-    },
-    "l0.InsertLineBreaks": {
-      "url": "@{baseUrl}#@{namespace}",
-      "author": "line0",
-      "name": "Insert Line Breaks",
-      "description": "Inserts hard line breaks after n characters, but tries to avoid breaking up words.",
-      "channels": {
-        "master": {
-          "version": "0.1.0",
-          "default": true,
-          "released": "2015-02-23",
-          "files": [
-            {
-              "name": ".lua",
-              "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "A2DBE38515BC63AE904829C8F15EDCAB196B93D7"
-            }
-          ],
-          "requiredModules": [
-            "aegisub.util",
-            "aegisub.re",
-            "aegisub.unicode",
-            {
-              "moduleName": "a-mo.LineCollection",
-              "name": "Aegisub-Motion (LineCollection)",
-              "url": "https://github.com/torque/Aegisub-Motion",
-              "version": "1.0.1"
-            },
-            {
-              "moduleName": "l0.ASSFoundation",
-              "name": "ASSFoundation",
-              "url": "https://github.com/TypesettingCartel/ASSFoundation",
-              "version": "0.1.1",
-              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
-            },
-            {
-              "moduleName": "l0.ASSFoundation.Common",
-              "name": "ASSFoundation (Common)",
-              "url": "https://github.com/TypesettingCartel/ASSFoundation",
-              "version": "0.1.1",
-              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
-            }
-          ]
-        }
-      },
-      "changelog": {
-        "0.0.1": [
-          "Sync with ASSFoundation changes",
-          "Start versioning with DependencyControl"
-        ],
-        "0.1.0": [
-          "Add update feeds"
+        "0.1.1": [
+          "Enabled auto-update using DependencyControl",
+          "DependencyControl compatibility fixes"
         ]
       }
     }

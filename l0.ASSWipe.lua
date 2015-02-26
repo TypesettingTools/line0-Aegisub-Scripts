@@ -79,7 +79,7 @@ function showDialog(sub, sel, res)
                                   hint="Determines the order cleaned tags will be ordered inside a tag section. Resets always go first, transforms last."}
         }
     }
-    local options = ConfigHandler(dlg, version.configFile, false, script_version)
+    local options = ConfigHandler(dlg, version.configFile, false, script_version, version.configDir)
     options:read()
     options:updateInterface("main")
     local btn, res = aegisub.dialog.display(dlg.main)

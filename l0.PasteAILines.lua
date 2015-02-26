@@ -52,7 +52,7 @@ local dlg = {
 }
 
 function showDialog(sub, sel)
-    local options = ConfigHandler(dlg, version:getConfigFileName(), false, script_version)
+    local options = ConfigHandler(dlg, version.configFile, false, script_version, version.configDir)
     dlg.main.aiLinesRaw.text = clipboard:get()
     options:read()
     options:updateInterface("main")
@@ -65,7 +65,7 @@ function showDialog(sub, sel)
 end
 
 function runSilently(sub, sel)
-    local options = ConfigHandler(dlg, config_file, false, script_version)
+    local options = ConfigHandler(dlg, version.configFile, false, script_version, version.configDir)
     options:read()
     local res = options.configuration.main
     res.aiLinesRaw = clipboard:get()

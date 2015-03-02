@@ -2,7 +2,7 @@ export script_name = "Highlight Substring"
 export script_description = "Highlights a substring at a given index in a line by underlaying a colored rectangle."
 export script_version = "0.1.0"
 export script_author = "line0"
-export script_namespace = "l0.highlightSubstring"
+export script_namespace = "l0.HighlightSubstring"
 
 DependencyControl = require "l0.DependencyControl"
 

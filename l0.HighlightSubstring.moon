@@ -50,7 +50,7 @@ showDialog = (sub, sel) ->
     btn, res = aegisub.dialog.display {
         {class: "label",   label:"Start Index:", x: 0, y: 0, width: 1, height: 1},
         {class: "intedit", name: "start",        x: 1, y: 0, width: 1, height: 1, value: 1, min: 0},
-        {class: "label",   label:"End Index:", x: 0, y: 1, width: 1, height: 1},
+        {class: "label",   label:"End Index:",   x: 0, y: 1, width: 1, height: 1},
         {class: "intedit", name: "end",          x: 1, y: 1, width: 1, height: 1, value: 1, min: 0}
     }
 

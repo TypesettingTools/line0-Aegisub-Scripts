@@ -1,6 +1,6 @@
 export script_name = "ASSWipe"
 export script_description = "Performs script cleanup, removes unnecessary tags and lines."
-export script_version = "0.1.3"
+export script_version = "0.2.0"
 export script_author = "line0"
 export script_namespace = "l0.ASSWipe"
 
@@ -11,9 +11,9 @@ version = DependencyControl{
         {"a-mo.LineCollection", version: "1.0.1", url: "https://github.com/torque/Aegisub-Motion"},
         {"a-mo.ConfigHandler", version: "1.1.1", url: "https://github.com/torque/Aegisub-Motion"},
         {"a-mo.Log", url: "https://github.com/torque/Aegisub-Motion"},
-        {"l0.ASSFoundation", version: "0.1.1", url: "https://github.com/TypesettingCartel/ASSFoundation",
+        {"l0.ASSFoundation", version: "0.2.0", url: "https://github.com/TypesettingCartel/ASSFoundation",
          feed: "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
-        {"l0.ASSFoundation.Common", version: "0.1.1", url: "https://github.com/TypesettingCartel/ASSFoundation",
+        {"l0.ASSFoundation.Common", version: "0.2.0", url: "https://github.com/TypesettingCartel/ASSFoundation",
          feed: "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
          "aegisub.util"
     }

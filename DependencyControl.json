@@ -219,14 +219,14 @@
       "description": "Provides configurable and hotkeyable tag/line modification macros.",
       "channels": {
         "master": {
-          "version": "0.3.2",
+          "version": "0.3.3",
           "default": true,
-          "released": "2015-02-26",
+          "released": "2015-03-21",
           "files": [
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "466235323E3A0CD84163F415DE40D90ED2E1B51F"
+              "sha1": "5679F65980E1C4A1AE4EF573E48793FD80BA2EA2"
             }
           ],
           "requiredModules": [
@@ -254,14 +254,14 @@
               "moduleName": "l0.ASSFoundation",
               "name": "ASSFoundation",
               "url": "https://github.com/TypesettingCartel/ASSFoundation",
-              "version": "0.1.1",
+              "version": "0.2.0",
               "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
             },
             {
               "moduleName": "l0.ASSFoundation.Common",
               "name": "ASSFoundation (Common)",
               "url": "https://github.com/TypesettingCartel/ASSFoundation",
-              "version": "0.1.1",
+              "version": "0.2.0",
               "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
             }
           ]
@@ -276,6 +276,9 @@
           "Enabled auto-update using DependencyControl",
           "Changed config file to \\config\\l0.Nudge.json (rename nudge.json to restore your existing configuration)",
           "DependencyControl compatibility fixes"
+        ],
+        "0.3.3": [
+          "ASSFoundation (Common) compatibility fixes"
         ]
       }
     },

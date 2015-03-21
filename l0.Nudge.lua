@@ -1,6 +1,6 @@
 script_name="Nudge"
 script_description="Provides configurable and hotkeyable tag/line modification macros."
-script_version="0.3.2"
+script_version="0.3.3"
 script_author="line0"
 script_namespace="l0.Nudge"
 
@@ -65,6 +65,7 @@ Nudger.targetList = table.keys(Nudger.targets.line)
 for name,ops in pairs(Nudger.targets.tags) do
     Nudger.targetList[#Nudger.targetList+1] = ASS.toFriendlyName[name] or name
 end
+table.sort(Nudger.targetList)
 
 
 Nudger.__index = Nudger
@@ -383,7 +384,8 @@ function Configuration:getDialog()
         return json:sub(2,json:len()-1)
     end
 
-    local tags, operations = table.sort(Nudger.targetList), table.sort(table.keys(Nudger.operations))
+    local tags, operations = Nudger.targetList, table.keys(Nudger.operations)
+    table.sort(operations)
 
     for i,nu in ipairs(self.nudgers) do
         dialog = table.join(dialog, {

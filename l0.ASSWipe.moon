@@ -90,7 +90,7 @@ process = (sub, sel, res) ->
             -- remove invisible lines
             stats.bytes += #line.raw + 1
             delCnt += 1
-            linesToDelete[delCnt] = line
+            linesToDelete[delCnt], line.ASS = line
         else
             if res.combineLines and not oldBounds.animated
                 hash = oldBounds.firstHash
@@ -133,6 +133,7 @@ process = (sub, sel, res) ->
                     tag.disabled = false
 
             data\commit!
+            line.ASS = nil
 
             if oldText != line.text
                 if not newBounds\equal oldBounds

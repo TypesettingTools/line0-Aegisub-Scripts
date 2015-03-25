@@ -14,14 +14,14 @@
       "description": "Performs script cleanup, removes unnecessary tags and lines.",
       "channels": {
         "master": {
-          "version": "0.2.0",
-          "released": "2015-03-18",
+          "version": "0.2.1",
+          "released": "2015-03-25",
           "default": true,
           "files": [
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "B11AC6F4A0DA2D37C318CCD33ADB1DF3CB9E1D20"
+              "sha1": "8593C37569F24C1E6FFB146B83C9FE305C24E907"
             },
             {
               "name": ".lua",
@@ -76,6 +76,10 @@
         "0.2.0": [
           "Scaled clips and drawings are now handled correctly and can be converted to floating-point.",
           "Drawings with extraneous ordinates are now detected and ASSWipe can attempt to fix them."
+        ],
+        "0.2.1": [
+          "Fixed out-of-memory errors on huge scripts.",
+          "Fixed the progress not being updated when no lines are being cleaned."
         ]
       }
     },

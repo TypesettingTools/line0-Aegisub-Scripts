@@ -145,7 +145,7 @@ process = (sub, sel, res) ->
                     stats.cleaned += 1
                     stats.bytes += #oldText - #line.text
 
-                aegisub.progress.set 100*i/lineCnt
+            aegisub.progress.set 100*i/lineCnt
 
     lines\runCallback callback, true
 

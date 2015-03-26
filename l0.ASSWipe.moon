@@ -80,6 +80,10 @@ process = (sub, sel, res) ->
         aegisub.cancel! if aegisub.progress.is_cancelled!
         aegisub.progress.task "Cleaning %d of %d lines..."\format i, lineCnt if i%10==0
 
+        unless line.styleRef
+            Log.warn "WARNING: Line #%d is using undefined style '%s', skipping...\n— %s", i, line.style, line.text
+            return
+
         success, data = pcall ASS\parse, line
         unless success
             Log.warn "Couldn't parse line #%d: %s", i, data

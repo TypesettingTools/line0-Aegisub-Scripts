@@ -14,14 +14,14 @@
       "description": "Performs script cleanup, removes unnecessary tags and lines.",
       "channels": {
         "master": {
-          "version": "0.2.1",
-          "released": "2015-03-25",
+          "version": "0.2.2",
+          "released": "2015-03-28",
           "default": true,
           "files": [
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "8593C37569F24C1E6FFB146B83C9FE305C24E907"
+              "sha1": "58F0D05DC31FFB35F9E22A117235DB42F66E983B"
             },
             {
               "name": ".lua",
@@ -50,7 +50,7 @@
               "moduleName": "l0.ASSFoundation",
               "name": "ASSFoundation",
               "url": "https://github.com/TypesettingCartel/ASSFoundation",
-              "version": "0.2.0",
+              "version": "0.2.2",
               "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
             },
             {
@@ -80,6 +80,9 @@
         "0.2.1": [
           "Fixed out-of-memory errors on huge scripts.",
           "Fixed the progress not being updated when no lines are being cleaned."
+        ],
+        "0.2.2": [
+          "ASSWipe now skips and warns about lines using undefined styles (instead of erroring out)."
         ]
       }
     },

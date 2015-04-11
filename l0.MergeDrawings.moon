@@ -62,9 +62,9 @@ mergeDrawings = (sub, sel, res, lines, lineCnt, targetLine) ->
                 unless align\equal 7
                     ex = section\getExtremePoints true
                     srcOff = align\getPositionOffset ex.w, ex.h
-                    section\sub(srcOff)
+                    section\sub srcOff
 
-                if i != 1
+                if i > 1
                     -- insert contours into first line, create a drawing section if none exists
                     targetSection or= (targetLine\insertSections ASS.Section.Drawing!)[1]
                     targetSection\insertContours section
@@ -76,10 +76,8 @@ mergeDrawings = (sub, sel, res, lines, lineCnt, targetLine) ->
         if i == 1
             -- write new position tag for the first line
             if pos.class == ASS.Tag.Move
-                startPos = pos.startPos
-                pos.endPos\sub startPos
-                pos = pos.startPos\copy!
-                startPos\set 0, 0
+                pos.endPos\sub pos.startPos
+                pos.startPos\set 0, 0
             else
                 data\replaceTags{ASS\createTag "position"}
         else

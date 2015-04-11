@@ -11,7 +11,7 @@ version = DependencyControl{
         {"a-mo.LineCollection", version: "1.0.1", url: "https://github.com/torque/Aegisub-Motion"},
         {"a-mo.ConfigHandler", version: "1.1.1", url: "https://github.com/torque/Aegisub-Motion"},
         {"a-mo.Log", url: "https://github.com/torque/Aegisub-Motion"},
-        {"l0.ASSFoundation", version: "0.2.2", url: "https://github.com/TypesettingCartel/ASSFoundation",
+        {"l0.ASSFoundation", version: "0.2.0", url: "https://github.com/TypesettingCartel/ASSFoundation",
          feed: "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
         {"l0.ASSFoundation.Common", version: "0.2.0", url: "https://github.com/TypesettingCartel/ASSFoundation",
          feed: "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
@@ -90,66 +90,68 @@ process = (sub, sel, res) ->
             return
         oldText, oldBounds = line.text, data\getLineBounds false
 
+        -- remove invisible lines
         if res.removeInvisible and oldBounds.w == 0
-            -- remove invisible lines
             stats.bytes += #line.raw + 1
             delCnt += 1
             linesToDelete[delCnt], line.ASS = line
-        else
-            if res.combineLines and not oldBounds.animated
-                hash = oldBounds.firstHash
-                if linesToCombine[hash]
-                    linesToCombine[hash][linesToCombine[hash].n+1] = line
-                    linesToCombine[hash].n = linesToCombine[hash].n+1
-                else
-                    linesToCombine[hash] = {line, n: 1}
+            return
 
-            -- un-scale drawings
-            if res.scale2float
-                callback = (section) ->
-                    if section.scale > 1
-                        section.scale\set 1
-                        stats.scale2float += 1
+        -- collect lines to combine
+        if res.combineLines and not oldBounds.animated
+            hash = oldBounds.firstHash
+            if linesToCombine[hash]
+                linesToCombine[hash][linesToCombine[hash].n+1] = line
+                linesToCombine[hash].n = linesToCombine[hash].n+1
+            else
+                linesToCombine[hash] = {line, n: 1}
 
-                data\callback callback, ASS.Section.Drawing
+        -- un-scale drawings
+        if res.scale2float
+            callback = (section) ->
+                if section.scale > 1
+                    section.scale\set 1
+                    stats.scale2float += 1
 
-            -- clean tags
-            data\cleanTags res.cleanLevel, true, res.tagsToKeep, res.tagSortOrder
-            newBounds = data\getLineBounds!
+            data\callback callback, ASS.Section.Drawing
 
-            if res.filterClips or res.removeJunk
-                data\modTags tagNames, (tag) ->
-                    -- remove junk
-                    if tag.instanceOf[ASS.Tag.Unknown]
-                        stats.junk += 1
-                        return false
+        -- clean tags
+        data\cleanTags res.cleanLevel, true, res.tagsToKeep, res.tagSortOrder
+        newBounds = data\getLineBounds!
 
-                    -- un-scale clips
-                    if tag.instanceOf[ASS.Tag.ClipVect] and res.scale2float and tag.scale>1
-                        tag.scale\set 1
-                        stats.scale2float += 1
+        if res.filterClips or res.removeJunk
+            data\modTags tagNames, (tag) ->
+                -- remove junk
+                if tag.instanceOf[ASS.Tag.Unknown]
+                    stats.junk += 1
+                    return false
 
-                    -- filter clips
-                    tag.disabled = true
-                    if data\getLineBounds!\equal newBounds
-                        stats.clips += 1
-                        return false
-                    tag.disabled = false
+                -- un-scale clips
+                if tag.instanceOf[ASS.Tag.ClipVect] and res.scale2float and tag.scale>1
+                    tag.scale\set 1
+                    stats.scale2float += 1
 
-            data\commit!
-            line.ASS = nil
+                -- filter clips
+                tag.disabled = true
+                if data\getLineBounds!\equal newBounds
+                    stats.clips += 1
+                    return false
+                tag.disabled = false
 
-            if oldText != line.text
-                if not newBounds\equal oldBounds
-                    debugError = true
-                    Log.warn "Cleaning affected output on line #%d, rolling back...", line.humanizedNumber
-                    Log.warn "—— Before: %s\n—— After: %s\n—— Style: %s\n", oldText, line.text, line.styleRef.name
-                    line.text = oldText
-                elseif #line.text < #oldText
-                    stats.cleaned += 1
-                    stats.bytes += #oldText - #line.text
+        data\commit!
+        line.ASS = nil
 
-            aegisub.progress.set 100*i/lineCnt
+        if oldText != line.text
+            if not newBounds\equal oldBounds
+                debugError = true
+                Log.warn "Cleaning affected output on line #%d, rolling back...", line.humanizedNumber
+                Log.warn "—— Before: %s\n—— After: %s\n—— Style: %s\n", oldText, line.text, line.styleRef.name
+                line.text = oldText
+            elseif #line.text < #oldText
+                stats.cleaned += 1
+                stats.bytes += #oldText - #line.text
+
+        aegisub.progress.set 100*i/lineCnt
 
     lines\runCallback callback, true
 

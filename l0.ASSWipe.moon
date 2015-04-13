@@ -227,5 +227,7 @@ showDialog = (sub, sel, res) ->
         options\write!
         process sub, sel, res
 
-
-version\registerMacro showDialog
+version\registerMacro showDialog, ->
+    if aegisub.project_properties!.video_file == ""
+        return false, "A video must be loaded to run #{script_name}."
+    else return true, script_description

@@ -96,9 +96,9 @@
         ],
         "0.3.0": [
           "Added support for purging invisible contours from drawings and clips.",
-          "ASSWipe can now only be run when a video is loaded."
+          "ASSWipe can now only be run when a video is loaded.",
           "The progress bar is now always updated for every processed line."
-        ],
+        ]
       }
     },
     "l0.InsertLineBreaks": {

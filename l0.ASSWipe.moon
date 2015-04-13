@@ -26,6 +26,7 @@ Done. Processed %d lines in %d seconds.
 — Removed %d invisible lines (%d%%)
 — Combined %d consecutive identical lines (%d%%)
 — Filtered %d clips and %d occurences of junk data
+— Purged %d invisible contours (%d in drawings, %d in clips)
 — Converted %d drawings/clips to floating-point
 — Total space saved: %.2f KB
 ]]
@@ -45,6 +46,8 @@ hints = {
     scale2float: "Converts drawings and clips with a scale parameter to a floating-point representation."
     tagSortOrder: "Determines the order cleaned tags will be ordered inside a tag section. Resets always go first, transforms last."
     fixDrawings: "Removes extraneous ordinates from broken drawings to make them parseable. May or may not changed the rendered output."
+    purgeContoursDraw: "Removes all contours of a drawing that are not visible on the canvas."
+    purgeContoursClip: "Removes all contours of a clip that do not affect the appearance of the line."
 }
 
 defaultSortOrder = [[
@@ -70,7 +73,8 @@ process = (sub, sel, res) ->
     linesToDelete, delCnt, linesToCombine, cmbCnt, lineCnt, debugError = {}, 0, {}, 0, #lines.lines, false
     tagNames = res.filterClips and util.copy(ASS.tagNames.clips) or {}
     tagNames[#tagNames+1] = res.removeJunk and "junk"
-    stats = bytes: 0, junk: 0, clips: 0, start: os.time!, cleaned: 0, scale2float: 0
+    stats = { bytes: 0, junk: 0, clips: 0, start: os.time!, cleaned: 0,
+              scale2float: 0, contoursDraw: 0, contoursClip: 0 }
 
     -- create proper tag name lists from user input which may be override tag names or mixed
     res.tagsToKeep = ASS\getTagNames res.tagsToKeep\split ",%s"
@@ -88,7 +92,16 @@ process = (sub, sel, res) ->
         unless success
             Log.warn "Couldn't parse line #%d: %s", i, data
             return
-        oldText, oldBounds = line.text, data\getLineBounds false
+        oldText, oldBounds = line.text, data\getLineBounds true
+
+        removeInvisibleContour = (contour) ->
+            contour.disabled = true
+            if oldBounds\equal data\getLineBounds!
+                if contour.parent.class == ASS.Section.Drawing
+                    stats.contoursDraw += 1
+                else stats.contoursClip += 1
+                return false
+            contour.disabled = false
 
         -- remove invisible lines
         if res.removeInvisible and oldBounds.w == 0
@@ -96,6 +109,18 @@ process = (sub, sel, res) ->
             delCnt += 1
             linesToDelete[delCnt], line.ASS = line
             return
+
+        if res.purgeContoursDraw or res.scale2float
+            cb = (section) ->
+                -- remove invisible contours from drawings
+                if res.purgeContoursDraw
+                    section\callback removeInvisibleContour
+                -- un-scale drawings
+                if res.scale2float and section.scale > 1
+                    section.scale\set 1
+                    stats.scale2float += 1
+
+            data\callback cb, ASS.Section.Drawing
 
         -- collect lines to combine
         if res.combineLines and not oldBounds.animated
@@ -105,15 +130,6 @@ process = (sub, sel, res) ->
                 linesToCombine[hash].n = linesToCombine[hash].n+1
             else
                 linesToCombine[hash] = {line, n: 1}
-
-        -- un-scale drawings
-        if res.scale2float
-            callback = (section) ->
-                if section.scale > 1
-                    section.scale\set 1
-                    stats.scale2float += 1
-
-            data\callback callback, ASS.Section.Drawing
 
         -- clean tags
         data\cleanTags res.cleanLevel, true, res.tagsToKeep, res.tagSortOrder
@@ -126,10 +142,14 @@ process = (sub, sel, res) ->
                     stats.junk += 1
                     return false
 
-                -- un-scale clips
-                if tag.instanceOf[ASS.Tag.ClipVect] and res.scale2float and tag.scale>1
-                    tag.scale\set 1
-                    stats.scale2float += 1
+                if tag.instanceOf[ASS.Tag.ClipVect]
+                    -- un-scale clips
+                    if res.scale2float and tag.scale>1
+                        tag.scale\set 1
+                        stats.scale2float += 1
+                    -- purge ineffective contours from clips
+                    if res.purgeContoursClip
+                        tag\callback removeInvisibleContour
 
                 -- filter clips
                 tag.disabled = true
@@ -166,7 +186,9 @@ process = (sub, sel, res) ->
 
     Log.dump{"Styles:", lines.styles, "Configuration:", res} if debugError
     Log.warn reportMsg, lineCnt, os.time!-stats.start, stats.cleaned, 100*stats.cleaned/lineCnt,
-             delCnt, 100*delCnt/lineCnt, cmbCnt, 100*cmbCnt/lineCnt, stats.clips, stats.junk, stats.scale2float, stats.bytes/1000
+             delCnt, 100*delCnt/lineCnt, cmbCnt, 100*cmbCnt/lineCnt, stats.clips, stats.junk,
+             stats.contoursClip+stats.contoursDraw, stats.contoursDraw, stats.contoursClip,
+             stats.scale2float, stats.bytes/1000
 
     if debugError
         Log.warn([[However, ASSWipe possibly encountered bugs while cleaning.
@@ -191,6 +213,9 @@ showDialog = (sub, sel, res) ->
             scale2float:        class: "checkbox", x: 0, y: 5, width: 2,  height: 1, value: true, config: true, label: "Un-scale drawings and clips", hint: hints.scale2float
             tagSortOrder:       class: "textbox",  x: 4, y: 4, width: 10, height: 3, value: defaultSortOrder, config: true, hint: hints.tagSortOrder
             fixDrawings:        class: "checkbox", x: 0, y: 6, width: 2,  height: 1, value: false, config: true, label: "Try to fix broken drawings", hint: hints.fixDrawings
+            purgeContoursLabel: class: "label",    x: 0, y: 8, width: 2,  height: 1, label: "Purge invisible contours: "
+            purgeContoursDraw:  class: "checkbox", x: 4, y: 8, width: 3,  height: 1, value: false, config: true, label: "from drawings", hint: hints.purgeContoursDraw
+            purgeContoursClip:  class: "checkbox", x: 7, y: 8, width: 6,  height: 1, value: false, config: true, label: "from clips", hint: hints.purgeContoursClip
         }
     }
     options = ConfigHandler dlg, version.configFile, false, script_version, version.configDir

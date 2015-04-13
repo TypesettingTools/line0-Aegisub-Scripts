@@ -11,14 +11,16 @@ version = DependencyControl{
         {"a-mo.LineCollection", version: "1.0.1", url: "https://github.com/torque/Aegisub-Motion"},
         {"a-mo.ConfigHandler", version: "1.1.1", url: "https://github.com/torque/Aegisub-Motion"},
         {"a-mo.Log", url: "https://github.com/torque/Aegisub-Motion"},
-        {"l0.ASSFoundation", version: "0.2.0", url: "https://github.com/TypesettingCartel/ASSFoundation",
+        {"l0.ASSFoundation", version: "0.2.4", url: "https://github.com/TypesettingCartel/ASSFoundation",
          feed: "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
         {"l0.ASSFoundation.Common", version: "0.2.0", url: "https://github.com/TypesettingCartel/ASSFoundation",
          feed: "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
+        {"SubInspector.Inspector", version: "0.6.1", url: "https://github.com/TypesettingTools/SubInspector",
+         feed: "https://raw.githubusercontent.com/TypesettingTools/SubInspector/master/DependencyControl.json"},
          "aegisub.util"
     }
 }
-LineCollection, ConfigHandler, Log, ASS, Common, util = version\requireModules!
+LineCollection, ConfigHandler, Log, ASS, Common, SubInspector, util = version\requireModules!
 
 reportMsg = [[
 Done. Processed %d lines in %d seconds.

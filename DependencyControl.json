@@ -2,8 +2,8 @@
   "dependencyControlFeedFormatVersion": "0.1.0",
   "name": "line0's Aegisub Scripts",
   "description": "Main repository for all of line0's automation macros.",
-  "baseUrl": "https://github.com/TypesettingCartel/line0-Aegisub-Scripts",
-  "fileBaseUrl": "https://raw.githubusercontent.com/TypesettingCartel/line0-Aegisub-Scripts/@{channel}/@{namespace}",
+  "baseUrl": "https://github.com/TypesettingTools/line0-Aegisub-Scripts",
+  "fileBaseUrl": "https://raw.githubusercontent.com/TypesettingTools/line0-Aegisub-Scripts/@{channel}/@{namespace}",
   "url": "@{baseUrl}",
   "maintainer": "line0",
   "macros": {
@@ -14,14 +14,14 @@
       "description": "Performs script cleanup, removes unnecessary tags and lines.",
       "channels": {
         "master": {
-          "version": "0.2.2",
-          "released": "2015-03-28",
+          "version": "0.3.0",
+          "released": "2015-04-13",
           "default": true,
           "files": [
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "58F0D05DC31FFB35F9E22A117235DB42F66E983B"
+              "sha1": "91A76510792E63A8ACAB07FB4DFD026CEABAC29B"
             },
             {
               "name": ".lua",
@@ -52,16 +52,23 @@
             {
               "moduleName": "l0.ASSFoundation",
               "name": "ASSFoundation",
-              "url": "https://github.com/TypesettingCartel/ASSFoundation",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
               "version": "0.2.2",
-              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             },
             {
               "moduleName": "l0.ASSFoundation.Common",
               "name": "ASSFoundation (Common)",
-              "url": "https://github.com/TypesettingCartel/ASSFoundation",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
               "version": "0.2.0",
-              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
+            },
+            {
+              "moduleName": "SubInspector.Inspector",
+              "name": "SubInspector",
+              "url": "https://github.com/TypesettingTools/SubInspector",
+              "version": "0.6.1",
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/SubInspector/master/DependencyControl.json"
             }
           ]
         }
@@ -86,7 +93,12 @@
         ],
         "0.2.2": [
           "ASSWipe now skips and warns about lines using undefined styles (instead of erroring out)."
-        ]
+        ],
+        "0.3.0": [
+          "Added support for purging invisible contours from drawings and clips.",
+          "ASSWipe can now only be run when a video is loaded."
+          "The progress bar is now always updated for every processed line."
+        ],
       }
     },
     "l0.InsertLineBreaks": {
@@ -126,16 +138,16 @@
             {
               "moduleName": "l0.ASSFoundation",
               "name": "ASSFoundation",
-              "url": "https://github.com/TypesettingCartel/ASSFoundation",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
               "version": "0.1.1",
-              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             },
             {
               "moduleName": "l0.ASSFoundation.Common",
               "name": "ASSFoundation (Common)",
-              "url": "https://github.com/TypesettingCartel/ASSFoundation",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
               "version": "0.1.1",
-              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             }
           ]
         }
@@ -201,16 +213,16 @@
             {
               "moduleName": "l0.ASSFoundation",
               "name": "ASSFoundation",
-              "url": "https://github.com/TypesettingCartel/ASSFoundation",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
               "version": "0.1.1",
-              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             },
             {
               "moduleName": "l0.ASSFoundation.Common",
               "name": "ASSFoundation (Common)",
-              "url": "https://github.com/TypesettingCartel/ASSFoundation",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
               "version": "0.1.1",
-              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             }
           ]
         }
@@ -254,9 +266,9 @@
             {
               "moduleName": "l0.ASSFoundation",
               "name": "ASSFoundation",
-              "url": "https://github.com/TypesettingCartel/ASSFoundation",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
               "version": "0.2.3",
-              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             }
           ]
         }
@@ -310,16 +322,16 @@
             {
               "moduleName": "l0.ASSFoundation",
               "name": "ASSFoundation",
-              "url": "https://github.com/TypesettingCartel/ASSFoundation",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
               "version": "0.2.0",
-              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             },
             {
               "moduleName": "l0.ASSFoundation.Common",
               "name": "ASSFoundation (Common)",
-              "url": "https://github.com/TypesettingCartel/ASSFoundation",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
               "version": "0.2.0",
-              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             }
           ]
         }
@@ -386,16 +398,16 @@
             {
               "moduleName": "l0.ASSFoundation",
               "name": "ASSFoundation",
-              "url": "https://github.com/TypesettingCartel/ASSFoundation",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
               "version": "0.1.1",
-              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             },
             {
               "moduleName": "l0.ASSFoundation.Common",
               "name": "ASSFoundation (Common)",
-              "url": "https://github.com/TypesettingCartel/ASSFoundation",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
               "version": "0.1.1",
-              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             }
           ]
         }
@@ -440,9 +452,9 @@
             {
               "moduleName": "l0.ASSFoundation",
               "name": "ASSFoundation",
-              "url": "https://github.com/TypesettingCartel/ASSFoundation",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
               "version": "0.2.4",
-              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             }
           ]
         }
@@ -490,16 +502,16 @@
             {
               "moduleName": "l0.ASSFoundation",
               "name": "ASSFoundation",
-              "url": "https://github.com/TypesettingCartel/ASSFoundation",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
               "version": "0.1.1",
-              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             },
             {
               "moduleName": "l0.ASSFoundation.Common",
               "name": "ASSFoundation (Common)",
-              "url": "https://github.com/TypesettingCartel/ASSFoundation",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
               "version": "0.1.1",
-              "feed": "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             }
           ]
         }

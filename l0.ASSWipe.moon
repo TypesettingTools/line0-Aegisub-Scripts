@@ -1,6 +1,6 @@
 export script_name = "ASSWipe"
 export script_description = "Performs script cleanup, removes unnecessary tags and lines."
-export script_version = "0.2.2"
+export script_version = "0.3.0"
 export script_author = "line0"
 export script_namespace = "l0.ASSWipe"
 

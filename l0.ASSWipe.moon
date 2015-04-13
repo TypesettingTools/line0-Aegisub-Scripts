@@ -85,6 +85,7 @@ process = (sub, sel, res) ->
     callback = (lines, line, i) ->
         aegisub.cancel! if aegisub.progress.is_cancelled!
         aegisub.progress.task "Cleaning %d of %d lines..."\format i, lineCnt if i%10==0
+        aegisub.progress.set 100*i/lineCnt
 
         unless line.styleRef
             Log.warn "WARNING: Line #%d is using undefined style '%s', skipping...\n— %s", i, line.style, line.text
@@ -172,8 +173,6 @@ process = (sub, sel, res) ->
             elseif #line.text < #oldText
                 stats.cleaned += 1
                 stats.bytes += #oldText - #line.text
-
-        aegisub.progress.set 100*i/lineCnt
 
     lines\runCallback callback, true
 

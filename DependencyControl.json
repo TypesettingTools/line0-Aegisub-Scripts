@@ -14,14 +14,14 @@
       "description": "Performs script cleanup, removes unnecessary tags and lines.",
       "channels": {
         "master": {
-          "version": "0.3.0",
-          "released": "2015-04-13",
+          "version": "0.3.1",
+          "released": "2015-04-17",
           "default": true,
           "files": [
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "91A76510792E63A8ACAB07FB4DFD026CEABAC29B"
+              "sha1": "A9A3962648C012FA8713F683367EA6353401532F"
             },
             {
               "name": ".lua",
@@ -98,6 +98,9 @@
           "Added support for purging invisible contours from drawings and clips.",
           "ASSWipe can now only be run when a video is loaded.",
           "The progress bar is now always updated for every processed line."
+        ],
+        "0.3.1": [
+          "Fixed a bug that would cause a rollback on lines that were cleaned up properly."
         ]
       }
     },

@@ -1,20 +1,20 @@
 export script_name = "ASSWipe"
 export script_description = "Performs script cleanup, removes unnecessary tags and lines."
-export script_version = "0.3.0"
+export script_version = "0.3.1"
 export script_author = "line0"
 export script_namespace = "l0.ASSWipe"
 
 DependencyControl = require "l0.DependencyControl"
 version = DependencyControl{
-    feed: "https://raw.githubusercontent.com/TypesettingCartel/line0-Aegisub-Scripts/master/DependencyControl.json",
+    feed: "https://raw.githubusercontent.com/TypesettingTools/line0-Aegisub-Scripts/master/DependencyControl.json",
     {
         {"a-mo.LineCollection", version: "1.0.1", url: "https://github.com/torque/Aegisub-Motion"},
         {"a-mo.ConfigHandler", version: "1.1.1", url: "https://github.com/torque/Aegisub-Motion"},
         {"a-mo.Log", url: "https://github.com/torque/Aegisub-Motion"},
-        {"l0.ASSFoundation", version: "0.2.4", url: "https://github.com/TypesettingCartel/ASSFoundation",
-         feed: "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
-        {"l0.ASSFoundation.Common", version: "0.2.0", url: "https://github.com/TypesettingCartel/ASSFoundation",
-         feed: "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
+        {"l0.ASSFoundation", version: "0.2.4", url: "https://github.com/TypesettingTools/ASSFoundation",
+         feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
+        {"l0.ASSFoundation.Common", version: "0.2.0", url: "https://github.com/TypesettingTools/ASSFoundation",
+         feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
         {"SubInspector.Inspector", version: "0.6.1", url: "https://github.com/TypesettingTools/SubInspector",
          feed: "https://raw.githubusercontent.com/TypesettingTools/SubInspector/master/DependencyControl.json"},
          "aegisub.util"

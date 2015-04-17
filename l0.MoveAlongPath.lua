@@ -6,16 +6,19 @@ script_namespace="l0.MoveAlongPath"
 
 local DependencyControl = require("l0.DependencyControl")
 local version = DependencyControl{
-    feed = "https://raw.githubusercontent.com/TypesettingCartel/line0-Aegisub-Scripts/master/DependencyControl.json",
+    feed = "https://raw.githubusercontent.com/TypesettingTools/line0-Aegisub-Scripts/master/DependencyControl.json",
     {
         "aegisub.util",
-        {"a-mo.LineCollection", version="1.0.1", url="https://github.com/torque/Aegisub-Motion"},
-        {"a-mo.Line", version="1.0.0", url="https://github.com/TypesettingCartel/Aegisub-Motion"},
-        {"a-mo.Log", url="https://github.com/torque/Aegisub-Motion"},
-        {"l0.ASSFoundation", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
-         feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
-        {"l0.ASSFoundation.Common", version="0.1.1", url="https://github.com/TypesettingCartel/ASSFoundation",
-         feed = "https://raw.githubusercontent.com/TypesettingCartel/ASSFoundation/master/DependencyControl.json"},
+        {"a-mo.LineCollection", version="1.0.1", url="https://github.com/torque/Aegisub-Motion",
+         feed = "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/master/DependencyControl.json"},
+        {"a-mo.Line", version="1.0.0", url="https://github.com/TypesettingTools/Aegisub-Motion",
+         feed = "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/master/DependencyControl.json"},
+        {"a-mo.Log", url="https://github.com/torque/Aegisub-Motion",
+         feed = "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/master/DependencyControl.json"},
+        {"l0.ASSFoundation", version="0.1.1", url="https://github.com/TypesettingTools/ASSFoundation",
+         feed = "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
+        {"l0.ASSFoundation.Common", version="0.1.1", url="https://github.com/TypesettingTools/ASSFoundation",
+         feed = "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
         "YUtils"
     }
 }

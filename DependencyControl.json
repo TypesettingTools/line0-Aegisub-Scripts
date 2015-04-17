@@ -118,7 +118,7 @@
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "543C46FAABC80D3BFCC55D8BB7EC762DB5888ECA"
+              "sha1": "E7F7EF6804EC31A66A63D21429A8ED6BA3AEF24C"
             }
           ],
           "requiredModules": [
@@ -180,7 +180,7 @@
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "0B4E0511116355D4A11C2EC75DF7EEAD0E14DE9F"
+              "sha1": "A829CD349D341C885F813E782D3DFE261C31808D"
             }
           ],
           "requiredModules": [
@@ -255,7 +255,7 @@
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "893926314A46D0C097C8AC5C26063315BB63698E"
+              "sha1": "A0190342A430CA5005F1475D0B74ADBECEB2725F"
             }
           ],
           "requiredModules": [
@@ -296,7 +296,7 @@
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "FD99E0952A6AD65563E1AFBA04E61EB3EB172572"
+              "sha1": "A29008DAA86AB30F08A8698CA698D16D6566EE81"
             }
           ],
           "requiredModules": [
@@ -371,7 +371,7 @@
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "2CEA0F2ECBA3A08C109AC5668EBC1F43FC6CAA1F"
+              "sha1": "A14931A8BACD1C81C9998D0B7FCD66248612577D"
             }
           ],
           "requiredModules": [
@@ -444,7 +444,7 @@
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "1A84FA1F5659F69DA8F0567B8F5B9EB0D0E3DE03"
+              "sha1": "DE2B6E8FFE8B20BD38711567B21ADD0D20997C37"
             }
           ],
           "requiredModules": [
@@ -485,7 +485,7 @@
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "9CF5EA6396B37DB1533B5DC143D004D5E2DB7A4F"
+              "sha1": "522254E08A09996BCB8409482455643B1EC6BF60"
             }
           ],
           "requiredModules": [

@@ -10,7 +10,7 @@ local version = DependencyControl{
     {
         "aegisub.util", "aegisub.re", "aegisub.unicode",
         {"a-mo.LineCollection", version="1.0.1", url="https://github.com/torque/Aegisub-Motion",
-         feed = "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/master/DependencyControl.json"},
+         feed = "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
         {"l0.ASSFoundation", version="0.1.1", url="https://github.com/TypesettingTools/ASSFoundation",
          feed = "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
         {"l0.ASSFoundation.Common", version="0.1.1", url="https://github.com/TypesettingTools/ASSFoundation",

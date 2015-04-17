@@ -11,7 +11,7 @@ rec = DependencyControl{
     {
         {"a-mo.LineCollection", version: "1.0.1", url: "https://github.com/torque/Aegisub-Motion",
          feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/master/DependencyControl.json"},
-        {"l0.ASSFoundation", version: "0.1.2", url: "https://github.com/TypesettingTools/ASSFoundation",
+        {"l0.ASSFoundation", version: "0.2.4", url: "https://github.com/TypesettingTools/ASSFoundation",
          feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"}
     }
 }

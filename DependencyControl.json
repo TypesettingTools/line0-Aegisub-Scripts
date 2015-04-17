@@ -289,14 +289,14 @@
       "description": "Provides configurable and hotkeyable tag/line modification macros.",
       "channels": {
         "master": {
-          "version": "0.3.3",
+          "version": "0.3.4",
           "default": true,
-          "released": "2015-03-21",
+          "released": "2015-04-17",
           "files": [
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "5679F65980E1C4A1AE4EF573E48793FD80BA2EA2"
+              "sha1": "FD99E0952A6AD65563E1AFBA04E61EB3EB172572"
             }
           ],
           "requiredModules": [
@@ -326,7 +326,7 @@
               "moduleName": "l0.ASSFoundation",
               "name": "ASSFoundation",
               "url": "https://github.com/TypesettingTools/ASSFoundation",
-              "version": "0.2.0",
+              "version": "0.2.5",
               "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             },
             {
@@ -351,6 +351,9 @@
         ],
         "0.3.3": [
           "ASSFoundation (Common) compatibility fixes"
+        ],
+        "0.3.4": [
+          "Drawing -> Clip conversion is now available."
         ]
       }
     },

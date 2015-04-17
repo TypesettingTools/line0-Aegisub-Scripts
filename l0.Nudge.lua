@@ -24,7 +24,7 @@ local util, clipboard, json, LineCollection, Log, ASS, Common = version:requireM
 
 local cmnOps = {"Add", "Multiply", "Power", "Cycle", "Set", "Set Default", "Remove", "Copy", "Paste Over", "Paste Into"}
 local colorOps, stringOps = table.join(cmnOps, {"Add HSV"}),  {"Append", "Prepend", "Replace", "Cycle", "Set", "Set Default", "Remove"}
-local drawingOps = {"Add", "Multiply", "Power", "Remove", "Copy", "Paste Over", "Paste Into", "Expand"}
+local drawingOps = {"Add", "Multiply", "Power", "Remove", "Copy", "Paste Over", "Paste Into", "Expand", "Convert To Clip"}
 local clipOpsVect = table.join(drawingOps, {"Invert Clip", "Convert To Drawing", "Set Default"})
 local clipOptsRect = table.join(cmnOps,{"Invert Clip", "Convert To Drawing"})
 local Nudger = {
@@ -222,6 +222,19 @@ function Nudger:nudgeLines(lineData, lines, line, targets)
                 lineData:insertSections(ASS.Section.Drawing{str=sectStr})
             elseif targets["Text"] then
                 lineData:insertSections(ASS.Section.Text(sectStr))
+            end
+        elseif op=="Convert To Clip" then
+            local clip
+            lineData:callback(function(sect)
+                if clip then
+                    clip:insertContours(sect:getClip())
+                else
+                    clip = sect:getClip()
+                end
+                return false
+            end, ASS.Section.Drawing, tagSect, tagSect, relative)
+            if clip then
+                lineData:replaceTags(clip)
             end
         end
     end

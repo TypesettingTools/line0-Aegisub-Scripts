@@ -95,7 +95,12 @@ process = (sub, sel, res) ->
         unless success
             Log.warn "Couldn't parse line #%d: %s", i, data
             return
-        oldText, oldBounds = line.text, data\getLineBounds true
+
+        -- it is essential to run SubInspector on a ASSFoundation-built line (rather than the original)
+        -- because ASSFoundation rounds tag values to a sane precision, which is not visible but
+        -- will produce a hash mismatch compared to the original line. However we must avoid that to
+        -- not trigger the ASSWipe bug detection
+        oldText, oldBounds = line.text, data\getLineBounds false
 
         removeInvisibleContour = (contour) ->
             contour.disabled = true

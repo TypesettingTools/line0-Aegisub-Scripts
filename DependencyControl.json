@@ -524,7 +524,7 @@
           "released": "2015-04-13",
           "files": [
             {
-              "name": ".lua",
+              "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
               "sha1": "A406DA568A48902F3BDE7E39F35DBA7D63975788"
             }

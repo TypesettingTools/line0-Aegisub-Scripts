@@ -553,6 +553,50 @@
         ]
       }
     },
+    "l0.SplitLines": {
+      "url": "@{baseUrl}#@{namespace}",
+      "author": "line0",
+      "name": "Split Lines",
+      "description": "Splits lines at configurable intervals, specified indexes or at tag boundaries while maintaining appearance.",
+      "channels": {
+        "master": {
+          "version": "0.1.0",
+          "default": true,
+          "released": "2015-05-06",
+          "files": [
+            {
+              "name": ".moon",
+              "url": "@{fileBaseUrl}@{fileName}",
+              "sha1": "20385983588EB4549620AFF044A593B068D7453A"
+            }
+          ],
+          "requiredModules": [
+            {
+              "moduleName": "a-mo.LineCollection",
+              "name": "Aegisub-Motion (LineCollection)",
+              "url": "https://github.com/torque/Aegisub-Motion",
+              "version": "1.0.1",
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"
+            },
+            {
+              "moduleName": "l0.ASSFoundation",
+              "name": "ASSFoundation",
+              "url": "https://github.com/TypesettingTools/ASSFoundation",
+              "version": "0.2.4",
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
+            },
+            {
+              "moduleName": "aegisub.re"
+            }
+          ]
+        }
+      },
+      "changelog": {
+        "0.1.0": [
+          "initial commit"
+        ]
+      }
+    },
     "l0.VerticalText": {
       "url": "@{baseUrl}#@{namespace}",
       "author": "line0",

@@ -102,7 +102,7 @@ function process(sub,sel,res)
     end)
 
     local startDist, metricsCache, path, posOff, angleOff, totalLength = 0, {}
-    local finalLines, lineCnt, finalLineCnt = LineCollection(sub), #lines.lines, 0
+    local linesToDelete, lineCnt, finalLineCnt, firstLineNum = {}, #lines.lines, 0
     local alignOffset = {
         [0] = function(w,a) return math.cos(math.rad(a))*w end,    -- right
         [1] = function() return 0 end,                             -- left
@@ -123,6 +123,7 @@ function process(sub,sel,res)
             aegisub.cancel()
         end
 
+        linesToDelete[i] = line
         local data, orgText = ASS:parse(line), line.text
         if i==1 then -- get path data and relative position/angle from first line
             path = data:getTags({"clip_vect","iclip_vect"})[1]
@@ -130,6 +131,7 @@ function process(sub,sel,res)
             data:removeTags({"clip_vect","iclip_vect"})
             angleOff, posOff = path:getAngleAtLength(0), path.contours[1].commands[1]:get()
             totalLength = path:getLength()
+            firstLineNum = line.number
         end
 
         if res.reverseLine then data:reverse() end
@@ -174,10 +176,10 @@ function process(sub,sel,res)
 
             charData:commit()
             if charData:getLineBounds(true).w ~= 0 then
-                charLines[j].number, finalLineCnt = sel[#sel]+finalLineCnt, finalLineCnt+1
                 local extra = {settings = res, id = id, orgLine = j==1 and orgText or nil}
                 charLines[j]:setExtraData(version.namespace, extra)
-                finalLines:addLine(charLines[j])
+                lines:addLine(charLines[j], nil, true, firstLineNum + finalLineCnt)
+                finalLineCnt = finalLineCnt + 1
             end
         end
 
@@ -186,8 +188,8 @@ function process(sub,sel,res)
         startDist = util.interpolate(time*framePct, 0, totalLength)
         aegisub.progress.set(i*100/lineCnt)
     end, true)
-    finalLines:insertLines()
-    lines:deleteLines()
+    lines:deleteLines(linesToDelete)
+    lines:insertLines()
 end
 
 function hasClip(sub, sel, active)

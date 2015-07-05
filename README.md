@@ -68,7 +68,7 @@ Operations
  - **Set Default:** Sets the tag fields to their default values according to the style of the line. The *value* field is ignored.
  - **Toggle:** Switches on/off type tags (*\i*,*\u*...) between 1 and 0. The *value* field is ignored.
  - **Add HSV:** modifies RGB values of color tags in the HSV domain. Values must be supplied as *Hue,Saturation,Value*. Hue takes an angle, while Saturation and Value must be supplied in range 0..1.
- - **Align Up/Down/Left/Right:** changes the alignment (*\an*) of a line stepwise in the specified direction. Example: *Align Up* changes *\an2* to *\an5*, *\an1* to *\an7*, but doesn't do anything for *\an8*.
+ - **Align Up/Down/Left/Right:** changes the alignment (*\an*) of a line stepwise in the specified direction. Example: *Align Up* changes *\an2* to *\an5*, *\an1* to *\an7*, but doesn't do anything for *\an8*. Set the *first value* to *true* to make Nudge maintain the appearance of the line by compensating the alignment change with *\pos* and (if required) *\org* adjustments.
  - **Append/Prepend:**: appends/prepends the specified string to string type tags (*\fs*, *\r*)
  - **Replace**: replaces in string type tags using regular expressions **(NOT lua expressions)**. First value is the string or pattern to match,  second value the replacement string.
  - **Invert Clip**: Changes *\clip* to *\iclip* and vice versa

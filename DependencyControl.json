@@ -374,14 +374,14 @@
       "description": "Provides configurable and hotkeyable tag/line modification macros.",
       "channels": {
         "master": {
-          "version": "0.3.4",
+          "version": "0.4.0",
           "default": true,
-          "released": "2015-04-17",
+          "released": "2015-07-05",
           "files": [
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "A29008DAA86AB30F08A8698CA698D16D6566EE81"
+              "sha1": "2D08E3FEA43782827D3F67DBCB98899911EF8D76"
             }
           ],
           "requiredModules": [
@@ -390,6 +390,9 @@
             },
             {
               "moduleName": "aegisub.clipboard"
+            },
+            {
+              "moduleName": "aegisub.re"
             },
             {
               "moduleName": "json"
@@ -411,7 +414,7 @@
               "moduleName": "l0.ASSFoundation",
               "name": "ASSFoundation",
               "url": "https://github.com/TypesettingTools/ASSFoundation",
-              "version": "0.2.5",
+              "version": "0.3.0",
               "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             },
             {
@@ -439,6 +442,9 @@
         ],
         "0.3.4": [
           "Drawing -> Clip conversion is now available."
+        ],
+        "0.4.0": [
+          "An option to maintain the appearance of the line when changing the aligment was added to the Align Up/Down/Left/Right operations."
         ]
       }
     },

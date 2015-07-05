@@ -1,6 +1,6 @@
 script_name="Nudge"
 script_description="Provides configurable and hotkeyable tag/line modification macros."
-script_version="0.3.4"
+script_version="0.4.0"
 script_author="line0"
 script_namespace="l0.Nudge"
 
@@ -8,17 +8,17 @@ local DependencyControl = require "l0.DependencyControl"
 local version = DependencyControl{
     feed = "https://raw.githubusercontent.com/TypesettingTools/line0-Aegisub-Scripts/master/DependencyControl.json",
     {
-        "aegisub.util", "aegisub.clipboard", "json",
+        "aegisub.util", "aegisub.clipboard", "aegisub.re", "json",
         {"a-mo.LineCollection", version="1.0.1", url="https://github.com/torque/Aegisub-Motion"},
         {"a-mo.Log", url="https://github.com/torque/Aegisub-Motion"},
-        {"l0.ASSFoundation", version="0.2.5", url="https://github.com/TypesettingTools/ASSFoundation",
+        {"l0.ASSFoundation", version="0.3.0", url="https://github.com/TypesettingTools/ASSFoundation",
          feed = "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
         {"l0.ASSFoundation.Common", version="0.2.0", url="https://github.com/TypesettingTools/ASSFoundation",
          feed = "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"}
     }
 }
 
-local util, clipboard, json, LineCollection, Log, ASS, Common = version:requireModules()
+local util, clipboard, re, json, LineCollection, Log, ASS, Common = version:requireModules()
 
 --------  Nudger Class -------------------
 
@@ -28,7 +28,7 @@ local drawingOps = {"Add", "Multiply", "Power", "Remove", "Copy", "Paste Over", 
 local clipOpsVect = table.join(drawingOps, {"Invert Clip", "Convert To Drawing", "Set Default"})
 local clipOptsRect = table.join(cmnOps,{"Invert Clip", "Convert To Drawing"})
 local Nudger = {
-    operations = {Add="add", Multiply="mul", Power="pow", Set="set", ["Align Up"]="up", ["Align Down"]="down", ["Align Left"]="left", ["Align Right"]="right",
+    operations = {Add="add", Multiply="mul", Power="pow", Set="set", ["Align Up"]=false, ["Align Down"]=false, ["Align Left"]=false, ["Align Right"]=false,
               Toggle="toggle", ["Auto Cycle"]="cycle", Cycle=false, ["Set Default"]=false, ["Add HSV"]="addHSV", Replace="replace", Append="append", Prepend="prepend",
               ["Invert Clip"]="toggleInverse", Remove = false, ["Convert To Drawing"]=false, ["Set Comment"]=false, ["Unset Comment"]=false, ["Toggle Comment"]=false,
               ["Copy"]=false, ["Paste Over"]=false, ["Paste Into"]=false, Expand=false, ["Convert To Clip"]=false},
@@ -171,6 +171,44 @@ function Nudger:nudgeTags(lineData, lines, line, targets)
 
             lineData:insertSections(drawing)
             if pos then lineData:replaceTags(pos) end
+
+    else
+        local opAlign = re.match(self.operation, "Align (Up|Down|Left|Right)")
+        if opAlign then
+            local pos, align, org= lineData:getPosition()
+            local newAlign = align:copy()
+            newAlign[string.lower(opAlign[2].str)](newAlign)
+
+            if self.value[1] == true then
+                local haveDrawings, haveRotation, w, h = false, false
+                lineData:callback(function(section,sections,i)
+                    haveDrawings = true
+                end, ASS.Section.Drawing)
+
+                -- While text uses type metrics for positioning and alignment
+                -- vector drawings use a straight bounding box
+                -- TODO: make this work for lines that have both drawings AND text
+                if haveDrawings then
+                    local bounds = lineData:getLineBounds()
+                    w, h = bounds.w, bounds.h
+                else
+                    local metrics = lineData:getTextMetrics(true)
+                    w, h = metrics.width, metrics.height
+                end
+                pos:add(newAlign:getPositionOffset(w, h, align))
+
+                -- add origin if any rotation is applied to the line
+                local effTags = lineData:getEffectiveTags(-1, true, true, false)
+                trans, tags = effTags:checkTransformed(), effTags.tags
+                Log.dump{tags.angle:modEq(0, 360)}
+                if tags.angle:modEq(0, 360) and tags.angle_x:modEq(0, 360) and tags.angle_y:modEq(0, 360)
+                and not (trans.angle or trans.angle_x or trans.angle_y) then
+                    org = nil
+                end
+            end
+            lineData:replaceTags{newAlign,org}
+        end
+
     end
 end
 

@@ -13,7 +13,7 @@ local version = DependencyControl{
          feed = "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
         {"a-mo.Log", url="https://github.com/torque/Aegisub-Motion",
          feed = "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
-        {"l0.ASSFoundation", version="0.1.1", url="https://github.com/TypesettingTools/ASSFoundation",
+        {"l0.ASSFoundation", version="0.3.1", url="https://github.com/TypesettingTools/ASSFoundation",
          feed = "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
         {"l0.ASSFoundation.Common", version="0.1.1", url="https://github.com/TypesettingTools/ASSFoundation",
          feed = "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
@@ -66,11 +66,11 @@ function process(sub,sel,res)
             end
 
             -- get font metrics
-            local metrics = charData:getMetrics(false, true)
+            local metrics = charData:getTextMetrics(true)
 
             -- since with \an5 the type is centered between ascender and baseline, we need to account
             -- for the descender and ascender separately
-            local descender, ascender = math.max(metrics.typeBounds[4]-metrics.ascent,0), math.max(metrics.descent-metrics.typeBounds[2],0)
+            local descender, ascender = math.max(metrics.bounds[4]-metrics.ascent,0), math.max(metrics.descent-metrics.bounds[2],0)
 
             -- calculate new position
             effTags.align:set(5)
@@ -78,14 +78,14 @@ function process(sub,sel,res)
             local an, frz = charData:insertTags(effTags.align,1):get(), effTags.angle:get()
             charOff = charOff + math.abs(math.cos(math.rad(frz)))*ascender
 
-            effTags.position:add(0, charOff + alignOffset(metrics.typeBounds.height-math.max(metrics.typeBounds[2]-metrics.descent,0), frz)
+            effTags.position:add(0, charOff + alignOffset(metrics.bounds.h-math.max(metrics.bounds[2]-metrics.descent,0), frz)
                                             + alignOffset(metrics.width, frz+90))
             charData:removeTags("position")
             charData:insertTags(effTags.position,1)
 
             -- set position for the next character
             local spacing = 0.2*avgMetrics[fontName].h*effTags.fontsize:get()/100
-            charOff = charOff + math.abs(math.cos(math.rad(frz)))*(metrics.typeBounds.height + spacing + descender)
+            charOff = charOff + math.abs(math.cos(math.rad(frz)))*(metrics.bounds.h + spacing + descender)
                      + math.abs(math.sin(math.rad(frz)))*metrics.width
 
             charData:commit()

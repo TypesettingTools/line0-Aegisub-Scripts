@@ -296,14 +296,14 @@
       "description": "Moves text along a path specified in a \\clip. Currently only works on fbf lines.",
       "channels": {
         "master": {
-          "version": "0.1.3",
+          "version": "0.1.4",
           "default": true,
-          "released": "2015-07-04",
+          "released": "2015-09-10",
           "files": [
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "6EBC554909897096C94FBBF044158E76111B46A3"
+              "sha1": "A29ADF505D202689AE867DB3E13962908D966945"
             }
           ],
           "requiredModules": [
@@ -364,6 +364,9 @@
         ],
         "0.1.3": [
           "Generated lines now have the correct line order (within the script and in relation to each other)"
+        ],
+        "0.1.4": [
+          "The required Yutils module is now loaded correctly on case-sensitive platforms/file systems such as Linux."
         ]
       }
     },
@@ -613,14 +616,14 @@
       "description": "Splits a line into vertical text.",
       "channels": {
         "master": {
-          "version": "0.1.1",
+          "version": "0.1.2",
           "default": true,
-          "released": "2015-02-26",
+          "released": "2015-09-10",
           "files": [
             {
               "name": ".lua",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "DE7DFAA551070814CF299CDF060F8200B740F9AA"
+              "sha1": "471CB39D3ED6C547022DA6B23048DB33AA2CDC30"
             }
           ],
           "requiredModules": [
@@ -664,6 +667,10 @@
         "0.1.1": [
           "Enabled auto-update using DependencyControl",
           "DependencyControl compatibility fixes"
+        ],
+        "0.1.2": [
+          "Sync with ASSFoundation API changes",
+          "The required Yutils module is now loaded correctly on case-sensitive platforms/file systems such as Linux."
         ]
       }
     }

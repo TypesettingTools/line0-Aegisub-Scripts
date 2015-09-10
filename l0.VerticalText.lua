@@ -1,7 +1,7 @@
 -- TODO: calc scale
 script_name="Vertical Text"
 script_description="Splits a line into vertical text."
-script_version="0.1.1"
+script_version="0.1.2"
 script_author="line0"
 script_namespace="l0.VerticalText"
 

@@ -314,7 +314,7 @@
               "moduleName": "aegisub.clipboard"
             },
             {
-              "moduleName": "YUtils"
+              "moduleName": "Yutils"
             },
             {
               "moduleName": "a-mo.LineCollection",
@@ -625,7 +625,7 @@
           ],
           "requiredModules": [
             {
-              "moduleName": "YUtils"
+              "moduleName": "Yutils"
             },
             {
               "moduleName": "a-mo.LineCollection",

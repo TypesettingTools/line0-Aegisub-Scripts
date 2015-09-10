@@ -17,10 +17,10 @@ local version = DependencyControl{
          feed = "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
         {"l0.ASSFoundation.Common", version="0.1.1", url="https://github.com/TypesettingTools/ASSFoundation",
          feed = "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
-        "YUtils"
+        "Yutils"
     }
 }
-local LineCollection, Log, ASS, Common, YUtils = version:requireModules()
+local LineCollection, Log, ASS, Common, Yutils = version:requireModules()
 
 function showDialog(sub, sel)
     -- here be dialog
@@ -54,9 +54,9 @@ function process(sub,sel,res)
             local fontName = effTags.fontname:get()
             if not avgMetrics[fontName] then
                 local start, end_, totalHeight, totalWidth, realCnt = 65, 122, 0, 0, 0
-                local font = YUtils.decode.create_font(fontName, false, false, false, false, 100)
+                local font = Yutils.decode.create_font(fontName, false, false, false, false, 100)
                 for i=start,end_ do
-                    x1,y1,x2,y2 = YUtils.shape.bounding(font.text_to_shape(string.char(i)))
+                    x1,y1,x2,y2 = Yutils.shape.bounding(font.text_to_shape(string.char(i)))
                     if x1 then
                         totalHeight, totalWidth = totalHeight+y2-y1, totalWidth+x2-x1
                         realCnt = realCnt+1

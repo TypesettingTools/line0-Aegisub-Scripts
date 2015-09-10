@@ -19,10 +19,10 @@ local version = DependencyControl{
          feed = "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
         {"l0.ASSFoundation.Common", version="0.2.0", url="https://github.com/TypesettingTools/ASSFoundation",
          feed = "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
-        "YUtils"
+        "Yutils"
     }
 }
-local util, LineCollection, Line, Log, ASS, Common, YUtils = version:requireModules()
+local util, LineCollection, Line, Log, ASS, Common, Yutils = version:requireModules()
 
 function showDialog(sub, sel)
     local dlg = {
@@ -83,10 +83,10 @@ function getLengthWithinBox(w, h, angle)   -- currently unused because only hori
     elseif angle==90 then return h end
 
     local A = math.atan2(h,w)
-    if angle==A then return YUtils.math.distance(w,h)
+    if angle==A then return Yutils.math.distance(w,h)
     else
         local a,b = angle<A and w or h, angle<A and math.tan(angle)*w or h/math.tan(angle)
-        return YUtils.math.distance(a,b)
+        return Yutils.math.distance(a,b)
     end
 end
 

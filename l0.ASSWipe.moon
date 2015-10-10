@@ -61,15 +61,64 @@ defaultSortOrder = [[
 clip_vect, iclip_vect, \q, \p, \k, \kf, \K, \ko, junk, unknown
 ]]
 
-mergeLines = (lines, start, cmbCnt, bytes) ->
+-- to be moved into ASSFoundation.Functional
+sortWithKeys = (tbl, comparator) ->
+    -- shellsort written by Rici Lake
+    -- c/p from http://lua-users.org/wiki/LuaSorting, with index argument added to comparator
+    incs = { 1391376, 463792, 198768, 86961, 33936, 13776, 4592, 1968, 861, 336, 112, 48, 21, 7, 3, 1 }
+    n = #tbl
+    for h in *incs
+        for i = h+1, n
+            a = tbl[i]
+            for j = i-h, 1, -h
+                b = tbl[j]
+                break unless comparator a, b, i, j
+                tbl[i] = b
+                i = j
+            tbl[i] = a
+    return tbl
+
+
+-- returns if we can merge line b into a while still maintain b's layer order
+isMergeable = (a, b, linesByFrame) ->
+    for i = b.firstFrame, b.lastFrame
+        group = linesByFrame[i]
+        local pos
+
+        unless group.sorted
+            -- ensure line group is sorted by layer blending order
+            sortWithKeys group, (x, y, i, j) ->
+                pos or= i if x == b
+                return x.layer < y.layer or x.layer == y.layer and i < j
+
+            group.sorted = true
+
+        -- get line position in blending order
+        pos or= i for i, v in ipairs group when v == b
+
+        -- as b is merged into a, it gets a's layer number
+        -- so we can only merge if the new layer number does not change the blending order in any of the frames b is visible in
+        lower = group[pos-1]
+        return false unless (not lower or a.layer > lower.layer or a.layer == lower.layer and a.number > lower.number)
+
+        higher = group[pos+1]
+        return false unless (not higher or a.layer < higher.layer or a.layer == higher.layer and a.number < higher.number)
+
+    return true
+
+mergeLines = (lines, start, cmbCnt, bytes, linesByFrame) ->
+    -- queue merged lines for deletion and collect statistics
     if lines[start].merged
         return lines[start], cmbCnt+1, bytes + #lines[start].raw + 1
 
+    -- merge applicable lines into first mergeable by extending its end time
+    -- then mark all merged lines
     merged = lines[start]
     for i=start+1,lines.n
-        if not lines[i].merged and lines[i].start_time==merged.end_time
-            lines[i].merged = true
-            merged.end_time = lines[i].end_time
+        line = lines[i]
+        break if line.merged or line.start_time != merged.end_time or not isMergeable merged, line, linesByFrame
+        lines[i].merged = true
+        merged.end_time = lines[i].end_time
     return nil, cmbCnt, bytes
 
 process = (sub, sel, res) ->
@@ -80,6 +129,7 @@ process = (sub, sel, res) ->
     tagNames[#tagNames+1] = res.removeJunk and "junk"
     stats = { bytes: 0, junk: 0, clips: 0, start: os.time!, cleaned: 0,
               scale2float: 0, contoursDraw: 0, contoursClip: 0 }
+    linesByFrame = {}
 
     -- create proper tag name lists from user input which may be override tag names or mixed
     res.tagsToKeep = ASS\getTagNames res.tagsToKeep\split ",%s"
@@ -133,14 +183,27 @@ process = (sub, sel, res) ->
 
             data\callback cb, ASS.Section.Drawing
 
-        -- collect lines to combine
-        if res.combineLines and not oldBounds.animated
-            hash = oldBounds.firstHash
-            if linesToCombine[hash]
-                linesToCombine[hash][linesToCombine[hash].n+1] = line
-                linesToCombine[hash].n = linesToCombine[hash].n+1
-            else
-                linesToCombine[hash] = {line, n: 1}
+
+        -- pogressively build a table of visible lines by frame
+        -- which is required to check mergeability of consecutive identical lines
+        if res.combineLines
+            line.firstFrame = aegisub.frame_from_ms line.start_time
+            line.lastFrame = -1 + aegisub.frame_from_ms line.end_time
+            for i = line.firstFrame, line.lastFrame
+                if linesByFrame[i]
+                    linesByFrame[i][linesByFrame[i].n+1] = line
+                    linesByFrame[i].n += 1
+                else
+                    linesByFrame[i] = {line, n: 1}
+
+            -- collect lines to combine
+            unless oldBounds.animated
+                hash = oldBounds.firstHash
+                if linesToCombine[hash]
+                    linesToCombine[hash][linesToCombine[hash].n+1] = line
+                    linesToCombine[hash].n = linesToCombine[hash].n+1
+                else
+                    linesToCombine[hash] = {line, n: 1}
 
         -- clean tags
         data\cleanTags res.cleanLevel, true, res.tagsToKeep, res.tagSortOrder
@@ -187,8 +250,8 @@ process = (sub, sel, res) ->
     for hash, lines in pairs linesToCombine
         continue if lines.n < 2
         table.sort lines, (a,b) -> a.start_time < b.start_time
-        for j=1,lines.n
-            linesToDelete[delCnt+cmbCnt+1], cmbCnt, stats.bytes = mergeLines lines, j, cmbCnt, stats.bytes
+        for j=1, lines.n
+            linesToDelete[delCnt+cmbCnt+1], cmbCnt, stats.bytes = mergeLines lines, j, cmbCnt, stats.bytes, linesByFrame
 
     lines\replaceLines!
     lines\deleteLines linesToDelete

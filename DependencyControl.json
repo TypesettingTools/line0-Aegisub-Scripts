@@ -14,14 +14,14 @@
       "description": "Performs script cleanup, removes unnecessary tags and lines.",
       "channels": {
         "master": {
-          "version": "0.3.2",
-          "released": "2015-10-10",
+          "version": "0.3.3",
+          "released": "2015-10-12",
           "default": true,
           "files": [
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "DE9B55C12A2DE2014A5D7245F058956101C5E1DB"
+              "sha1": "F911BC4F3A75E93E9E21FE978508B0BB262AEDA6"
             },
             {
               "name": ".lua",
@@ -104,6 +104,9 @@
         ],
         "0.3.2": [
           "The 'Combine consecutive identical lines' feature no longer ignores layer order changes inbetween candidate fbf lines. The previous behavior caused the layer blending order to break when certain conditions were met. Thanks coldhell for reporting this one."
+        ],
+        "0.3.3": [
+          "The blending order check introduced for the 'Combine consecutive identical lines' feature in 0.3.2 now considers merge operations that have already taken place in the current line's blending groups, which considerably improves the number of mergeable lines in some cases."
         ]
       }
     },

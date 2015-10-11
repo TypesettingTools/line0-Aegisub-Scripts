@@ -119,6 +119,13 @@ mergeLines = (lines, start, cmbCnt, bytes, linesByFrame) ->
         break if line.merged or line.start_time != merged.end_time or not isMergeable merged, line, linesByFrame
         lines[i].merged = true
         merged.end_time = lines[i].end_time
+
+        -- update lines by frame index
+        for f = line.firstFrame, line.lastFrame
+            group = linesByFrame[f]
+            pos = i for i, v in ipairs group when v == line
+            group[pos] = merged
+
     return nil, cmbCnt, bytes
 
 process = (sub, sel, res) ->
@@ -247,11 +254,27 @@ process = (sub, sel, res) ->
 
     lines\runCallback callback, true
 
-    for hash, lines in pairs linesToCombine
-        continue if lines.n < 2
-        table.sort lines, (a,b) -> a.start_time < b.start_time
-        for j=1, lines.n
-            linesToDelete[delCnt+cmbCnt+1], cmbCnt, stats.bytes = mergeLines lines, j, cmbCnt, stats.bytes, linesByFrame
+    -- sort lines which are to be combined by time
+    sortFunc = (a, b) ->
+        return true if a.start_time < b.start_time
+        return false if a.start_time > b.start_time
+        return true if a.layer < b.layer
+        return false if a.layer > b.layer
+        return true if a.number < b.number
+        return false
+
+    linesToCombineSorted, l = {}, 1
+    for _, group in pairs linesToCombine
+        continue if group.n < 2
+        table.sort group, sortFunc
+        linesToCombineSorted[l] = group
+        l += 1
+    table.sort linesToCombineSorted, (a, b) -> sortFunc a[1], b[1]
+
+    -- combine lines
+    for group in *linesToCombineSorted
+        for j=1, group.n
+            linesToDelete[delCnt+cmbCnt+1], cmbCnt, stats.bytes = mergeLines group, j, cmbCnt, stats.bytes, linesByFrame
 
     lines\replaceLines!
     lines\deleteLines linesToDelete

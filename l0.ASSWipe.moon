@@ -12,18 +12,17 @@ version = DependencyControl{
          feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
         {"a-mo.ConfigHandler", version: "1.1.1", url: "https://github.com/torque/Aegisub-Motion",
          feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
-        {"a-mo.Log", url: "https://github.com/torque/Aegisub-Motion",
-         feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
         {"l0.ASSFoundation", version: "0.2.4", url: "https://github.com/TypesettingTools/ASSFoundation",
          feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
-        {"l0.ASSFoundation.Common", version: "0.2.0", url: "https://github.com/TypesettingTools/ASSFoundation",
-         feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
+        {"l0.Functional", version: "0.3.0", url: "https://github.com/TypesettingTools/Functional",
+         feed: "https://raw.githubusercontent.com/TypesettingTools/Functional/master/DependencyControl.json"},
         {"SubInspector.Inspector", version: "0.6.1", url: "https://github.com/TypesettingTools/SubInspector",
          feed: "https://raw.githubusercontent.com/TypesettingTools/SubInspector/master/DependencyControl.json"},
-         "aegisub.util"
+         "aegisub.util", "json"
     }
 }
-LineCollection, ConfigHandler, ASS, Common, SubInspector, util = version\requireModules!
+LineCollection, ConfigHandler, ASS, Functional, SubInspector, util, json = version\requireModules!
+{:list, :math, :string, :table, :unicode, :util, :re } = Functional
 logger = version\getLogger!
 
 reportMsg = [[

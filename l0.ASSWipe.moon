@@ -22,6 +22,7 @@ version = DependencyControl{
     }
 }
 LineCollection, ConfigHandler, ASS, Functional, SubInspector, util, json = version\requireModules!
+ffms, min, concat, sort = aegisub.frame_from_ms, math.min, table.concat, table.sort
 {:list, :math, :string, :table, :unicode, :util, :re } = Functional
 logger = version\getLogger!
 
@@ -210,23 +211,22 @@ process = (sub, sel, res) ->
         -- pogressively build a table of visible lines by frame
         -- which is required to check mergeability of consecutive identical lines
         if res.combineLines
-            line.firstFrame = aegisub.frame_from_ms line.start_time
-            line.lastFrame = -1 + aegisub.frame_from_ms line.end_time
+            line.firstFrame = ffms line.start_time
+            line.lastFrame = -1 + ffms line.end_time
             for i = line.firstFrame, line.lastFrame
-                if linesByFrame[i]
-                    linesByFrame[i][linesByFrame[i].n+1] = line
-                    linesByFrame[i].n += 1
-                else
-                    linesByFrame[i] = {line, n: 1}
+                lbf = linesByFrame[i]
+                if lbf
+                    lbf[lbf.n+1] = line
+                    lbf.n += 1
+                else linesByFrame[i] = {line, n: 1}
 
             -- collect lines to combine
             unless oldBounds.animated
-                hash = oldBounds.firstHash
-                if linesToCombine[hash]
-                    linesToCombine[hash][linesToCombine[hash].n+1] = line
-                    linesToCombine[hash].n = linesToCombine[hash].n+1
-                else
-                    linesToCombine[hash] = {line, n: 1}
+                ltc = linesToCombine[oldBounds.firstHash]
+                if ltc
+                    ltc[ltc.n+1] = line
+                    ltc.n += 1
+                else linesToCombine[oldBounds.firstHash] = {line, n: 1}
 
         -- clean tags
         data\cleanTags res.cleanLevel, true, res.tagsToKeep, res.tagSortOrder
@@ -282,10 +282,10 @@ process = (sub, sel, res) ->
     linesToCombineSorted, l = {}, 1
     for _, group in pairs linesToCombine
         continue if group.n < 2
-        table.sort group, sortFunc
+        sort group, sortFunc
         linesToCombineSorted[l] = group
         l += 1
-    table.sort linesToCombineSorted, (a, b) -> sortFunc a[1], b[1]
+    sort linesToCombineSorted, (a, b) -> sortFunc a[1], b[1]
 
     -- combine lines
     for group in *linesToCombineSorted

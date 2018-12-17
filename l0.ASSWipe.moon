@@ -185,7 +185,7 @@ removeInvisibleContoursOpt = (section, orgBounds) ->
 
 process = (sub, sel, res) ->
     ASS.config.fixDrawings = res.fixDrawings
-    lines = LineCollection sub,sel
+    lines = LineCollection sub, sel
     linesToDelete, delCnt, linesToCombine, cmbCnt, lineCnt, debugError = {}, 0, {}, 0, #lines.lines, false
     tagNames = res.filterClips and util.copy(ASS.tagNames.clips) or {}
     tagNames[#tagNames+1] = res.removeJunk and "junk"
@@ -232,7 +232,8 @@ process = (sub, sel, res) ->
         orgText, oldBounds = line.text, data\getLineBounds false
         orgTextParsed = oldBounds.rawText
 
-        removeInvisibleContour = (contour) ->
+
+        removeInvisibleContours = (contour) ->
             contour.disabled = true
             if oldBounds\equal data\getLineBounds!
                 if contour.parent.class == ASS.Section.Drawing
@@ -240,6 +241,7 @@ process = (sub, sel, res) ->
                 else stats.contoursClip += 1
                 return false
             contour.disabled = false
+
 
         -- remove invisible lines
         if res.removeInvisible and oldBounds.w == 0
@@ -299,7 +301,7 @@ process = (sub, sel, res) ->
                         stats.scale2float += 1
                     -- purge ineffective contours from clips
                     if res.purgeContoursClip
-                        tag\callback removeInvisibleContour
+                        tag\callback removeInvisibleContours
 
                 -- filter clips
                 tag.disabled = true

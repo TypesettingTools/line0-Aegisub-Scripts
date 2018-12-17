@@ -23,7 +23,8 @@ version = DependencyControl{
          "aegisub.util"
     }
 }
-LineCollection, ConfigHandler, Log, ASS, Common, SubInspector, util = version\requireModules!
+LineCollection, ConfigHandler, ASS, Common, SubInspector, util = version\requireModules!
+logger = version\getLogger!
 
 reportMsg = [[
 Done. Processed %d lines in %d seconds.
@@ -148,19 +149,20 @@ process = (sub, sel, res) ->
         aegisub.progress.set 100*i/lineCnt
 
         unless line.styleRef
-            Log.warn "WARNING: Line #%d is using undefined style '%s', skipping...\n— %s", i, line.style, line.text
+            logger\warn "WARNING: Line #%d is using undefined style '%s', skipping...\n— %s", i, line.style, line.text
             return
 
         success, data = pcall ASS\parse, line
         unless success
-            Log.warn "Couldn't parse line #%d: %s", i, data
+            logger\warn "Couldn't parse line #%d: %s", i, data
             return
 
         -- it is essential to run SubInspector on a ASSFoundation-built line (rather than the original)
         -- because ASSFoundation rounds tag values to a sane precision, which is not visible but
         -- will produce a hash mismatch compared to the original line. However we must avoid that to
         -- not trigger the ASSWipe bug detection
-        oldText, oldBounds = line.text, data\getLineBounds false
+        orgText, oldBounds = line.text, data\getLineBounds false
+        orgTextParsed = oldBounds.rawText
 
         removeInvisibleContour = (contour) ->
             contour.disabled = true
@@ -242,15 +244,15 @@ process = (sub, sel, res) ->
         data\commit!
         line.ASS = nil
 
-        if oldText != line.text
+        if orgText != line.text
             if not newBounds\equal oldBounds
                 debugError = true
-                Log.warn "Cleaning affected output on line #%d, rolling back...", line.humanizedNumber
-                Log.warn "—— Before: %s\n—— After: %s\n—— Style: %s\n", oldText, line.text, line.styleRef.name
-                line.text = oldText
-            elseif #line.text < #oldText
+                logger\warn "Cleaning affected output on line #%d, rolling back...", line.humanizedNumber
+                logger\warn "—— Before: %s\n—— Parsed: %s\n—— After: %s\n—— Style: %s", orgText, orgTextParsed, line.text, line.styleRef.name
+                line.text = orgText
+            elseif #line.text < #orgText
                 stats.cleaned += 1
-                stats.bytes += #oldText - #line.text
+                stats.bytes += #orgText - #line.text
 
     lines\runCallback callback, true
 
@@ -279,16 +281,17 @@ process = (sub, sel, res) ->
     lines\replaceLines!
     lines\deleteLines linesToDelete
 
-    Log.dump{"Styles:", lines.styles, "Configuration:", res} if debugError
-    Log.warn reportMsg, lineCnt, os.time!-stats.start, stats.cleaned, 100*stats.cleaned/lineCnt,
+    logger\warn json.encode {Styles: lines.styles, Configuration: res} if debugError
+    logger\warn reportMsg, lineCnt, os.time!-stats.start, stats.cleaned, 100*stats.cleaned/lineCnt,
              delCnt, 100*delCnt/lineCnt, cmbCnt, 100*cmbCnt/lineCnt, stats.clips, stats.junk,
              stats.contoursClip+stats.contoursDraw, stats.contoursDraw, stats.contoursClip,
              stats.scale2float, stats.bytes/1000
 
     if debugError
-        Log.warn([[However, ASSWipe possibly encountered bugs while cleaning.
-                   Affected lines have been rolled back to their previous state.
-                   Please copy the whole log window contents and send them to line0.]])
+        logger\warn [[However, ASSWipe possibly encountered bugs while cleaning.
+                    Affected lines have been rolled back to their previous state, so your script is most likely fine.
+                    Please copy the whole log window contents and send them to line0.]]
+
 
     return lines\getSelection!
 

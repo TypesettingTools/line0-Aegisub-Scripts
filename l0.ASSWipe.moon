@@ -229,7 +229,7 @@ process = (sub, sel, res) ->
         -- because ASSFoundation rounds tag values to a sane precision, which is not visible but
         -- will produce a hash mismatch compared to the original line. However we must avoid that to
         -- not trigger the ASSWipe bug detection
-        orgText, oldBounds = line.text, data\getLineBounds false
+        orgText, oldBounds = line.text, data\getLineBounds false, true
         orgTextParsed = oldBounds.rawText
 
 
@@ -290,11 +290,11 @@ process = (sub, sel, res) ->
         if res.filterClips or res.removeJunk
             data\modTags tagNames, (tag) ->
                 -- remove junk
-                if tag.instanceOf[ASS.Tag.Unknown]
+                if tag.class == ASS.Tag.Unknown
                     stats.junk += 1
                     return false
 
-                if tag.instanceOf[ASS.Tag.ClipVect]
+                if tag.class == ASS.Tag.ClipVect
                     -- un-scale clips
                     if res.scale2float and tag.scale>1
                         tag.scale\set 1
@@ -310,7 +310,7 @@ process = (sub, sel, res) ->
                     return false
                 tag.disabled = false
 
-        data\commit!
+        data\commit nil, res.cleanLevel == 0
         -- reclaim some memory
         line.ASS, line.undoText = nil
 
@@ -391,6 +391,8 @@ showDialog = (sub, sel, res) ->
             extraDataLabel:     class: "label",    x: 0, y: 10, width: 1,  height: 1, label: "Filter extra data: "
             extraDataMode:      class: "dropdown", x: 1, y: 10, width: 1,  height: 1, value: "Keep All", config: true, items: {"Keep all", "Remove all", "Keep all except", "Remove all except"}, hint: hints.extraData
             extraDataFilter:    class: "textbox",  x: 4, y: 10, width: 10, height: 3, value: "", config: true, hint: hints.extraData
+            quirksModeLabel:    class: "label",    x: 0, y: 14, width: 2,  height: 1, label: "Quirks mode: "
+            quirksMode:         class: "dropdown", x: 4, y: 14, width: 2,  height: 1, value: "VSFilter", config: true, items: [k for k, v in pairs ASS.Quirks], hint: hints.quirksMode
         }
     }
     options = ConfigHandler dlg, version.configFile, false, script_version, version.configDir
@@ -400,6 +402,7 @@ showDialog = (sub, sel, res) ->
     if btn
         options\updateConfiguration res, "main"
         options\write!
+        ASS.config.quirks = ASS.Quirks[res.quirksMode]
         process sub, sel, res
 
 version\registerMacro showDialog, ->

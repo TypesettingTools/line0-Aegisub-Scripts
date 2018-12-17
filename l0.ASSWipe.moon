@@ -130,6 +130,59 @@ mergeLines = (lines, start, cmbCnt, bytes, linesByFrame) ->
 
     return nil, cmbCnt, bytes
 
+
+removeInvisibleContoursOptCollectBounds = (contour, contours, i, j, _, cntStrings, sliceSize, linePre, linePost, isAnimated, boundsBatch) ->
+    prevContours = concat cntStrings, " ", 1, j-1
+    nextContours = j <= sliceSize and concat(cntStrings, " ", j+1) or ""
+    text = "#{linePre}#{prevContours} #{nextContours}#{linePost}"
+    boundsBatch\add contour.parent.parent, text, i, isAnimated
+
+
+removeInvisibleContoursOptPurge = (contour, contours, i, _, _, allBounds, orgBounds) ->
+    bounds, allBounds[i] = allBounds[i]
+    return false if orgBounds\equal bounds
+
+
+removeInvisibleContoursOpt = (section, orgBounds) ->
+    cutOff, ass, contourCnt = false, section.parent, #section.contours
+
+    sliceSize = math.ceil 10e4 / contourCnt
+    if contourCnt > 100
+        logger\hint "Cleaning complex drawing with %d contours (slice size: %s)...", contourCnt, sliceSize
+
+    selectSurroundingSections = (sect, _, _, _, toTheLeft) ->
+        if toTheLeft
+            cutOff = true if section == sect
+        else
+            if section == sect
+                cutOff = false
+                return false
+
+        return not cutOff
+
+
+    lineStringPre, drwState = ass\getString nil, nil, selectSurroundingSections, false, true
+    lineStringPost = ass\getString nil, drwState, selectSurroundingSections, false, false
+
+    allBounds, cntString, last = {}
+    isAnimated = ass\isAnimated!
+
+    for i = 1, contourCnt, sliceSize
+        last = min i+sliceSize-1, contourCnt
+        cntString = [cnt\getTagParams! for cnt in *section.contours[i, last]]
+        boundsBatch = ASS.LineBoundsBatch!
+
+        section\callback removeInvisibleContoursOptCollectBounds, i, last, nil, nil,
+                         cntString, sliceSize, lineStringPre, lineStringPost, isAnimated, boundsBatch
+
+        boundsBatch\run true, allBounds
+        lineStringPre ..= concat cntString, " "
+        boundsBatch = nil
+        collectgarbage!
+
+    _, purgeCnt = section\callback removeInvisibleContoursOptPurge, nil, nil, nil, nil, allBounds, orgBounds
+    return purgeCnt
+
 process = (sub, sel, res) ->
     ASS.config.fixDrawings = res.fixDrawings
     lines = LineCollection sub,sel
@@ -199,7 +252,7 @@ process = (sub, sel, res) ->
             cb = (section) ->
                 -- remove invisible contours from drawings
                 if res.purgeContoursDraw
-                    section\callback removeInvisibleContour
+                    stats.contoursDraw += removeInvisibleContoursOpt section, oldBounds
                 -- un-scale drawings
                 if res.scale2float and section.scale > 1
                     section.scale\set 1

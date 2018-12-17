@@ -326,6 +326,7 @@ process = (sub, sel, res) ->
                 stats.cleaned += 1
                 stats.bytes += #orgText - #line.text
 
+        aegisub.cancel! if aegisub.progress.is_cancelled!
     lines\runCallback callback, true
 
     -- sort lines which are to be combined by time

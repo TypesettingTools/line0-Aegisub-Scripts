@@ -34,6 +34,7 @@ Done. Processed %d lines in %d seconds.
 — Filtered %d clips and %d occurences of junk data
 — Purged %d invisible contours (%d in drawings, %d in clips)
 — Converted %d drawings/clips to floating-point
+— Filtered %d records of extra data
 — Total space saved: %.2f KB
 ]]
 
@@ -136,12 +137,13 @@ process = (sub, sel, res) ->
     tagNames = res.filterClips and util.copy(ASS.tagNames.clips) or {}
     tagNames[#tagNames+1] = res.removeJunk and "junk"
     stats = { bytes: 0, junk: 0, clips: 0, start: os.time!, cleaned: 0,
-              scale2float: 0, contoursDraw: 0, contoursClip: 0 }
+              scale2float: 0, contoursDraw: 0, contoursClip: 0, extra: 0 }
     linesByFrame = {}
 
     -- create proper tag name lists from user input which may be override tag names or mixed
     res.tagsToKeep = ASS\getTagNames res.tagsToKeep\split ",%s"
     res.tagSortOrder = ASS\getTagNames res.tagSortOrder\split ",%s"
+    res.extraDataFilter = res.extraDataFilter\split ",%s"
 
     callback = (lines, line, i) ->
         aegisub.cancel! if aegisub.progress.is_cancelled!
@@ -151,6 +153,19 @@ process = (sub, sel, res) ->
         unless line.styleRef
             logger\warn "WARNING: Line #%d is using undefined style '%s', skipping...\n— %s", i, line.style, line.text
             return
+
+        -- filter extra data
+        if line.extra and res.extraDataMode != "Keep all"
+            removed, r = switch res.extraDataMode
+                when "Remove all"
+                    removed = line.extra
+                    line.extra = nil
+                    removed, table.length removed
+                when "Remove all except"
+                    table.removeKeysExcept line.extra, res.extraDataFilter
+                when "Keep all except"
+                    table.removeKeys line.extra, res.extraDataFilter
+            stats.extra += r
 
         success, data = pcall ASS\parse, line
         unless success
@@ -285,7 +300,7 @@ process = (sub, sel, res) ->
     logger\warn reportMsg, lineCnt, os.time!-stats.start, stats.cleaned, 100*stats.cleaned/lineCnt,
              delCnt, 100*delCnt/lineCnt, cmbCnt, 100*cmbCnt/lineCnt, stats.clips, stats.junk,
              stats.contoursClip+stats.contoursDraw, stats.contoursDraw, stats.contoursClip,
-             stats.scale2float, stats.bytes/1000
+             stats.scale2float, stats.extra, stats.bytes/1000
 
     if debugError
         logger\warn [[However, ASSWipe possibly encountered bugs while cleaning.
@@ -314,6 +329,9 @@ showDialog = (sub, sel, res) ->
             purgeContoursLabel: class: "label",    x: 0, y: 8, width: 2,  height: 1, label: "Purge invisible contours: "
             purgeContoursDraw:  class: "checkbox", x: 4, y: 8, width: 3,  height: 1, value: false, config: true, label: "from drawings", hint: hints.purgeContoursDraw
             purgeContoursClip:  class: "checkbox", x: 7, y: 8, width: 6,  height: 1, value: false, config: true, label: "from clips", hint: hints.purgeContoursClip
+            extraDataLabel:     class: "label",    x: 0, y: 10, width: 1,  height: 1, label: "Filter extra data: "
+            extraDataMode:      class: "dropdown", x: 1, y: 10, width: 1,  height: 1, value: "Keep All", config: true, items: {"Keep all", "Remove all", "Keep all except", "Remove all except"}, hint: hints.extraData
+            extraDataFilter:    class: "textbox",  x: 4, y: 10, width: 10, height: 3, value: "", config: true, hint: hints.extraData
         }
     }
     options = ConfigHandler dlg, version.configFile, false, script_version, version.configDir

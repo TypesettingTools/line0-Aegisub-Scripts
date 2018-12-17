@@ -311,7 +311,8 @@ process = (sub, sel, res) ->
                 tag.disabled = false
 
         data\commit!
-        line.ASS = nil
+        -- reclaim some memory
+        line.ASS, line.undoText = nil
 
         if orgText != line.text
             if not newBounds\equal oldBounds

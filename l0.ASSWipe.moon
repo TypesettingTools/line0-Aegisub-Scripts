@@ -318,6 +318,9 @@ process = (sub, sel, res) ->
                 debugError = true
                 logger\warn "Cleaning affected output on line #%d, rolling back...", line.humanizedNumber
                 logger\warn "—— Before: %s\n—— Parsed: %s\n—— After: %s\n—— Style: %s", orgText, orgTextParsed, line.text, line.styleRef.name
+                logger\warn "—— Hash Before: %s (%s); Hash After: %s (%s)\n",
+                            oldBounds.firstHash, oldBounds.animated and "animated" or "static",
+                            newBounds.firstHash, newBounds.animated and "animated" or "static"
                 line.text = orgText
             elseif #line.text < #orgText
                 stats.cleaned += 1

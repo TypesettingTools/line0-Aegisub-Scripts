@@ -110,6 +110,7 @@ class Nudger
     @value = params.value or {}
     @id = params.id or util.uuid!
     @noDefault = params.noDefault or false
+    @keepEmptySections = params.keepEmptySections == nil and true or params.keepEmptySections
     @targetValue = params.targetValue or 0
     @targetName = params.targetName or "Tag Section"
     @validate!
@@ -325,7 +326,7 @@ class Nudger
       if #lineTargets > 0
         @nudgeLines lineData, lines, line, lineTargets
 
-      lineData\commit!
+      lineData\commit nil, @keepEmptySections
     lines\replaceLines!
 table.sort Nudger.targetList
 
@@ -356,7 +357,7 @@ class Configuration
       {operation: "Invert Clip", value: {}, id: "e719120a-e45a-44d4-b76a-62943f47d2c5", name: "Invert First Clip", tag: "Clips",
         noDefault: true, targetName: "Matched Tag", targetValue: "1"},
       {operation: "Remove", value: {}, id: "4dfc33fd-3090-498b-8922-7e1eb4515257", name: "Remove Comments & Junk", tag: "Comments/Junk", noDefault: true},
-      {operation: "Remove", value: {}, id: "bc642b90-8ebf-45e8-a160-98b4658721bd", name: "Strip Tags", tag: "Any Tag", noDefault: true},
+      {operation: "Remove", value: {}, id: "bc642b90-8ebf-45e8-a160-98b4658721bd", name: "Strip Tags", tag: "Any Tag", noDefault: true, keepEmptySections: false},
       {operation: "Convert To Drawing", value: {false, false}, id: "9cf44e64-9ce9-402e-8097-9e189014c9c1", name: "Clips -> Drawing", tag: "Clips", noDefault: true},
     }
   }
@@ -373,7 +374,7 @@ class Configuration
       data = json.decode fileHandle\read '*a'
       fileHandle\close!
     else
-      data = @default
+      data = @@default
 
     -- version checking
     logger\assert tonumber(data.__version\sub(3,3)) >= 3,
@@ -405,7 +406,8 @@ class Configuration
       {class: "label", label: "Target", x: 4, y: 0, width: 1, height: 1},
       {class: "label", label: "Target #", x: 5, y: 0, width: 1, height: 1},
       {class: "label", label: "No Default", x: 6, y: 0, width: 1, height: 1},
-      {class: "label", label: "Remove", x: 7, y: 0, width: 1, height: 1},
+      {class: "label", label: "Keep Empty", x: 7, y: 0, width: 1, height: 1},
+      {class: "label", label: "Remove", x: 8, y: 0, width: 1, height: 1},
     }
 
     getUnwrappedJson = (arr) ->
@@ -425,7 +427,8 @@ class Configuration
         {class: "dropdown", name: encodeDlgResName(nu.id, "targetName"), items: {"Tag Section", "Matched Tag"}, value: nu.targetName, x: 4, y: i, width: 1, height: 1},
         {class: "intedit", name: encodeDlgResName(nu.id, "targetValue"), value: nu.targetValue, x: 5, y: i, width: 1, height: 1},
         {class: "checkbox", name: encodeDlgResName(nu.id, "noDefault"), value: nu.noDefault, x: 6, y: i, width: 1, height: 1},
-        {class: "checkbox", name: encodeDlgResName(nu.id, "remove"), value: false, x: 7, y: i, width: 1, height: 1}
+        {class: "checkbox", name: encodeDlgResName(nu.id, "keepEmptySections"), value: nu.keepEmptySections, x: 7, y: i, width: 1, height: 1},
+        {class: "checkbox", name: encodeDlgResName(nu.id, "remove"), value: false, x: 8, y: i, width: 1, height: 1}
       }
 
     return dialog

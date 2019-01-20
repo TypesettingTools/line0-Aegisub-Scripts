@@ -13,8 +13,6 @@ version = DependencyControl {
          feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
         {"a-mo.Line", version: "1.4.3", url: "https://github.com/TypesettingTools/Aegisub-Motion",
          feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
-        {"a-mo.Log", url: "https://github.com/torque/Aegisub-Motion",
-         feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
         {"l0.ASSFoundation", version: "0.2.9", url: "https://github.com/TypesettingTools/ASSFoundation",
          feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
         {"l0.ASSFoundation.Common", version: "0.2.0", url: "https://github.com/TypesettingTools/ASSFoundation",
@@ -22,7 +20,8 @@ version = DependencyControl {
         "Yutils"
     }
 }
-util, LineCollection, Line, Log, ASS, Common, Yutils = version\requireModules!
+util, LineCollection, Line, ASS, Common, Yutils = version\requireModules!
+logger = version\getLogger!
 
 getLengthWithinBox = (w, h, angle) ->  -- currently unused because only horizontal metrics are being used
     return 0 if w == 0 or h == 0
@@ -68,7 +67,7 @@ process = (sub,sel,res) ->
         ass = ASS\parse line
         if i == 1 -- get path ass and relative position/angle from first line
             path = ass\removeTags({"clip_vect","iclip_vect"})[1]
-            assert path, "Error: couldn't find \\clip containing path in first line, aborting."
+            logger\assert path, "Error: couldn't find \\clip containing path in first line, aborting."
             angleOff = path\getAngleAtLength 0
             posOff = path.contours[1].commands[1]\get!
             totalLength = path\getLength!

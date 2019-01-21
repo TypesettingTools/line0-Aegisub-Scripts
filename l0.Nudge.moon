@@ -12,7 +12,7 @@ depCtrl = DependencyControl {
     {"a-mo.LineCollection", version: "1.0.1", url: "https://github.com/torque/Aegisub-Motion"},
     {"l0.ASSFoundation", version: "0.4.0", url: "https://github.com/TypesettingTools/ASSFoundation",
       feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
-    {"l0.Functional", version: "0.4.1", url: "https://github.com/TypesettingTools/Functional",
+    {"l0.Functional", version: "0.5.0", url: "https://github.com/TypesettingTools/Functional",
       feed: "https://raw.githubusercontent.com/TypesettingTools/Functional/master/DependencyControl.json"},
   }
 }

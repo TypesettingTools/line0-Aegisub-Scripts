@@ -1,6 +1,6 @@
 export script_name = "ASSWipe"
 export script_description = "Performs script cleanup, removes unnecessary tags and lines."
-export script_version = "0.4.0-test1"
+export script_version = "0.4.0"
 export script_author = "line0"
 export script_namespace = "l0.ASSWipe"
 
@@ -14,7 +14,7 @@ version = DependencyControl{
          feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
         {"l0.ASSFoundation", version: "0.4.0", url: "https://github.com/TypesettingTools/ASSFoundation",
          feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
-        {"l0.Functional", version: "0.4.1", url: "https://github.com/TypesettingTools/Functional",
+        {"l0.Functional", version: "0.5.0", url: "https://github.com/TypesettingTools/Functional",
          feed: "https://raw.githubusercontent.com/TypesettingTools/Functional/master/DependencyControl.json"},
         {"SubInspector.Inspector", version: "0.6.1", url: "https://github.com/TypesettingTools/SubInspector",
          feed: "https://raw.githubusercontent.com/TypesettingTools/SubInspector/master/DependencyControl.json"},

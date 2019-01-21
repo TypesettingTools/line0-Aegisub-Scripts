@@ -15,12 +15,13 @@ version = DependencyControl {
       feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
     {"l0.ASSFoundation", version: "0.2.9", url: "https://github.com/TypesettingTools/ASSFoundation",
       feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
-    {"l0.ASSFoundation.Common", version: "0.2.0", url: "https://github.com/TypesettingTools/ASSFoundation",
-      feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
+    {"l0.Functional", version: "0.5.0", url: "https://github.com/TypesettingTools/Functional",
+      feed: "https://raw.githubusercontent.com/TypesettingTools/Functional/master/DependencyControl.json"},
     "Yutils"
   }
 }
-util, LineCollection, Line, ASS, Common, Yutils = version\requireModules!
+util, LineCollection, Line, ASS, Functional, Yutils = version\requireModules!
+{:list, :math, :string, :table, :unicode, :util, :re } = Functional
 logger = version\getLogger!
 
 getLengthWithinBox = (w, h, angle) ->  -- currently unused because only horizontal metrics are being used

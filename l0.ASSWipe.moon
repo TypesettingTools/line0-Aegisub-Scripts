@@ -234,6 +234,7 @@ process = (sub, sel, res) ->
         -- not trigger the ASSWipe bug detection
         orgText, oldBounds = line.text, data\getLineBounds false, true
         orgTextParsed = oldBounds.rawText
+        orgTagTypes = ["#{tag.__tag.name}(#{table.concat({tag\getTagParams!}, ",")})" for tag in *data\getTags!]
 
 
         removeInvisibleContours = (contour) ->
@@ -325,7 +326,7 @@ process = (sub, sel, res) ->
             if not newBounds\equal oldBounds
                 debugError = true
                 logger\warn "Cleaning affected output on line #%d, rolling back...", line.humanizedNumber
-                logger\warn "—— Before: %s\n—— Parsed: %s\n—— After: %s\n—— Style: %s", orgText, orgTextParsed, line.text, line.styleRef.name
+                logger\warn "—— Before: %s\n—— Parsed: %s\n—— After: %s\n—— Style: %s\n—— Tags: %s", orgText, orgTextParsed, line.text, line.styleRef.name, table.concat orgTagTypes, "; "
                 logger\warn "—— Hash Before: %s (%s); Hash After: %s (%s)\n",
                             oldBounds.firstHash, oldBounds.animated and "animated" or "static",
                             newBounds.firstHash, newBounds.animated and "animated" or "static"

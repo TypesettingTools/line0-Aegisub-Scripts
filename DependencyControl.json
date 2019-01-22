@@ -582,47 +582,6 @@
         ]
       }
     },
-    "l0.SplitByChars": {
-      "url": "@{baseUrl}#@{namespace}",
-      "author": "line0",
-      "name": "Split Line By Characters",
-      "description": "Splits a line into a separate line for every character while maintaining appearance.",
-      "channels": {
-        "master": {
-          "version": "0.1.0",
-          "default": true,
-          "released": "2015-04-13",
-          "files": [
-            {
-              "name": ".moon",
-              "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "A406DA568A48902F3BDE7E39F35DBA7D63975788"
-            }
-          ],
-          "requiredModules": [
-            {
-              "moduleName": "a-mo.LineCollection",
-              "name": "Aegisub-Motion (LineCollection)",
-              "url": "https://github.com/torque/Aegisub-Motion",
-              "version": "1.0.1",
-              "feed": "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"
-            },
-            {
-              "moduleName": "l0.ASSFoundation",
-              "name": "ASSFoundation",
-              "url": "https://github.com/TypesettingTools/ASSFoundation",
-              "version": "0.2.4",
-              "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
-            }
-          ]
-        }
-      },
-      "changelog": {
-        "0.1.0": [
-          "initial commit"
-        ]
-      }
-    },
     "l0.SplitLines": {
       "url": "@{baseUrl}#@{namespace}",
       "author": "line0",

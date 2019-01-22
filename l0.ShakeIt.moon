@@ -1,24 +1,24 @@
-export script_name        = "Shake It"
+export script_name = "Shake It"
 export script_description = "Lets you add a shaking effect to fbf typesets with configurable constraints."
-export script_version     = "0.1.0"
-export script_author      = "line0"
-export script_namespace   = "l0.ShakeIt"
+export script_version = "0.1.0"
+export script_author = "line0"
+export script_namespace = "l0.ShakeIt"
 
 DependencyControl = require "l0.DependencyControl"
-dep = DependencyControl {
+depCtrl = DependencyControl {
   feed: "https://raw.githubusercontent.com/TypesettingTools/line0-Aegisub-Scripts/master/DependencyControl.json",
   {
     {"a-mo.LineCollection", version: "1.1.4", url: "https://github.com/torque/Aegisub-Motion",
-     feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
+      feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
     {"l0.ASSFoundation", version:"0.3.3", url: "https://github.com/TypesettingTools/ASSFoundation",
-     feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
+      feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
     {"l0.Functional", version: "0.3.0", url: "https://github.com/TypesettingTools/Functional",
-     feed: "https://raw.githubusercontent.com/TypesettingTools/Functional/master/DependencyControl.json"}
+      feed: "https://raw.githubusercontent.com/TypesettingTools/Functional/master/DependencyControl.json"}
   }
 }
-LineCollection, ASS, functional = dep\requireModules!
-{:list, :math, :string, :table, :unicode, :util, :re } = functional
-logger = dep\getLogger!
+LineCollection, ASS, Functional = depCtrl\requireModules!
+{:list, :math, :string, :table, :unicode, :util, :re } = Functional
+logger = depCtrl\getLogger!
 
 -- Enums used in dialog
 signChgModesSingle = {
@@ -33,13 +33,10 @@ signChgModesCmb = {
   One: "Exactly one"
 }
 
-
 hasLineRotation = (line) ->
   styleTags = line\getDefaultTags nil, false
-  unless styleTags.tags.angle\equal 0
-    return true
-  line\modTags {"angle", "angle_x", "angle_y"}, (tag) ->
-    return true
+  return true unless styleTags.tags.angle\equal 0
+  line\modTags {"angle", "angle_x", "angle_y"}, (tag) -> true
 
 shakeItApply = (lines, groups) ->
   aegisub.progress.task "Shaking..."
@@ -118,86 +115,120 @@ makeOffsetGenerator = (res)  ->
 
     -- give up after so many rolls, because we're to lazy to actually do our maths
     -- and factor the constraints in when pulling our random numbers
-    logger\error "ERROR: Couldn't find offset that satifies chosen angle constraints (Min: #{res.angleMin}°, Max: #{res.angleMax}° for group #{i}. Aborting."
+    logger\error "Couldn't find offset that satifies chosen angle constraints (Min: #{res.angleMin}°, Max: #{res.angleMax}° for group #{i}. Aborting."
 
 
 shakeIt = (sub, sel) ->
   btn, res = aegisub.dialog.display {
-    { class: "label",       x: 0, y: 0,  width: 10, height: 1,
-      label: "Shaking Offset Limits (relative to original position): "
-    },
-    { class: "floatedit",   x: 0, y: 1,  width: 3,  height: 1,
-      name:  "offXMin",     value: 0, min: 0, step:1
-    },
-    { class: "label",       x: 3, y: 1,  width: 3,  height: 1,
-      label: "<  x  <"
-    },
-    { class: "floatedit",   x: 6, y: 1,  width: 4,  height: 1,
-      name:  "offXMax",     value: 10, min: 0, step: 1
+    {
+      class: "label", label: "Shaking Offset Limits (relative to original position): ",
+      x: 0, y: 0, width: 10, height: 1,
     },
     {
-      class: "floatedit",   x: 0, y: 2,  width: 3,  height: 1,
-      name:  "offYMin",     value: 0, min: 0, step: 1
+      class: "floatedit", name: "offXMin",
+      value: 0, min: 0, step:1,
+      x: 0, y: 1, width: 3, height: 1
     },
-    { class: "label",       x: 3, y: 2,  width: 3,  height: 1,
-      label: "<  y  <"
+    {
+      class: "label", label: "<  x  <",
+      x: 3, y: 1, width: 3, height: 1
     },
-    { class: "floatedit",   x: 6, y: 2,  width: 4,  height: 1
-      name:  "offYMax",     value: 10, min: 0, step:1
+    {
+      class: "floatedit", name: "offXMax",
+      value: 10, min: 0, step: 1,
+      x: 6, y: 1, width: 4, height: 1,
     },
-    { class: "label",       x: 0, y: 3,  width: 10, height: 1
-      label: ""
+    {
+      class: "floatedit", name: "offYMin",
+      value: 0, min: 0, step: 1,
+      x: 0, y: 2, width: 3, height: 1
     },
-    { class: "label",       x: 0, y: 4,  width: 10, height: 1,
-      label: "Angle between subsequent line offsets:",
+    {
+      class: "label", label: "<  y  <",
+      x: 3, y: 2, width: 3, height: 1
     },
-    { class: "label",       x: 0, y: 5,  width: 1,  height: 1,
-      label: "Min:"
+    {
+      class: "floatedit", name: "offYMax",
+      x: 6, y: 2, width: 4, height: 1,
+      value: 10, min: 0, step: 1
     },
-    { class: "floatedit",   x: 1, y: 5,  width: 2,  height: 1,
-      name:  "angleMin",    value: 0, min: 0, max: 180, step: 1
+    {
+      class: "label", label: "",
+      x: 0, y: 3, width: 10, height: 1
     },
-    { class: "label",       x: 3, y: 5,  width: 3,  height: 1
-      label: "°    Max:"
+    {
+      class: "label", label: "Angle between subsequent line offsets:",
+      x: 0, y: 4, width: 10, height: 1
     },
-    { class: "floatedit",   x: 6, y: 5,  width: 2,  height: 1,
-      name:  "angleMax",    value: 180, min: 0, max: 180, step:1
+    {
+      class: "label", label: "Min:",
+      x: 0, y: 5, width: 1, height: 1
     },
-    { class: "label",       x: 8, y: 5,  width: 2, height: 1
-      label: "°"
+    {
+      class: "floatedit", name: "angleMin",
+      value: 0, min: 0, max: 180, step: 1,
+      x: 1, y: 5, width: 2, height: 1
     },
-    { class: "label",       x: 0, y: 6,  width: 10, height: 1
-      label: ""
+    {
+      class: "label", label: "°    Max:",
+      x: 3, y: 5, width: 3, height: 1
     },
-    { class: "label",       x: 0, y: 7,  width: 10, height: 1
-      label: "Constraints:"
+    {
+      class: "floatedit", name: "angleMax",
+      value: 180, min: 0, max: 180, step: 1,
+      x: 6, y: 5, width: 2, height: 1,
     },
-    { class: "dropdown",    x: 0, y: 8,  width: 2, height: 1,
-      name:  "signChgX", items: table.values(signChgModesSingle), value: signChgModesSingle.Any
+    {
+      class: "label", label: "°",
+      x: 8, y: 5, width: 2, height: 1
     },
-    { class: "label",       x: 2, y: 8,  width: 5,  height: 1
-      label: "sign change for X offsets of subsequent lines.",
+    {
+      class: "label", label: "",
+      x: 0, y: 6, width: 10, height: 1
     },
-    { class: "dropdown",    x: 0, y: 9,  width: 2, height: 1,
-      name:  "signChgY", items: table.values(signChgModesSingle), value: signChgModesSingle.Any
+    {
+      class: "label", label: "Constraints:",
+      x: 0, y: 7, width: 10, height: 1
     },
-    { class: "label",       x: 2, y: 9,  width: 5,  height: 1
-      label: "sign change for Y offsets of subsequent lines.",
+    {
+      class: "dropdown", name: "signChgX",
+      items: table.values(signChgModesSingle), value: signChgModesSingle.Any,
+      x: 0, y: 8, width: 2, height: 1
     },
-    { class: "dropdown",    x: 0, y: 10, width: 2, height: 1,
-      name:  "signChgCmb", items: table.values(signChgModesCmb), value: signChgModesCmb.Any
+    {
+      class: "label", label: "sign change for X offsets of subsequent lines.",
+      x: 2, y: 8, width: 5, height: 1
     },
-    { class: "label",       x: 2, y: 10, width: 5,  height: 1
+    {
+      class: "dropdown", name: "signChgY",
+      items: table.values(signChgModesSingle), value: signChgModesSingle.Any,
+      x: 0, y: 9, width: 2, height: 1
+    },
+    {
+      class: "label", label: "sign change for Y offsets of subsequent lines.",
+      x: 2, y: 9, width: 5, height: 1
+    },
+    {
+      class: "dropdown", name: "signChgCmb",
+      items: table.values(signChgModesCmb), value: signChgModesCmb.Any,
+      x: 0, y: 10, width: 2, height: 1
+    },
+    {
+      class: "label", x: 2, y: 10, width: 5, height: 1
       label: "of the X and Y offsets must change sign between subsequent line.",
     },
-    { class: "label",       x: 0, y: 11, width: 10, height: 1
-      label: "",
+    {
+      class: "label", label: "",
+      x: 0, y: 11, width: 10, height: 1
     },
-    { class: "label",       x: 0, y: 12, width: 1, height: 1,
-      label: "RNG Seed:",
+    {
+      class: "label", label: "RNG Seed:",
+      x: 0, y: 12, width: 1, height: 1
     },
-    { class:"intedit",      x: 1, y: 12, width: 2, height: 1,
-      name:"seed",          value:os.time()
+    {
+      class:"intedit", name: "seed",
+      value: os.time!,
+      x: 1, y: 12, width: 2, height: 1
     },
   }
   aegisub.cancel! unless btn
@@ -231,18 +262,19 @@ shakeIt = (sub, sel) ->
   -- collect selected lines and group by start time
   lines = LineCollection sub, sel
   lineCnt = #lines.lines
-  groups = table.values list.groupBy(lines.lines, "start_time"), (grpA, grpB) ->
-    return grpA[1].start_time < grpB[1].start_time
+  groups = table.values list.groupBy(lines.lines, "start_time"),
+    (grpA, grpB) -> grpA[1].start_time < grpB[1].start_time
 
   -- generate offsets for every line group, but don't apply them immediately in case the generator fails
   generatePositionOffset = makeOffsetGenerator res
   aegisub.progress.task "Rolling..."
-  for i, group in ipairs groups do
-    aegisub.progress.set 50*i / #groups
+
+  for i, group in ipairs groups
+    aegisub.progress.set 50 * i / #groups
     aegsiub.cancel! if aegisub.progress.is_cancelled!
     group.offX, group.offY = generatePositionOffset i != 1
 
   -- apply the position offsets to all line groups
   shakeItApply lines, groups
 
-dep\registerMacro shakeIt
+depCtrl\registerMacro shakeIt

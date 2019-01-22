@@ -76,12 +76,13 @@ splitLines = (sub, sel, mode, arg) ->
   cb = (lines, line, i) ->
     aegisub.cancel! if aegisub.progress.is_cancelled!
     data = ASS\parse line
+
     splits = switch mode
       when "interval" then data\splitAtIntervals arg, unpack config
       when "tags" then data\splitAtTags unpack config
       when "indexes" then data\splitAtIndexes arg, unpack config
 
-    lines\addLine split for split in *splits
+    lines\addLine split for split in *[line for line in *splits when line.ASS.textLength > 0]
     toDelete[#toDelete+1] = line
     aegisub.progress.set 100*i/lineCnt
 

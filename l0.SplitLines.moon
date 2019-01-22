@@ -1,6 +1,6 @@
 export script_name = "Split Lines"
 export script_description = "Splits a line while maintaining appearance."
-export script_version = "0.1.0"
+export script_version = "0.2.0"
 export script_author = "line0"
 export script_namespace = "l0.SplitLines"
 

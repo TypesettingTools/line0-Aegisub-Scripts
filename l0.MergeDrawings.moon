@@ -73,14 +73,7 @@ mergeDrawings = (sub, sel, res, lines, lineCnt, targetLine) ->
       elseif section.class == ASS.Section.Text
         haveTextSection or= true
 
-    if i == 1
-      -- write new position tag for the first line
-      if pos.class == ASS.Tag.Move
-        pos.endPos\sub pos.startPos
-        pos.startPos\set 0, 0
-      else
-        data\replaceTags{ASS\createTag "position"}
-    else
+    if i > 1
       -- remove drawings from original lines and mark empty lines for deletion
       if haveTextSection then data\commit!
       else mergedLines[#mergedLines+1] = line
@@ -96,6 +89,16 @@ mergeDrawings = (sub, sel, res, lines, lineCnt, targetLine) ->
     ex = targetSection\getExtremePoints true
     off = target.align\getPositionOffset ex.w, ex.h
     targetSection\add off
+
+  pos, align = targetLine\getPosition!
+  bounds = targetSection\getBounds!
+  targetSection\sub bounds[1]
+  if pos.class == ASS.Tag.Move
+    pos.endPos\sub pos.startPos
+    pos.endPos\add bounds[1]
+    pos.startPos\set bounds[1].x, bounds[1].y
+  else
+    targetLine\replaceTags{ASS\createTag "position", bounds[1]}
 
   targetLine\commit!
   lines\replaceLines!

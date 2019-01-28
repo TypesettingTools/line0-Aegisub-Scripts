@@ -1,7 +1,7 @@
 export script_name = "Merge Drawings"
 export script_description = [[Moves all drawings found in all selected lines into the first line.
  Maintains positioning and converts scale as well as alignment.]]
-export script_version = "0.1.0"
+export script_version = "0.2.0"
 export script_author = "line0"
 export script_namespace = "l0.MergeDrawings"
 

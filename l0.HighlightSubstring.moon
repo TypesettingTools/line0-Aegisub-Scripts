@@ -9,14 +9,15 @@ DependencyControl = require "l0.DependencyControl"
 rec = DependencyControl{
   feed: "https://raw.githubusercontent.com/TypesettingTools/line0-Aegisub-Scripts/master/DependencyControl.json",
   {
-    {"a-mo.LineCollection", version: "1.0.1", url: "https://github.com/torque/Aegisub-Motion",
+    {"a-mo.LineCollection", version: "1.0.1", url: "https://github.com/TypesettingTools/Aegisub-Motion",
       feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
-    {"l0.ASSFoundation", version: "0.2.4", url: "https://github.com/TypesettingTools/ASSFoundation",
+    {"l0.ASSFoundation", version: "0.4.0", url: "https://github.com/TypesettingTools/ASSFoundation",
       feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"}
   }
 }
 
 LineCollection, ASS = rec\requireModules!
+logger = rec\getLogger!
 
 highlightSubstring = (sub, sel, res) ->
   lines = LineCollection sub, sel
@@ -36,13 +37,15 @@ highlightSubstring = (sub, sel, res) ->
     box, tags = ASS.Section.Drawing!, ASS.Section.Tag {
       ASS\createTag("position", 0, 0),
       ASS\createTag("align", 7),
-      ASS\createTag("color", 0, 0, 255),
+      ASS\createTag("color1", 0, 0, 255),
       ASS\createTag("alpha", 127),
       ASS\createTag("outline", 0),
       ASS\createTag("shadow", 0)
     }
-    box\drawRect bounds[1], bounds[2]
-    lines\addLine ASS\createLine{{tags, box}, data, layer: line.layer - 1}
+
+    if bounds.w > 0
+      box\drawRect bounds[1], bounds[2]
+      lines\addLine ASS\createLine{{tags, box}, data, layer: line.layer - 1}
 
   lines\replaceLines!
   lines\insertLines!

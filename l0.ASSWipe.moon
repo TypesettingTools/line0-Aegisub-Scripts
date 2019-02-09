@@ -132,12 +132,12 @@ mergeLines = (lines, start, cmbCnt, bytes, linesByFrame) ->
     return nil, cmbCnt, bytes
 
 
-removeInvisibleContoursOptCollectBounds = (contour, contours, i, j, _, cntStrings, sliceSize, linePre, linePost, isAnimated, boundsBatch) ->
-    prevContours = concat cntStrings, " ", 1, j-1
-    nextContours = j <= sliceSize and concat(cntStrings, " ", j+1) or ""
-    text = "#{linePre}#{prevContours} #{nextContours}#{linePost}"
-    boundsBatch\add contour.parent.parent, text, i, isAnimated
-
+removeInvisibleContoursOptCollectBounds = (contour, _, sectionContourIndex, sliceContourIndex, _, sliceRawContours, sliceSize, linePre, linePost, isAnimated, boundsBatch) ->
+    prevContours = concat sliceRawContours, " ", 1, sliceContourIndex-1
+    nextContours = sliceContourIndex <= sliceSize and concat(sliceRawContours, " ", sliceContourIndex+1) or ""
+    text = "#{linePre}#{prevContours}#{(#prevContours == 0 or #nextContours == 0) and "" or " "}#{nextContours}#{linePost}"
+    boundsBatch\add contour.parent.parent, text, sectionContourIndex, isAnimated
+    rawContour = sliceRawContours[sliceContourIndex]
 
 removeInvisibleContoursOptPurge = (contour, contours, i, _, _, allBounds, orgBounds) ->
     bounds, allBounds[i] = allBounds[i]
@@ -165,19 +165,19 @@ removeInvisibleContoursOpt = (section, orgBounds) ->
     lineStringPre, drwState = ass\getString nil, nil, selectSurroundingSections, false, true
     lineStringPost = ass\getString nil, drwState, selectSurroundingSections, false, false
 
-    allBounds, cntString, last = {}
+    allBounds, sliceContours, sliceStartIndex = {}
     isAnimated = ass\isAnimated!
 
-    for i = 1, contourCnt, sliceSize
-        last = min i+sliceSize-1, contourCnt
-        cntString = [cnt\getTagParams! for cnt in *section.contours[i, last]]
+    for sliceStartIndex = 1, contourCnt, sliceSize
+        sliceEndIndex = min sliceStartIndex+sliceSize-1, contourCnt
+        sliceContours = [cnt\getTagParams! for cnt in *section.contours[sliceStartIndex, sliceEndIndex]]
         boundsBatch = ASS.LineBoundsBatch!
 
-        section\callback removeInvisibleContoursOptCollectBounds, i, last, nil, nil,
-                         cntString, sliceSize, lineStringPre, lineStringPost, isAnimated, boundsBatch
+        section\callback removeInvisibleContoursOptCollectBounds, sliceStartIndex, sliceEndIndex, nil, nil,
+            sliceContours, sliceSize, lineStringPre, lineStringPost, isAnimated, boundsBatch
 
         boundsBatch\run true, allBounds
-        lineStringPre ..= concat cntString, " "
+        lineStringPre ..= concat sliceContours, " "
         boundsBatch = nil
         collectgarbage!
 

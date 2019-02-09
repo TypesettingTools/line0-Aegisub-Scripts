@@ -197,9 +197,9 @@ process = (sub, sel, res) ->
     linesByFrame = {}
 
     -- create proper tag name lists from user input which may be override tag names or mixed
-    res.tagsToKeep = ASS\getTagNames res.tagsToKeep\split ",%s"
-    res.tagSortOrder = ASS\getTagNames res.tagSortOrder\split ",%s"
-    res.extraDataFilter = res.extraDataFilter\split ",%s"
+    res.tagsToKeep = ASS\getTagNames string.split res.tagsToKeep, ",%s", nil, false
+    res.tagSortOrder = ASS\getTagNames string.split res.tagSortOrder, ",%s", nil, false
+    res.extraDataFilter = string.split res.extraDataFilter, ",%s", nil, false
 
     callback = (lines, line, i) ->
         aegisub.cancel! if aegisub.progress.is_cancelled!

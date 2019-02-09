@@ -18,10 +18,10 @@ version = DependencyControl{
       feed: "https://raw.githubusercontent.com/TypesettingTools/Functional/master/DependencyControl.json"},
     {"SubInspector.Inspector", version: "0.6.1", url: "https://github.com/TypesettingTools/SubInspector",
       feed: "https://raw.githubusercontent.com/TypesettingTools/SubInspector/master/DependencyControl.json"},
-      "aegisub.util", "json"
+    "json"
   }
 }
-LineCollection, ConfigHandler, ASS, Functional, SubInspector, util, json = version\requireModules!
+LineCollection, ConfigHandler, ASS, Functional, SubInspector, json = version\requireModules!
 ffms, min, concat, sort = aegisub.frame_from_ms, math.min, table.concat, table.sort
 {:list, :math, :string, :table, :unicode, :util, :re } = Functional
 logger = version\getLogger!

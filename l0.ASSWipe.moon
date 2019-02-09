@@ -33,6 +33,7 @@ Done. Processed %d lines in %d seconds.
 — Combined %d consecutive identical lines (%d%%)
 — Filtered %d clips and %d occurences of junk data
 — Purged %d invisible contours (%d in drawings, %d in clips)
+— Failed to purge %d invisible contours due to rendering inconsistencies
 — Converted %d drawings/clips to floating-point
 — Filtered %d records of extra data
 — Total space saved: %.2f KB
@@ -56,6 +57,7 @@ hints = {
   purgeContoursDraw: "Removes all contours of a drawing that are not visible on the canvas."
   purgeContoursClip: "Removes all contours of a clip that do not affect the appearance of the line."
   stripComments: "Removes any comments encapsulated in {curly brackets}."
+  purgeContoursIgnoreHashMismatch: "Removes invisible contours even if it causes a SubInspector hash mismatch when comparing the result to the original line. This may or may not visually affect your drawing, so never use this option unsupervised!"
 }
 
 defaultSortOrder = [[
@@ -143,7 +145,6 @@ removeInvisibleContoursOptPurge = (contour, contours, i, _, _, allBounds, orgBou
   bounds, allBounds[i] = allBounds[i]
   return false if orgBounds\equal bounds
 
-
 removeInvisibleContoursOpt = (section, orgBounds) ->
   cutOff, ass, contourCnt = false, section.parent, #section.contours
 
@@ -193,7 +194,7 @@ process = (sub, sel, res) ->
   tagNames = res.filterClips and util.copy(ASS.tagNames.clips) or {}
   tagNames[#tagNames+1] = res.removeJunk and "junk"
   stats = { bytes: 0, junk: 0, clips: 0, start: os.time!, cleaned: 0,
-        scale2float: 0, contoursDraw: 0, contoursClip: 0, extra: 0 }
+        scale2float: 0, contoursDraw: 0, contoursDrawSkipped: 0, contoursClip: 0, extra: 0 }
   linesByFrame = {}
 
   -- create proper tag name lists from user input which may be override tag names or mixed
@@ -254,18 +255,27 @@ process = (sub, sel, res) ->
       linesToDelete[delCnt], line.ASS = line
       return
 
+
+    purgedContourCount = 0
     if res.purgeContoursDraw or res.scale2float
       cb = (section) ->
         -- remove invisible contours from drawings
         if res.purgeContoursDraw
-          stats.contoursDraw += removeInvisibleContoursOpt section, oldBounds
+          purgedContourCount = removeInvisibleContoursOpt section, oldBounds
         -- un-scale drawings
         if res.scale2float and section.scale > 1
           section.scale\set 1
           stats.scale2float += 1
 
       data\callback cb, ASS.Section.Drawing
-
+      if purgedContourCount > 0
+        if res.purgeContoursDraw and not res.purgeContoursIgnoreHashMismatch and not data\getLineBounds!\equal oldBounds
+          line.text = orgText
+          data = ASS\parse line
+          stats.contoursDrawSkipped += purgedContourCount
+        else
+          stats.contoursDraw += purgedContourCount
+          oldBounds = data\getLineBounds! if res.purgeContoursIgnoreHashMismatch
 
     -- pogressively build a table of visible lines by frame
     -- which is required to check mergeability of consecutive identical lines
@@ -366,7 +376,7 @@ process = (sub, sel, res) ->
   logger\warn json.encode {Styles: lines.styles, Configuration: res} if debugError
   logger\warn reportMsg, lineCnt, os.time!-stats.start, stats.cleaned, 100*stats.cleaned/lineCnt,
     delCnt, 100*delCnt/lineCnt, cmbCnt, 100*cmbCnt/lineCnt, stats.clips, stats.junk,
-    stats.contoursClip+stats.contoursDraw, stats.contoursDraw, stats.contoursClip,
+    stats.contoursClip+stats.contoursDraw, stats.contoursDraw, stats.contoursClip, stats.contoursDrawSkipped,
     stats.scale2float, stats.extra, stats.bytes/1000
 
   if debugError
@@ -397,11 +407,12 @@ showDialog = (sub, sel, res) ->
       purgeContoursLabel: class: "label",    x: 0, y: 11, width: 2,  height: 1, label: "Purge invisible contours: "
       purgeContoursDraw:  class: "checkbox", x: 4, y: 11, width: 3,  height: 1, value: false, config: true, label: "from drawings", hint: hints.purgeContoursDraw
       purgeContoursClip:  class: "checkbox", x: 7, y: 11, width: 6,  height: 1, value: false, config: true, label: "from clips", hint: hints.purgeContoursClip
-      extraDataLabel:     class: "label",    x: 0, y: 13, width: 1,  height: 1, label: "Filter extra data: "
-      extraDataMode:      class: "dropdown", x: 1, y: 13, width: 1,  height: 1, value: "Keep All", config: true, items: {"Keep all", "Remove all", "Keep all except", "Remove all except"}, hint: hints.extraData
-      extraDataFilter:    class: "textbox",  x: 4, y: 13, width: 10, height: 3, value: "", config: true, hint: hints.extraData
-      quirksModeLabel:    class: "label",    x: 0, y: 17, width: 2,  height: 1, label: "Quirks mode: "
-      quirksMode:         class: "dropdown", x: 4, y: 17, width: 2,  height: 1, value: "VSFilter", config: true, items: [k for k, v in pairs ASS.Quirks], hint: hints.quirksMode
+      purgeContoursIgnoreHashMismatch: class: "checkbox", x: 4, y: 12, width: 9, height: 1, value: false, config: true, label: "ignore rendering inconsistencies", hint: hints.purgeContoursIgnoreHashMismatch
+      extraDataLabel:     class: "label",    x: 0, y: 14, width: 1,  height: 1, label: "Filter extra data: "
+      extraDataMode:      class: "dropdown", x: 1, y: 14, width: 1,  height: 1, value: "Keep All", config: true, items: {"Keep all", "Remove all", "Keep all except", "Remove all except"}, hint: hints.extraData
+      extraDataFilter:    class: "textbox",  x: 4, y: 14, width: 10, height: 3, value: "", config: true, hint: hints.extraData
+      quirksModeLabel:    class: "label",    x: 0, y: 18, width: 2,  height: 1, label: "Quirks mode: "
+      quirksMode:         class: "dropdown", x: 4, y: 18, width: 2,  height: 1, value: "VSFilter", config: true, items: [k for k, v in pairs ASS.Quirks], hint: hints.quirksMode
     }
   }
   options = ConfigHandler dlg, version.configFile, false, script_version, version.configDir

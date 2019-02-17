@@ -16,7 +16,7 @@
         "master": {
           "version": "0.4.0",
           "released": "2019-02-17",
-          "default": true,
+          "default": false,
           "files": [
             {
               "name": ".moon",
@@ -173,7 +173,7 @@
       "channels": {
         "master": {
           "version": "0.1.0",
-          "default": true,
+          "default": false,
           "released": "2015-04-17",
           "files": [
             {
@@ -240,7 +240,7 @@
       "channels": {
         "master": {
           "version": "0.1.1",
-          "default": true,
+          "default": false,
           "released": "2019-02-17",
           "files": [
             {
@@ -312,7 +312,7 @@
       "channels": {
         "master": {
           "version": "0.2.0",
-          "default": true,
+          "default": false,
           "released": "2019-02-17",
           "files": [
             { "name": ".lua", "delete": true },
@@ -407,7 +407,7 @@
       "channels": {
         "master": {
           "version": "0.2.0",
-          "default": true,
+          "default": false,
           "released": "2019-02-17",
           "files": [
             {
@@ -480,7 +480,7 @@
       "channels": {
         "master": {
           "version": "0.2.0",
-          "default": true,
+          "default": false,
           "released": "2019-02-17",
           "files": [
             { "name": ".lua", "delete": true },
@@ -598,7 +598,7 @@
       "channels": {
         "master": {
           "version": "0.5.0",
-          "default": true,
+          "default": false,
           "released": "2019-02-17",
           "files": [
             { "name": ".lua", "delete": true },
@@ -705,7 +705,7 @@
       "channels": {
         "master": {
           "version": "0.2.0",
-          "default": true,
+          "default": false,
           "released": "2019-02-17",
           "files": [
             { "name": ".lua", "delete": true },
@@ -819,7 +819,7 @@
       "channels": {
         "master": {
           "version": "0.1.1",
-          "default": true,
+          "default": false,
           "released": "2019-02-17",
           "files": [
             {
@@ -905,7 +905,7 @@
       "channels": {
         "master": {
           "version": "0.2.0",
-          "default": true,
+          "default": false,
           "released": "2019-02-17",
           "files": [
             {
@@ -994,7 +994,7 @@
       "channels": {
         "master": {
           "version": "0.2.0",
-          "default": true,
+          "default": false,
           "released": "2019-02-17",
           "files": [
             { "name": ".lua", "delete": true },

@@ -14,14 +14,14 @@
       "description": "Performs script cleanup, removes unnecessary tags and lines.",
       "channels": {
         "master": {
-          "version": "0.3.3",
-          "released": "2015-10-12",
+          "version": "0.4.0",
+          "released": "2019-02-17",
           "default": true,
           "files": [
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "F911BC4F3A75E93E9E21FE978508B0BB262AEDA6"
+              "sha1": "49FCD502F90CF3152B09EF76EF18194D16D739E3"
             },
             {
               "name": ".lua",
@@ -101,6 +101,18 @@
         ],
         "0.3.3": [
           "The blending order check introduced for the 'Combine consecutive identical lines' feature in 0.3.2 now considers merge operations that have already taken place in the current line's blending groups, which considerably improves the number of mergeable lines in some cases."
+        ],
+        "0.4.0": [
+          "The performance and memory usage of the 'clean drawings' features has been greatly improved.",
+          "Memory footprint has been decreased by removing the undo text from already cleaned lines.",
+          "A cleaning option was added to filter/strip extradata from processed scripts.",
+          "A cleaning option was aded to strip comments from processed lines.",
+          "The user can now cancel ASSWipe at pretty much any point in time when cleaning is in progress.",
+          "Upgraded ASSFoundation to v0.4.0 which fixes many cleaning issues experienced in the previous version of ASSWipe. See the ASSFoundation changelog for details.",
+          "Configuration for the 'quirks mode' added in ASSFoundation v0.4.0 is now exposed to the user, letting them tailor the cleaning process to either libass or vsfitlter.",
+          "After cleaning contours of a drawing, a dedicated hash check is performed to ensure the process didn't visually change the lines. When it detects the change, it automatically reverts to the original contours and resumes the cleaning process. The amount of affected contours is reported in the final report.",
+          "Added an option to ignore hash changes caused by contour cleaning. This may visually affect drawings, so don't use this unsupervised!",
+          "Logging/error reporting was improved and logs are no written to a log file."
         ]
       }
     },
@@ -118,7 +130,7 @@
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "01947301F234B54266379D35872D100F94C4840A"
+              "sha1": "71277E59825413746CCB33231A2FBC396995E8AB"
             }
           ],
           "requiredModules": [
@@ -152,14 +164,14 @@
       "description": "Highlights a substring at a given index in a line by underlaying a colored rectangle.",
       "channels": {
         "master": {
-          "version": "0.1.0",
+          "version": "0.1.1",
           "default": true,
-          "released": "2015-04-17",
+          "released": "2019-02-17",
           "files": [
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "0FD2863182A3BC6A932E2F6E5B31A562C68CBDEC"
+              "sha1": "3158BBDB18C8B1208049AB166D1A566359B866FE"
             }
           ],
           "requiredModules": [
@@ -183,6 +195,9 @@
       "changelog": {
         "0.1.0": [
           "initial release"
+        ],
+        "0.1.1": [
+          "HighlightSubstring now properly works with ASSFoundation v0.4.0+"
         ]
       }
     },
@@ -193,14 +208,18 @@
       "description": "Inserts hard line breaks after n characters, but tries to avoid breaking up words.",
       "channels": {
         "master": {
-          "version": "0.1.1",
+          "version": "0.2.0",
           "default": true,
-          "released": "2015-02-26",
+          "released": "2019-02-17",
           "files": [
             {
               "name": ".lua",
+              "delete": true
+            },
+            {
+              "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "7C954E5DA5B8DFD37DAA2098F17ABE8B94439561"
+              "sha1": "1AC3A3FD9119800D2F660D107CB0D2FB69A9D2B4"
             }
           ],
           "requiredModules": [
@@ -236,6 +255,9 @@
         "0.1.1": [
           "Enabled auto-update using DependencyControl",
           "DependencyControl compatibility fixes"
+        ],
+        "0.2.0": [
+          "The script was ported to MoonScript and dependencies have been updated to their latest versions."
         ]
       }
     },
@@ -246,14 +268,14 @@
       "description": "Moves all drawings found in all selected lines into the first line. Maintains positioning and converts scale as well as alignment.",
       "channels": {
         "master": {
-          "version": "0.1.0",
+          "version": "0.2.0",
           "default": true,
-          "released": "2015-04-10",
+          "released": "2019-02-17",
           "files": [
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "67892809D519E4BAF41092799261D988CBA53F28"
+              "sha1": "A85D3A6FF3CDE816BC211625D215696E14A5F893"
             }
           ],
           "requiredModules": [
@@ -277,6 +299,10 @@
       "changelog": {
         "0.1.0": [
           "initial release"
+        ],
+        "0.2.0": [
+          "The final merged drawing is trimmed in such a way that its top-left-most point is also its origin. Position/Move tags are added/adjusted in order for the drawing to retain its position on the canvas.",
+          "Dependencies have been updated to their latest versions."
         ]
       }
     },
@@ -287,9 +313,9 @@
       "description": "Moves text along a path specified in a \\clip. Currently only works on fbf lines.",
       "channels": {
         "master": {
-          "version": "0.1.4",
+          "version": "0.2.0",
           "default": true,
-          "released": "2015-09-10",
+          "released": "2019-02-17",
           "files": [
             {
               "name": ".lua",
@@ -298,7 +324,7 @@
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "92AC4F037DA057EDE9077F8459678306269712C2"
+              "sha1": "5CC5A49D8690C5C0AF9170ACFA2C1E178D2D90D0"
             }
           ],
           "requiredModules": [
@@ -350,6 +376,10 @@
         ],
         "0.1.4": [
           "The required Yutils module is now loaded correctly on case-sensitive platforms/file systems such as Linux."
+        ],
+        "0.2.0": [
+          "The script now uses the DependencyControl logger infrastructure and writes a log file to disk.",
+          "Dependencies have been updated to their latest versions."
         ]
       }
     },
@@ -360,14 +390,18 @@
       "description": "Provides configurable and hotkeyable tag/line modification macros.",
       "channels": {
         "master": {
-          "version": "0.4.0",
+          "version": "0.5.0",
           "default": true,
-          "released": "2015-07-05",
+          "released": "2019-02-17",
           "files": [
             {
               "name": ".lua",
+              "delete": true
+            },
+            {
+              "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "2D08E3FEA43782827D3F67DBCB98899911EF8D76"
+              "sha1": "E65255219E0C9A29C6DEC27F385DE65F3D2977F7"
             }
           ],
           "requiredModules": [
@@ -418,6 +452,11 @@
         ],
         "0.4.0": [
           "An option to maintain the appearance of the line when changing the aligment was added to the Align Up/Down/Left/Right operations."
+        ],
+        "0.5.0": [
+          "The script was ported to MoonScript and dependencies have been updated to their latest versions.",
+          "The default align nudgers are now configured to maintain line positioning.",
+          "An option was added for a nudger to strip or keep sections left empty after performing the desired operation."
         ]
       }
     },
@@ -428,14 +467,18 @@
       "description": "Convenience macro for pasting full lines exported by AI2ASS.",
       "channels": {
         "master": {
-          "version": "0.1.2",
+          "version": "0.2.0",
           "default": true,
-          "released": "2015-02-26",
+          "released": "2019-02-17",
           "files": [
             {
               "name": ".lua",
+              "delete": true
+            },
+            {
+              "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "6DC92B9A87023CCB1A032894317F097612B9D30B"
+              "sha1": "CE50E1E290EB75D7B25419D4333A758405641C7E"
             }
           ],
           "requiredModules": [
@@ -485,6 +528,9 @@
           "Enabled auto-update using DependencyControl",
           "Changed config file to \\config\\l0.PasteAILines.json (rename PasteAILines.json to restore your existing configuration)",
           "DependencyControl compatibility fixes"
+        ],
+        "0.2.0": [
+          "The script was ported to MoonScript and dependencies have been updated to their latest versions."
         ]
       }
     },
@@ -495,14 +541,14 @@
       "description": "Lets you add a shaking effect to fbf typesets with configurable constraints.",
       "channels": {
         "master": {
-          "version": "0.1.0",
+          "version": "0.1.1",
           "default": true,
-          "released": "2016-01-24",
+          "released": "2019-02-17",
           "files": [
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "FC63C1C30B70A5109955B53548A2C1D5ADC46106"
+              "sha1": "6804DD52F15754F0E0725CFE982A250EE9B0B29C"
             }
           ],
           "requiredModules": [
@@ -533,6 +579,9 @@
       "changelog": {
         "0.1.0": [
           "Ported from old Lua version to use DependencyControl, ASSFoundation, Aegisub-Motion and Functional."
+        ],
+        "0.1.1": [
+          "Cosmetic improvements to the source code"
         ]
       }
     },
@@ -543,14 +592,14 @@
       "description": "Splits lines at configurable intervals, specified indexes or at tag boundaries while maintaining appearance.",
       "channels": {
         "master": {
-          "version": "0.1.0",
+          "version": "0.2.0",
           "default": true,
-          "released": "2015-05-06",
+          "released": "2019-02-17",
           "files": [
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "20385983588EB4549620AFF044A593B068D7453A"
+              "sha1": "941CDCF5EEDD78EA9BED747E8790714EA58A0C1D"
             }
           ],
           "requiredModules": [
@@ -584,6 +633,10 @@
       "changelog": {
         "0.1.0": [
           "initial commit"
+        ],
+        "0.2.0": [
+          "Split lines that would only contain whitespace are no longer written to the script.",
+          "Dependencies have been updated to their latest versions."
         ]
       }
     },
@@ -594,14 +647,18 @@
       "description": "Splits a line into vertical text.",
       "channels": {
         "master": {
-          "version": "0.1.2",
+          "version": "0.2.0",
           "default": true,
-          "released": "2015-09-10",
+          "released": "2019-02-17",
           "files": [
             {
               "name": ".lua",
+              "delete": true
+            },
+            {
+              "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "471CB39D3ED6C547022DA6B23048DB33AA2CDC30"
+              "sha1": "B89FEBE845444BF8858E27A09CAA2D237AAA3367"
             }
           ],
           "requiredModules": [
@@ -636,6 +693,9 @@
         "0.1.2": [
           "Sync with ASSFoundation API changes",
           "The required Yutils module is now loaded correctly on case-sensitive platforms/file systems such as Linux."
+        ],
+        "0.2.0": [
+          "The script was ported to MoonScript and dependencies have been updated to their latest versions."
         ]
       }
     }

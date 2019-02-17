@@ -8,8 +8,8 @@ DependencyControl = require "l0.DependencyControl"
 depCtrl = DependencyControl {
   feed: "https://raw.githubusercontent.com/TypesettingTools/line0-Aegisub-Scripts/master/DependencyControl.json",
   {
-    "aegisub.util", "aegisub.clipboard", "aegisub.re", "json",
-    {"a-mo.LineCollection", version: "1.0.1", url: "https://github.com/torque/Aegisub-Motion"},
+    "aegisub.clipboard", "json",
+    {"a-mo.LineCollection", version: "1.3.0", url: "https://github.com/TypesettingTools/Aegisub-Motion"},
     {"l0.ASSFoundation", version: "0.4.0", url: "https://github.com/TypesettingTools/ASSFoundation",
       feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
     {"l0.Functional", version: "0.5.0", url: "https://github.com/TypesettingTools/Functional",
@@ -17,7 +17,7 @@ depCtrl = DependencyControl {
   }
 }
 
-util, clipboard, re, json, LineCollection, ASS, Functional = depCtrl\requireModules!
+clipboard, json, LineCollection, ASS, Functional = depCtrl\requireModules!
 {:list, :math, :string, :table, :unicode, :util, :re } = Functional
 logger = depCtrl\getLogger!
 

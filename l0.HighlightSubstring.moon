@@ -1,6 +1,6 @@
 export script_name = "Highlight Substring"
 export script_description = "Highlights a substring at a given index in a line by underlaying a colored rectangle."
-export script_version = "0.1.0"
+export script_version = "0.1.1"
 export script_author = "line0"
 export script_namespace = "l0.HighlightSubstring"
 
@@ -9,7 +9,7 @@ DependencyControl = require "l0.DependencyControl"
 rec = DependencyControl{
   feed: "https://raw.githubusercontent.com/TypesettingTools/line0-Aegisub-Scripts/master/DependencyControl.json",
   {
-    {"a-mo.LineCollection", version: "1.0.1", url: "https://github.com/TypesettingTools/Aegisub-Motion",
+    {"a-mo.LineCollection", version: "1.3.0", url: "https://github.com/TypesettingTools/Aegisub-Motion",
       feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
     {"l0.ASSFoundation", version: "0.4.0", url: "https://github.com/TypesettingTools/ASSFoundation",
       feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"}

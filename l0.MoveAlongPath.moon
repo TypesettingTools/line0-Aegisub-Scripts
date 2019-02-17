@@ -1,6 +1,6 @@
 export script_name = "Move Along Path"
 export script_description = "Moves text along a path specified in a \\clip. Currently only works on fbf lines."
-export script_version = "0.1.4"
+export script_version = "0.2.0"
 export script_author = "line0"
 export script_namespace = "l0.MoveAlongPath"
 
@@ -9,11 +9,11 @@ version = DependencyControl {
   feed: "https://raw.githubusercontent.com/TypesettingTools/line0-Aegisub-Scripts/master/DependencyControl.json",
   {
     "aegisub.util",
-    {"a-mo.LineCollection", version: "1.1.1", url: "https://github.com/torque/Aegisub-Motion",
+    {"a-mo.LineCollection", version: "1.3.0", url: "https://github.com/torque/Aegisub-Motion",
       feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
-    {"a-mo.Line", version: "1.4.3", url: "https://github.com/TypesettingTools/Aegisub-Motion",
+    {"a-mo.Line", version: "1.5.3", url: "https://github.com/TypesettingTools/Aegisub-Motion",
       feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
-    {"l0.ASSFoundation", version: "0.2.9", url: "https://github.com/TypesettingTools/ASSFoundation",
+    {"l0.ASSFoundation", version: "0.4.0", url: "https://github.com/TypesettingTools/ASSFoundation",
       feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
     {"l0.Functional", version: "0.5.0", url: "https://github.com/TypesettingTools/Functional",
       feed: "https://raw.githubusercontent.com/TypesettingTools/Functional/master/DependencyControl.json"},

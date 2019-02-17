@@ -106,7 +106,7 @@ pasteAILines = (sub,sel,res) ->
           maxLayer = math.max maxLayer, line.layer,
       true
 
-  aiLinesRaw = res.aiLinesRaw\split "\n"
+  aiLinesRaw = string.split res.aiLinesRaw, "\n"
   aiLines = LineCollection sub
   firstSel, sel, lineCnt = sel[1], {}, #aiLinesRaw
   for i = 1, lineCnt

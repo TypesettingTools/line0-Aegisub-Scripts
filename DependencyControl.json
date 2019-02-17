@@ -697,7 +697,7 @@
         ]
       }
     },
-    "l0.PasteAILines": {
+    "l0.PasteAiLines": {
       "url": "@{baseUrl}#@{namespace}",
       "author": "line0",
       "name": "Paste AI Lines",

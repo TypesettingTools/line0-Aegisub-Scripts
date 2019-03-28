@@ -479,15 +479,15 @@
       "description": "Moves text along a path specified in a \\clip. Currently only works on fbf lines.",
       "channels": {
         "master": {
-          "version": "0.2.0",
+          "version": "0.2.1",
           "default": false,
-          "released": "2019-02-17",
+          "released": "2019-03-28",
           "files": [
             { "name": ".lua", "delete": true },
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "5CC5A49D8690C5C0AF9170ACFA2C1E178D2D90D0"
+              "sha1": "C91DD0D7E7C84E45D7F9D413317DE36B56E6C23B"
             }
           ],
           "requiredModules": [
@@ -524,15 +524,15 @@
           "fileBaseUrl": "@{fileBaseUrl}/@{namespace}-v@{version}/@{namespace}"
         },
         "release": {
-          "version": "0.2.0",
+          "version": "0.2.1",
           "default": true,
-          "released": "2019-02-17",
+          "released": "2019-03-28",
           "files": [
             { "name": ".lua", "delete": true },
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "5CC5A49D8690C5C0AF9170ACFA2C1E178D2D90D0"
+              "sha1": "C91DD0D7E7C84E45D7F9D413317DE36B56E6C23B"
             }
           ],
           "requiredModules": [
@@ -587,6 +587,9 @@
         "0.2.0": [
           "The script now uses the DependencyControl logger infrastructure and writes a log file to disk.",
           "Dependencies have been updated to their latest versions."
+        ],
+        "0.2.1": [
+          "Entering the automation menu with no lines selected no longer results in an error message. "
         ]
       }
     },

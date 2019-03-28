@@ -1,6 +1,6 @@
 export script_name = "Move Along Path"
 export script_description = "Moves text along a path specified in a \\clip. Currently only works on fbf lines."
-export script_version = "0.2.0"
+export script_version = "0.2.1"
 export script_author = "line0"
 export script_namespace = "l0.MoveAlongPath"
 
@@ -127,6 +127,7 @@ process = (sub,sel,res) ->
   lines\insertLines!
 
 hasClip = (sub, sel, active) ->
+  return false if #sel == 0
   firstLine = Line sub[sel[1]]
   ass = ASS\parse firstLine
   if 0 == #ass\getTags {"clip_vect","iclip_vect"}
@@ -141,7 +142,7 @@ getExtraData = (line) ->
 
 hasUndoData = (sub, sel, active) ->
   for i = 1, #sel
-    return true if getExtraData sub[sel[i]]
+    return true if sel[i] and getExtraData sub[sel[i]]
   return false
 
 undo = (sub, sel) ->

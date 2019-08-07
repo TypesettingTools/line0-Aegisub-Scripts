@@ -222,13 +222,26 @@ shakeIt = (sub, sel) ->
       x: 0, y: 11, width: 10, height: 1
     },
     {
+      class: "label", label: "Shake interval: every",
+      x: 0, y: 12, width: 2, height: 1
+    },
+    {
+      class:"intedit", name: "interval",
+      value: 1, min: 1,
+      x: 2, y: 12, width: 1, height: 1
+    },
+    {
+      class: "label", label: "line(s)",
+      x: 3, y: 12, width: 1, height: 1
+    },
+    {
       class: "label", label: "RNG Seed:",
-      x: 0, y: 12, width: 1, height: 1
+      x: 0, y: 13, width: 1, height: 1
     },
     {
       class:"intedit", name: "seed",
       value: os.time!,
-      x: 1, y: 12, width: 2, height: 1
+      x: 1, y: 13, width: 2, height: 1
     },
   }
   aegisub.cancel! unless btn
@@ -264,6 +277,10 @@ shakeIt = (sub, sel) ->
   lineCnt = #lines.lines
   groups = table.values list.groupBy(lines.lines, "start_time"),
     (grpA, grpB) -> grpA[1].start_time < grpB[1].start_time
+
+  -- group fbf lines to get longer shake interval
+  if res.interval > 1
+    groups = [list.join unpack group for group in *list.chunk groups, res.interval]
 
   -- generate offsets for every line group, but don't apply them immediately in case the generator fails
   generatePositionOffset = makeOffsetGenerator res

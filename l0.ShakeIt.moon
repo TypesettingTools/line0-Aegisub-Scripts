@@ -109,6 +109,13 @@ collectTags = (lines, groups, tagName, targets) ->
 
       -- deduplicate tags we matched multiple times
       tags = table.keys list.makeSet tags
+      -- sort tags by order of appearance in the line
+      table.sort tags, (a, b) ->
+        aSectionPosition = list.indexOf a.parent.parent.sections, a.parent
+        bSectionPosition = list.indexOf b.parent.parent.sections, b.parent
+        if aSectionPosition == bSectionPosition
+          return list.indexOf(a.parent.tags, a) < list.indexOf b.parent.tags, b
+        return  aSectionPosition < bSectionPosition
 
       maxTagCountPerLine = math.max maxTagCountPerLine, #tags
       tags

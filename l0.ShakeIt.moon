@@ -176,7 +176,7 @@ makeSimpleOffset = (prev, min, max, signChgMode = signChgModesSingle.Any, minDif
     if diffToPrev <= maxDiff and diffToPrev >= minDiff
       return off
 
-  logger\error "Couldn't find offset that satifies chosen temporal offset constraints (Min: #{res.offTemporalMin}, Max: #{res.offTemporalMax} for group #{i}. Aborting."
+  logger\error "Couldn't find offset that satifies constraints Min=#{minDiff} <= #{prev} <= Max=#{maxDiff}."
 
 
 makeMultiOffsetGenerator = (res, count) ->
@@ -187,13 +187,13 @@ makeMultiOffsetGenerator = (res, count) ->
   -- allow user to replay a previous shake
   math.randomseed res.seed
 
-  return (constrainTemporal = true, rollLimit) ->
-    minPrevDiff, maxPrevDiff = if constrainTemporal
-      res.offTemporalMin, res.offTemporalMax
+  return (applyConstraints = true, rollLimit) ->
+    minPrevDiff, maxPrevDiff = if applyConstraints
+      res.groupOffsetMin, res.groupOffsetMax
     else 0, math.huge
 
     offPrev = for i = 1, count
-      makeSimpleOffset offPrev[i], res.offTotalMin, res.offTotalMax, res.signChg, minPrevDiff, maxPrevDiff, rollLimit
+      makeSimpleOffset offPrev[i], res.absoluteOffsetMin, res.absoluteOffsetMax, res.signChg, minPrevDiff, maxPrevDiff, rollLimit
     return offPrev
 
 
@@ -404,11 +404,11 @@ shakeTag = (sub, sel) ->
       x: 0, y: 5, width: 6, height: 1
     },
     {
-      class: "label", label: "Shaking Offset Limits (relative to original tag value): ",
+      class: "label", label: "Shake offset limits (relative to original tag value): ",
       x: 0, y: 6, width: 6, height: 1,
     },
     {
-      class: "floatedit", name: "offTotalMin",
+      class: "floatedit", name: "absoluteOffsetMin",
       value: 0, min: 0, step:1,
       x: 0, y: 7, width: 2, height: 1
     },
@@ -417,7 +417,7 @@ shakeTag = (sub, sel) ->
       x: 2, y: 7, width: 1, height: 1
     },
     {
-      class: "floatedit", name: "offTotalMax",
+      class: "floatedit", name: "absoluteOffsetMax",
       value: 10, min: 0, step: 1,
       x: 3, y: 7, width: 2, height: 1,
     },
@@ -426,7 +426,7 @@ shakeTag = (sub, sel) ->
       x: 0, y: 8, width: 6, height: 1
     },
     {
-      class: "label", label: "Change range between subsequent line group offsets:",
+      class: "label", label: "Offset difference range between subsequent line groups:",
       x: 0, y: 9, width: 6, height: 1
     },
     {
@@ -434,7 +434,7 @@ shakeTag = (sub, sel) ->
       x: 0, y: 10, width: 1, height: 1
     },
     {
-      class: "floatedit", name: "offTemporalMin",
+      class: "floatedit", name: "groupOffsetMin",
       value: 0, min: 0, step: 1,
       x: 1, y: 10, width: 2, height: 1
     },
@@ -443,7 +443,7 @@ shakeTag = (sub, sel) ->
       x: 3, y: 10, width: 1, height: 1
     },
     {
-      class: "floatedit", name: "offTemporalMax",
+      class: "floatedit", name: "groupOffsetMax",
       value: 10, min: 0, step: 1,
       x: 4, y: 10, width: 2, height: 1,
     },
@@ -452,7 +452,7 @@ shakeTag = (sub, sel) ->
       x: 0, y: 11, width: 6, height: 1
     },
     {
-      class: "label", label: "Constraints:",
+      class: "label", label: "Shake offset constraints between subsequent line groups:",
       x: 0, y: 12, width: 6, height: 1
     },
     {
@@ -498,11 +498,11 @@ shakeTag = (sub, sel) ->
   aegisub.cancel! unless btn
 
   -- fix up some user errors
-  if res.offTotalMax < res.offTotalMin
-    res.offTotalMin, res.offTotalMax = res.offTotalMax, res.offTotalMin
+  if res.absoluteOffsetMax < res.absoluteOffsetMin
+    res.absoluteOffsetMin, res.absoluteOffsetMax = res.absoluteOffsetMax, res.absoluteOffsetMin
 
-  if res.offTemporalMax < res.offTemporalMin
-    res.offTemporalMin, res.offTemporalMax = res.offTemporalMax, res.offTemporalMin
+  if res.groupOffsetMax < res.groupOffsetMin
+    res.groupOffsetMin, res.groupOffsetMax = res.groupOffsetMax, res.groupOffsetMin
 
   lines = LineCollection sub, sel
   groups = groupLines lines, res.interval

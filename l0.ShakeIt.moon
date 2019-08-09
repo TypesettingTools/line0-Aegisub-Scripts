@@ -180,6 +180,8 @@ makeSimpleOffset = (prev, min, max, signChgMode = signChgModesSingle.Any, minDif
 
 
 makeMultiOffsetGenerator = (res, count) ->
+  -- this makes all initial offsets start with the same sign if sign change is enforced
+  -- TODO: maybe offer an option to start with a random sign for every value
   offPrev = [0 for _ = 1, count]
 
   -- allow user to replay a previous shake

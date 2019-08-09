@@ -44,10 +44,11 @@ hasLineRotation = (line) ->
   return true unless styleTags.tags.angle\equal 0
   line\modTags {"angle", "angle_x", "angle_y"}, (tag) -> true
 
-groupLines = (lines, interval = 1) ->
-  -- collect selected lines and group by start time
-  groups = table.values list.groupBy(lines.lines, "start_time"),
-    (grpA, grpB) -> grpA[1].start_time < grpB[1].start_time
+groupLines = (lines, field, interval = 1) ->
+  -- collect selected lines and group if desired
+  groups = if field
+    table.values list.groupBy(lines.lines, field), (grpA, grpB) -> grpA[1][field] < grpB[1][field]
+  else [{line} for line in *lines]
 
   -- group fbf lines to get longer shake interval
   if interval > 1
@@ -251,91 +252,101 @@ shakePosition = (sub, sel) ->
       x: 0, y: 3, width: 10, height: 1
     },
     {
-      class: "label", label: "Angle between subsequent line offsets:",
-      x: 0, y: 4, width: 10, height: 1
+      class: "checkbox", name: "groupLines", label: "Group lines by:",
+      value: true,
+      x: 0, y: 4, width: 1, height: 1
+    },
+    {
+      class: "dropdown", name: "groupLinesField",
+      items: {"start_time", "end_time", "layer", "effect", "actor"}, value: 'start_time',
+      x: 1, y: 4, width: 1, height: 1
+    },
+    {
+      class: "label", label: "Angle between subsequent line group offsets:",
+      x: 0, y: 5, width: 10, height: 1
     },
     {
       class: "label", label: "Min:",
-      x: 0, y: 5, width: 1, height: 1
+      x: 0, y: 6, width: 1, height: 1
     },
     {
       class: "floatedit", name: "angleMin",
       value: 0, min: 0, max: 180, step: 1,
-      x: 1, y: 5, width: 2, height: 1
+      x: 1, y: 6, width: 2, height: 1
     },
     {
       class: "label", label: "°    Max:",
-      x: 3, y: 5, width: 3, height: 1
+      x: 3, y: 6, width: 3, height: 1
     },
     {
       class: "floatedit", name: "angleMax",
       value: 180, min: 0, max: 180, step: 1,
-      x: 6, y: 5, width: 2, height: 1,
+      x: 6, y: 6, width: 2, height: 1,
     },
     {
       class: "label", label: "°",
-      x: 8, y: 5, width: 2, height: 1
+      x: 8, y: 6, width: 2, height: 1
     },
     {
       class: "label", label: "",
-      x: 0, y: 6, width: 10, height: 1
+      x: 0, y: 7, width: 10, height: 1
     },
     {
       class: "label", label: "Constraints:",
-      x: 0, y: 7, width: 10, height: 1
+      x: 0, y: 8, width: 10, height: 1
     },
     {
       class: "dropdown", name: "signChgX",
       items: table.values(signChgModesSingle), value: signChgModesSingle.Any,
-      x: 0, y: 8, width: 2, height: 1
+      x: 0, y: 9, width: 2, height: 1
     },
     {
-      class: "label", label: "sign change for X offsets of subsequent lines.",
-      x: 2, y: 8, width: 5, height: 1
+      class: "label", label: "sign change for X offsets of subsequent line groups.",
+      x: 2, y: 9, width: 5, height: 1
     },
     {
       class: "dropdown", name: "signChgY",
       items: table.values(signChgModesSingle), value: signChgModesSingle.Any,
-      x: 0, y: 9, width: 2, height: 1
+      x: 0, y: 10, width: 2, height: 1
     },
     {
-      class: "label", label: "sign change for Y offsets of subsequent lines.",
-      x: 2, y: 9, width: 5, height: 1
+      class: "label", label: "sign change for Y offsets of subsequent line groups.",
+      x: 2, y: 10, width: 5, height: 1
     },
     {
       class: "dropdown", name: "signChgCmb",
       items: table.values(signChgModesCmb), value: signChgModesCmb.Any,
-      x: 0, y: 10, width: 2, height: 1
+      x: 0, y: 11, width: 2, height: 1
     },
     {
-      class: "label", x: 2, y: 10, width: 5, height: 1
-      label: "of the X and Y offsets must change sign between subsequent line.",
+      class: "label", x: 2, y: 11, width: 5, height: 1
+      label: "of the X and Y offsets must change sign between subsequent line groups.",
     },
     {
       class: "label", label: "",
-      x: 0, y: 11, width: 10, height: 1
+      x: 0, y: 12, width: 10, height: 1
     },
     {
       class: "label", label: "Shake interval: every",
-      x: 0, y: 12, width: 2, height: 1
+      x: 0, y: 13, width: 2, height: 1
     },
     {
       class:"intedit", name: "interval",
       value: 1, min: 1,
-      x: 2, y: 12, width: 1, height: 1
+      x: 2, y: 13, width: 1, height: 1
     },
     {
-      class: "label", label: "line(s)",
-      x: 3, y: 12, width: 1, height: 1
+      class: "label", label: "line group(s)",
+      x: 3, y: 13, width: 1, height: 1
     },
     {
       class: "label", label: "RNG Seed:",
-      x: 0, y: 13, width: 1, height: 1
+      x: 0, y: 14, width: 1, height: 1
     },
     {
       class:"intedit", name: "seed",
       value: os.time!,
-      x: 1, y: 13, width: 2, height: 1
+      x: 1, y: 14, width: 2, height: 1
     }
   }
   aegisub.cancel! unless btn
@@ -367,7 +378,7 @@ shakePosition = (sub, sel) ->
   logger\assert #err == 1, table.concat err, "\n"
 
   lines = LineCollection sub, sel
-  groups = groupLines lines, res.interval
+  groups = groupLines lines, res.groupLines and res.groupLinesField or nil, res.interval
 
   -- generate offsets for every line group, but don't apply them immediately in case the generator fails
   offsets = calculateOffsets #groups, makePositionOffsetGenerator res
@@ -433,73 +444,83 @@ shakeTag = (sub, sel) ->
       x: 0, y: 8, width: 6, height: 1
     },
     {
+      class: "checkbox", name: "groupLines", label: "Group lines by:",
+      value: true,
+      x: 0, y: 9, width: 1, height: 1
+    },
+    {
+      class: "dropdown", name: "groupLinesField",
+      items: {"start_time", "end_time", "layer", "effect", "actor"}, value: 'start_time',
+      x: 1, y: 9, width: 1, height: 1
+    },
+    {
       class: "label", label: "Offset difference range between subsequent line groups:",
-      x: 0, y: 9, width: 6, height: 1
+      x: 0, y: 10, width: 6, height: 1
     },
     {
       class: "label", label: "Min:",
-      x: 0, y: 10, width: 1, height: 1
+      x: 0, y: 11, width: 1, height: 1
     },
     {
       class: "floatedit", name: "groupOffsetMin",
       value: 0, min: 0, step: 1,
-      x: 1, y: 10, width: 2, height: 1
+      x: 1, y: 11, width: 2, height: 1
     },
     {
       class: "label", label: "    Max:",
-      x: 3, y: 10, width: 1, height: 1
+      x: 3, y: 11, width: 1, height: 1
     },
     {
       class: "floatedit", name: "groupOffsetMax",
       value: 10, min: 0, step: 1,
-      x: 4, y: 10, width: 2, height: 1,
+      x: 4, y: 11, width: 2, height: 1,
     },
     {
       class: "label", label: "",
-      x: 0, y: 11, width: 6, height: 1
+      x: 0, y: 12, width: 6, height: 1
     },
     {
       class: "label", label: "Shake offset constraints between subsequent line groups:",
-      x: 0, y: 12, width: 6, height: 1
+      x: 0, y: 13, width: 6, height: 1
     },
     {
       class: "dropdown", name: "signChg",
       items: table.values(signChgModesSingle), value: signChgModesSingle.Any,
-      x: 0, y: 13, width: 2, height: 1
+      x: 0, y: 14, width: 2, height: 1
     },
     {
       class: "label", label: "sign change for tag offsets of subsequent lines.",
-      x: 2, y: 13, width: 4, height: 1
-    },
-    {
-      class: "label", label: "",
-      x: 0, y: 14, width: 6, height: 1
+      x: 2, y: 14, width: 4, height: 1
     },
     {
       class: "label", label: "",
       x: 0, y: 15, width: 6, height: 1
     },
     {
+      class: "label", label: "",
+      x: 0, y: 16, width: 6, height: 1
+    },
+    {
       class: "label", label: "Shake interval: every",
-      x: 0, y: 16, width: 1, height: 1
+      x: 0, y: 17, width: 1, height: 1
     },
     {
       class:"intedit", name: "interval",
       value: 1, min: 1,
-      x: 1, y: 16, width: 2, height: 1
+      x: 1, y: 17, width: 2, height: 1
     },
     {
-      class: "label", label: "group(s) / line(s)",
-      x: 3, y: 16, width: 1, height: 1
+      class: "label", label: "line group(s)",
+      x: 3, y: 17, width: 1, height: 1
     },
     {
       class: "label", label: "RNG Seed:",
-      x: 0, y: 17, width: 1, height: 1
+      x: 0, y: 18, width: 1, height: 1
     },
     {
       class:"intedit", name: "seed",
       value: os.time!,
-      x: 1, y: 17, width: 2, height: 1
+      x: 1, y: 18, width: 2, height: 1
     }
   }
   aegisub.cancel! unless btn
@@ -512,7 +533,7 @@ shakeTag = (sub, sel) ->
     res.groupOffsetMin, res.groupOffsetMax = res.groupOffsetMax, res.groupOffsetMin
 
   lines = LineCollection sub, sel
-  groups = groupLines lines, res.interval
+  groups = groupLines lines, res.groupLines and res.groupLinesField or nil, res.interval
   groupCnt = #groups
 
   tagsByGroupAndLine, offsetCount = collectTags lines, groups, ASS.tagNames[res.tag][1], res

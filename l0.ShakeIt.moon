@@ -334,10 +334,10 @@ groupLines = (lines, field, interval = 1) ->
 
 applyPositionShake = (lines, groups, offsets) ->
   aegisub.progress.task "Shaking..."
-  groupCnt = #groups
+  groupCount = #groups
 
   for i, group in ipairs groups
-    aegisub.progress.set 50 + 50 * i/groupCnt
+    aegisub.progress.set 20 + 80 * (i-1) / groupCount
     aegisub.cancel! if aegisub.progress.is_cancelled!
 
     for line in *group
@@ -360,8 +360,12 @@ applyPositionShake = (lines, groups, offsets) ->
 
 collectTags = (lines, groups, tagName, targets) ->
   maxTagCountPerLine = 0
+  groupCount = #groups
 
   tagsByGroupAndLine = for i, group in ipairs groups
+    aegisub.progress.set 10 + 50 * (i-1) / groupCount
+    aegisub.cancel! if aegisub.progress.is_cancelled!
+
     for line in *group
       tags = {}
       ass = line.ASS or ASS\parse line
@@ -412,7 +416,7 @@ makePositionOffsetGenerator = (res)  ->
   -- allow user to replay a previous shake
   math.randomseed res.seed
 
-  return (constrainAngle = true, rollLimit = 1000) ->
+  return (constrainAngle = true, rollLimit = 5000) ->
     for i = 1, rollLimit
       -- check if X sign change is subject to combined X/Y constraints
       xSign = if res.signChangeCmb == signChangeModes2D.One and res.signChangeY == signChangeModes1D.Force
@@ -452,7 +456,7 @@ makePositionOffsetGenerator = (res)  ->
     -- and factor the constraints in when pulling our random numbers
     logger\error "Couldn't find offset that satifies chosen angle constraints (Min: #{res.angleMin}°, Max: #{res.angleMax}° for group #{i}. Aborting."
 
-makeSimpleOffset = (prev, min, max, signChangeMode = signChangeModes1D.Any, minDiff = 0, maxDiff = math.huge, rollLimit = 1000) ->
+makeSimpleOffset = (prev, min, max, signChangeMode = signChangeModes1D.Any, minDiff = 0, maxDiff = math.huge, rollLimit = 5000) ->
   for i = 1, rollLimit
     sign = getSingleSign signChangeMode, prev
     off = sign * math.randomFloat min, max
@@ -481,11 +485,9 @@ makeMultiOffsetGenerator = (res, count) ->
     return offPrev
 
 
-calculateOffsets = (seriesCount, generator) ->
-  aegisub.progress.task "Rolling dice..."
-
+calculateOffsets = (seriesCount, generator, startProgress, endProgress) ->
   return for i = 1, seriesCount
-    aegisub.progress.set 50 * i / seriesCount
+    aegisub.progress.set startProgress + (endProgress-startProgress) * (i-1) / seriesCount
     aegsiub.cancel! if aegisub.progress.is_cancelled!
     generator i != 1
 
@@ -531,12 +533,18 @@ shakePosition = (sub, sel) ->
   logger\assert #err == 1, table.concat err, "\n"
 
   lines = LineCollection sub, sel
-  groups = groupLines lines, res.groupLines and res.groupLinesField or nil, res.interval
 
+  aegisub.progress.task "Grouping lines..."
+  groups = groupLines lines, res.groupLines and res.groupLinesField or nil, res.interval
+  aegisub.progress.set 10
+  aegisub.cancel! if aegisub.progress.is_cancelled!
+
+  aegisub.progress.task "Rolling dice..."
   -- generate offsets for every line group, but don't apply them immediately in case the generator fails
-  offsets = calculateOffsets #groups, makePositionOffsetGenerator res
+  offsets = calculateOffsets #groups, makePositionOffsetGenerator(res), 10, 20
 
   -- apply the position offsets to all line groups
+  aegisub.progress.task "Applying shake..."
   applyPositionShake lines, groups, offsets
 
 shakeScalarTag = (sub, sel) ->
@@ -551,16 +559,22 @@ shakeScalarTag = (sub, sel) ->
     res.groupOffsetMin, res.groupOffsetMax = res.groupOffsetMax, res.groupOffsetMin
 
   lines = LineCollection sub, sel
+
+  aegisub.progress.task "Grouping lines..."
   groups = groupLines lines, res.groupLines and res.groupLinesField or nil, res.interval
-  groupCnt = #groups
+  groupCount = #groups
+  aegisub.progress.set 10
 
+  aegisub.progress.task "Collecting tags..."
   tagsByGroupAndLine, offsetCount = collectTags lines, groups, ASS.tagNames[res.tag][1], res
-  offsets = calculateOffsets #groups, makeMultiOffsetGenerator res, offsetCount
 
-  aegisub.progress.task "Shaking..."
+  aegisub.progress.task "Rolling dice..."
+  offsets = calculateOffsets #groups, makeMultiOffsetGenerator(res, offsetCount), 60, 70
+
+  aegisub.progress.task "Applying shake..."
 
   for g, group in ipairs groups
-    aegisub.progress.set 50 + 50 * g/groupCnt
+    aegisub.progress.set 70 + 30 * (g-1) / groupCount
     aegisub.cancel! if aegisub.progress.is_cancelled!
 
     for tagsByLine in *tagsByGroupAndLine[g]

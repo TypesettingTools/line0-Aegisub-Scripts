@@ -13,21 +13,23 @@ depCtrl = DependencyControl {
     {"l0.ASSFoundation", version:"0.4.0", url: "https://github.com/TypesettingTools/ASSFoundation",
       feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
     {"l0.Functional", version: "0.5.0", url: "https://github.com/TypesettingTools/Functional",
-      feed: "https://raw.githubusercontent.com/TypesettingTools/Functional/master/DependencyControl.json"}
+      feed: "https://raw.githubusercontent.com/TypesettingTools/Functional/master/DependencyControl.json"},
+    {"a-mo.ConfigHandler", version: "1.1.4", url: "https://github.com/TypesettingTools/Aegisub-Motion",
+      feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
   }
 }
-LineCollection, ASS, Functional = depCtrl\requireModules!
+LineCollection, ASS, Functional, ConfigHandler = depCtrl\requireModules!
 {:list, :math, :string, :table, :unicode, :util, :re } = Functional
 logger = depCtrl\getLogger!
 
 -- Enums used in dialog
-signChgModesSingle = {
+signChangeModes1D = {
   Any: "Allow Any"
   Force: "Force"
   Prevent: "Prevent"
 }
 
-signChgModesCmb = {
+signChangeModes2D = {
   Any: "Any number"
   Either: "At least one"
   One: "Exactly one"
@@ -37,6 +39,280 @@ tagShakeTargets = {
   LineBegin: "Beginning of every line"
   ExistingTags: "Every existing override tag"
   TagSections: "Every tag section"
+}
+
+dialogs = {
+  shakePosition: {
+    {
+      class: "label", label: "Shaking Offset Limits (relative to original position): ",
+      x: 0, y: 0, width: 10, height: 1,
+    },
+    offXMin: {
+      class: "floatedit",
+      value: 0, min: 0, step:1, config: true
+      x: 0, y: 1, width: 3, height: 1
+    },
+    {
+      class: "label", label: "<  x  <",
+      x: 3, y: 1, width: 3, height: 1
+    },
+    offXMax: {
+      class: "floatedit",
+      value: 10, min: 0, step: 1, config: true
+      x: 6, y: 1, width: 4, height: 1,
+    },
+    offYMin: {
+      class: "floatedit",
+      value: 0, min: 0, step: 1, config: true
+      x: 0, y: 2, width: 3, height: 1
+    },
+    {
+      class: "label", label: "<  y  <",
+      x: 3, y: 2, width: 3, height: 1
+    },
+    offYMax: {
+      class: "floatedit",
+      x: 6, y: 2, width: 4, height: 1, config: true
+      value: 10, min: 0, step: 1
+    },
+    {
+      class: "label", label: "",
+      x: 0, y: 3, width: 10, height: 1
+    },
+    groupLines: {
+      class: "checkbox", label: "Group lines by:",
+      value: true, config: true
+      x: 0, y: 4, width: 1, height: 1
+    },
+    groupLinesField: {
+      class: "dropdown",
+      items: {"start_time", "end_time", "layer", "effect", "actor"}, value: 'start_time', config: true
+      x: 1, y: 4, width: 1, height: 1
+    },
+    {
+      class: "label", label: "Angle between subsequent line group offsets:",
+      x: 0, y: 5, width: 10, height: 1
+    },
+    {
+      class: "label", label: "Min:",
+      x: 0, y: 6, width: 1, height: 1
+    },
+    angleMin: {
+      class: "floatedit",
+      value: 0, min: 0, max: 180, step: 1, config: true
+      x: 1, y: 6, width: 2, height: 1
+    },
+    {
+      class: "label", label: "�    Max:",
+      x: 3, y: 6, width: 3, height: 1
+    },
+    angleMax: {
+      class: "floatedit",
+      value: 180, min: 0, max: 180, step: 1, config: true
+      x: 6, y: 6, width: 2, height: 1,
+    },
+    {
+      class: "label", label: "�",
+      x: 8, y: 6, width: 2, height: 1
+    },
+    {
+      class: "label", label: "",
+      x: 0, y: 7, width: 10, height: 1
+    },
+    {
+      class: "label", label: "Constraints:",
+      x: 0, y: 8, width: 10, height: 1
+    },
+    signChangeX: {
+      class: "dropdown",
+      items: table.values(signChangeModes1D), value: signChangeModes1D.Any, config: true
+      x: 0, y: 9, width: 2, height: 1
+    },
+    {
+      class: "label", label: "sign change for X offsets of subsequent line groups.",
+      x: 2, y: 9, width: 5, height: 1
+    },
+    signChangeY: {
+      class: "dropdown",
+      items: table.values(signChangeModes1D), value: signChangeModes1D.Any, config: true
+      x: 0, y: 10, width: 2, height: 1
+    },
+    {
+      class: "label", label: "sign change for Y offsets of subsequent line groups.",
+      x: 2, y: 10, width: 5, height: 1
+    },
+    signChangeCmb: {
+      class: "dropdown",
+      items: table.values(signChangeModes2D), value: signChangeModes2D.Any, config: true
+      x: 0, y: 11, width: 2, height: 1
+    },
+    {
+      class: "label", x: 2, y: 11, width: 5, height: 1
+      label: "of the X and Y offsets must change sign between subsequent line groups.",
+    },
+    {
+      class: "label", label: "",
+      x: 0, y: 12, width: 10, height: 1
+    },
+    {
+      class: "label", label: "Shake interval: every",
+      x: 0, y: 13, width: 2, height: 1
+    },
+    interval: {
+      class:"intedit",
+      value: 1, min: 1, config: true
+      x: 2, y: 13, width: 1, height: 1
+    },
+    {
+      class: "label", label: "line group(s)",
+      x: 3, y: 13, width: 1, height: 1
+    },
+    {
+      class: "label", label: "RNG Seed:",
+      x: 0, y: 14, width: 1, height: 1
+    },
+    seed: {
+      class:"intedit",
+      value: os.time!,
+      x: 1, y: 14, width: 2, height: 1
+    }
+  },
+  shakeScalarTag: {
+    {
+      class: "label", label: "Shaking Targets:",
+      x: 0, y: 0, width: 6, height: 1
+    },
+    {
+      class: "label", label: "Tag:",
+      x: 0, y: 1, width: 1, height: 1
+    },
+    tag: {
+      class: "dropdown",
+      items: table.pluck table.filter(ASS.tagMap, (tag) -> tag.type == ASS.Number and not tag.props.global), "overrideName",
+      value: "\\frz", config: true,
+      x: 1, y: 1, width: 1, height: 1
+    },
+    LineBegin: {
+      class: "checkbox", label: tagShakeTargets.LineBegin,
+      value: true, config: true,
+      x: 0, y: 2, width: 6, height: 1
+    },
+    ExistingTags: {
+      class: "checkbox", label: tagShakeTargets.ExistingTags,
+      value: false, config: true,
+      x: 0, y: 3, width: 6, height: 1
+    },
+    TagSections: {
+      class: "checkbox", label: tagShakeTargets.TagSections,
+      value: false, config: true
+      x: 0, y: 4, width: 6, height: 1
+    },
+    {
+      class: "label", label: "",
+      x: 0, y: 5, width: 6, height: 1
+    },
+    {
+      class: "label", label: "Shake offset limits (relative to original tag value): ",
+      x: 0, y: 6, width: 6, height: 1,
+    },
+    absoluteOffsetMin: {
+      class: "floatedit",
+      value: 0, min: 0, step:1, config: true,
+      x: 0, y: 7, width: 2, height: 1
+    },
+    {
+      class: "label", label: "<  value  <",
+      x: 2, y: 7, width: 1, height: 1
+    },
+    absoluteOffsetMax: {
+      class: "floatedit",
+      value: 10, min: 0, step: 1, config: true
+      x: 3, y: 7, width: 2, height: 1,
+    },
+    {
+      class: "label", label: "",
+      x: 0, y: 8, width: 6, height: 1
+    },
+    groupLines: {
+      class: "checkbox", label: "Group lines by:",
+      value: true, config: true,
+      x: 0, y: 9, width: 1, height: 1
+    },
+    groupLinesField: {
+      class: "dropdown",
+      items: {"start_time", "end_time", "layer", "effect", "actor"}, value: 'start_time', config: true,
+      x: 1, y: 9, width: 1, height: 1
+    },
+    {
+      class: "label", label: "Offset difference range between subsequent line groups:",
+      x: 0, y: 10, width: 6, height: 1
+    },
+    {
+      class: "label", label: "Min:",
+      x: 0, y: 11, width: 1, height: 1
+    },
+    groupOffsetMin: {
+      class: "floatedit",
+      value: 0, min: 0, step: 1, config: true,
+      x: 1, y: 11, width: 2, height: 1
+    },
+    {
+      class: "label", label: "    Max:",
+      x: 3, y: 11, width: 1, height: 1
+    },
+    groupOffsetMax: {
+      class: "floatedit",
+      value: 10, min: 0, step: 1, config: true
+      x: 4, y: 11, width: 2, height: 1,
+    },
+    {
+      class: "label", label: "",
+      x: 0, y: 12, width: 6, height: 1
+    },
+    {
+      class: "label", label: "Shake offset constraints between subsequent line groups:",
+      x: 0, y: 13, width: 6, height: 1
+    },
+    signChange: {
+      class: "dropdown",
+      items: table.values(signChangeModes1D), value: signChangeModes1D.Any, config: true,
+      x: 0, y: 14, width: 2, height: 1
+    },
+    {
+      class: "label", label: "sign change for tag offsets of subsequent lines.",
+      x: 2, y: 14, width: 4, height: 1
+    },
+    {
+      class: "label", label: "",
+      x: 0, y: 15, width: 6, height: 1
+    },
+    {
+      class: "label", label: "",
+      x: 0, y: 16, width: 6, height: 1
+    },
+    {
+      class: "label", label: "Shake interval: every",
+      x: 0, y: 17, width: 1, height: 1
+    },
+    interval: {
+      class: "intedit",
+      value: 1, min: 1, config: true,
+      x: 1, y: 17, width: 2, height: 1
+    },
+    {
+      class: "label", label: "line group(s)",
+      x: 3, y: 17, width: 1, height: 1
+    },
+    {
+      class: "label", label: "RNG Seed:",
+      x: 0, y: 18, width: 1, height: 1
+    },
+    seed: {
+      class:"intedit",
+      value: os.time!,
+      x: 1, y: 18, width: 2, height: 1
+    }
+  }
 }
 
 hasLineRotation = (line) ->
@@ -125,8 +401,8 @@ collectTags = (lines, groups, tagName, targets) ->
 
 getSingleSign = (mode, offPrev) ->
   ref = switch mode
-    when signChgModesSingle.Prevent then offPrev
-    when signChgModesSingle.Force then -offPrev
+    when signChangeModes1D.Prevent then offPrev
+    when signChangeModes1D.Force then -offPrev
     else math.random! - 0.5
   return math.sign ref, true
 
@@ -139,24 +415,24 @@ makePositionOffsetGenerator = (res)  ->
   return (constrainAngle = true, rollLimit = 1000) ->
     for i = 1, rollLimit
       -- check if X sign change is subject to combined X/Y constraints
-      xSign = if res.signChgCmb == signChgModesCmb.One and res.signChgY == signChgModesSingle.Force
+      xSign = if res.signChangeCmb == signChangeModes2D.One and res.signChangeY == signChangeModes1D.Force
         math.sign offXPrev, true
-      elseif res.signChgCmb == signChgModesCmb.Either and res.signChgY == signChgModesSingle.Prevent
+      elseif res.signChangeCmb == signChangeModes2D.Either and res.signChangeY == signChangeModes1D.Prevent
         math.sign -offXPrev, true
       -- otherwise use X-only constraints
-      else getSingleSign res.signChgX, offXPrev
+      else getSingleSign res.signChangeX, offXPrev
 
       -- generate a new horizontal offset with the desired sign
       offX = xSign * math.randomFloat res.offXMin, res.offXMax
       xSignChanged = offX * offXPrev < 0
 
       -- check if Y sign change is subject to combined X/Y constraints
-      ySign = if res.signChgCmb == signChgModesCmb.Either and not xSignChanged
+      ySign = if res.signChangeCmb == signChangeModes2D.Either and not xSignChanged
         math.sign -offYPrev, true
-      elseif res.signChgCmb == signChgModesCmb.One and xSignChanged
+      elseif res.signChangeCmb == signChangeModes2D.One and xSignChanged
         math.sign offYPrev, true
       -- otherwise use Y-only constraints
-      else getSingleSign res.signChgY, offYPrev
+      else getSingleSign res.signChangeY, offYPrev
 
       -- generate a new vertical offset with the desired sign
       offY = ySign * math.randomFloat res.offYMin, res.offYMax
@@ -174,11 +450,11 @@ makePositionOffsetGenerator = (res)  ->
 
     -- give up after so many rolls, because we're to lazy to actually do our maths
     -- and factor the constraints in when pulling our random numbers
-    logger\error "Couldn't find offset that satifies chosen angle constraints (Min: #{res.angleMin}째, Max: #{res.angleMax}째 for group #{i}. Aborting."
+    logger\error "Couldn't find offset that satifies chosen angle constraints (Min: #{res.angleMin}�, Max: #{res.angleMax}� for group #{i}. Aborting."
 
-makeSimpleOffset = (prev, min, max, signChgMode = signChgModesSingle.Any, minDiff = 0, maxDiff = math.huge, rollLimit = 1000) ->
+makeSimpleOffset = (prev, min, max, signChangeMode = signChangeModes1D.Any, minDiff = 0, maxDiff = math.huge, rollLimit = 1000) ->
   for i = 1, rollLimit
-    sign = getSingleSign signChgMode, prev
+    sign = getSingleSign signChangeMode, prev
     off = sign * math.randomFloat min, max
     diffToPrev = math.abs off-prev
     if diffToPrev <= maxDiff and diffToPrev >= minDiff
@@ -201,7 +477,7 @@ makeMultiOffsetGenerator = (res, count) ->
     else 0, math.huge
 
     offPrev = for i = 1, count
-      makeSimpleOffset offPrev[i], res.absoluteOffsetMin, res.absoluteOffsetMax, res.signChg, minPrevDiff, maxPrevDiff, rollLimit
+      makeSimpleOffset offPrev[i], res.absoluteOffsetMin, res.absoluteOffsetMax, res.signChange, minPrevDiff, maxPrevDiff, rollLimit
     return offPrev
 
 
@@ -213,143 +489,20 @@ calculateOffsets = (seriesCount, generator) ->
     aegsiub.cancel! if aegisub.progress.is_cancelled!
     generator i != 1
 
+
+showDialog = (macro) ->
+  options = ConfigHandler dialogs, depCtrl.configFile, false, script_version, depCtrl.configDir
+  options\read!
+  options\updateInterface macro
+  btn, res = aegisub.dialog.display dialogs[macro]
+  if btn
+    options\updateConfiguration res, macro
+    options\write!
+    return res
+
 shakePosition = (sub, sel) ->
-  btn, res = aegisub.dialog.display {
-    {
-      class: "label", label: "Shaking Offset Limits (relative to original position): ",
-      x: 0, y: 0, width: 10, height: 1,
-    },
-    {
-      class: "floatedit", name: "offXMin",
-      value: 0, min: 0, step:1,
-      x: 0, y: 1, width: 3, height: 1
-    },
-    {
-      class: "label", label: "<  x  <",
-      x: 3, y: 1, width: 3, height: 1
-    },
-    {
-      class: "floatedit", name: "offXMax",
-      value: 10, min: 0, step: 1,
-      x: 6, y: 1, width: 4, height: 1,
-    },
-    {
-      class: "floatedit", name: "offYMin",
-      value: 0, min: 0, step: 1,
-      x: 0, y: 2, width: 3, height: 1
-    },
-    {
-      class: "label", label: "<  y  <",
-      x: 3, y: 2, width: 3, height: 1
-    },
-    {
-      class: "floatedit", name: "offYMax",
-      x: 6, y: 2, width: 4, height: 1,
-      value: 10, min: 0, step: 1
-    },
-    {
-      class: "label", label: "",
-      x: 0, y: 3, width: 10, height: 1
-    },
-    {
-      class: "checkbox", name: "groupLines", label: "Group lines by:",
-      value: true,
-      x: 0, y: 4, width: 1, height: 1
-    },
-    {
-      class: "dropdown", name: "groupLinesField",
-      items: {"start_time", "end_time", "layer", "effect", "actor"}, value: 'start_time',
-      x: 1, y: 4, width: 1, height: 1
-    },
-    {
-      class: "label", label: "Angle between subsequent line group offsets:",
-      x: 0, y: 5, width: 10, height: 1
-    },
-    {
-      class: "label", label: "Min:",
-      x: 0, y: 6, width: 1, height: 1
-    },
-    {
-      class: "floatedit", name: "angleMin",
-      value: 0, min: 0, max: 180, step: 1,
-      x: 1, y: 6, width: 2, height: 1
-    },
-    {
-      class: "label", label: "째    Max:",
-      x: 3, y: 6, width: 3, height: 1
-    },
-    {
-      class: "floatedit", name: "angleMax",
-      value: 180, min: 0, max: 180, step: 1,
-      x: 6, y: 6, width: 2, height: 1,
-    },
-    {
-      class: "label", label: "째",
-      x: 8, y: 6, width: 2, height: 1
-    },
-    {
-      class: "label", label: "",
-      x: 0, y: 7, width: 10, height: 1
-    },
-    {
-      class: "label", label: "Constraints:",
-      x: 0, y: 8, width: 10, height: 1
-    },
-    {
-      class: "dropdown", name: "signChgX",
-      items: table.values(signChgModesSingle), value: signChgModesSingle.Any,
-      x: 0, y: 9, width: 2, height: 1
-    },
-    {
-      class: "label", label: "sign change for X offsets of subsequent line groups.",
-      x: 2, y: 9, width: 5, height: 1
-    },
-    {
-      class: "dropdown", name: "signChgY",
-      items: table.values(signChgModesSingle), value: signChgModesSingle.Any,
-      x: 0, y: 10, width: 2, height: 1
-    },
-    {
-      class: "label", label: "sign change for Y offsets of subsequent line groups.",
-      x: 2, y: 10, width: 5, height: 1
-    },
-    {
-      class: "dropdown", name: "signChgCmb",
-      items: table.values(signChgModesCmb), value: signChgModesCmb.Any,
-      x: 0, y: 11, width: 2, height: 1
-    },
-    {
-      class: "label", x: 2, y: 11, width: 5, height: 1
-      label: "of the X and Y offsets must change sign between subsequent line groups.",
-    },
-    {
-      class: "label", label: "",
-      x: 0, y: 12, width: 10, height: 1
-    },
-    {
-      class: "label", label: "Shake interval: every",
-      x: 0, y: 13, width: 2, height: 1
-    },
-    {
-      class:"intedit", name: "interval",
-      value: 1, min: 1,
-      x: 2, y: 13, width: 1, height: 1
-    },
-    {
-      class: "label", label: "line group(s)",
-      x: 3, y: 13, width: 1, height: 1
-    },
-    {
-      class: "label", label: "RNG Seed:",
-      x: 0, y: 14, width: 1, height: 1
-    },
-    {
-      class:"intedit", name: "seed",
-      value: os.time!,
-      x: 1, y: 14, width: 2, height: 1
-    }
-  }
-  aegisub.cancel! unless btn
+  res = showDialog "shakePosition"
+  return aegisub.cancel! unless res
 
   -- fix up some user errors
   if res.offXMax < res.offXMin
@@ -363,16 +516,16 @@ shakePosition = (sub, sel) ->
 
   -- check for conflicting constraints
   err = {"You have provided conflicting constraints: "}
-  if res.signChgX == signChgModesSingle.Force and res.signChgY == signChgModesSingle.Force
+  if res.signChangeX == signChangeModes1D.Force and res.signChangeY == signChangeModes1D.Force
     if res.angleMax < 90
-      err[#err+1] = "Forced sign inversion for X and Y offsets require a maxium angle of at least 90째."
-    if res.signChgCmb == signChgModesCmb.One
+      err[#err+1] = "Forced sign inversion for X and Y offsets require a maxium angle of at least 90�."
+    if res.signChangeCmb == signChangeModes2D.One
       err[#err+1] = "Can't limit signs to only one of the X and Y offsets because sign changes are separately enforced for both."
 
-  elseif res.signChgX == signChgModesSingle.Prevent and res.signChgY == signChgModesSingle.Prevent
+  elseif res.signChangeX == signChangeModes1D.Prevent and res.signChangeY == signChangeModes1D.Prevent
     if res.angleMin > 90
-      err[#err+1] = "Can't prevent sign inversion for X and Y offsets when the minimum angle is larger than 90째."
-    if res.signChgCmb == signChgModesCmb.Either
+      err[#err+1] = "Can't prevent sign inversion for X and Y offsets when the minimum angle is larger than 90�."
+    if res.signChangeCmb == signChangeModes2D.Either
       err[#err+1] = "Can't change signs of either X or Y offsets because they are prevented for both."
 
   logger\assert #err == 1, table.concat err, "\n"
@@ -386,144 +539,9 @@ shakePosition = (sub, sel) ->
   -- apply the position offsets to all line groups
   applyPositionShake lines, groups, offsets
 
-shakeTag = (sub, sel) ->
-  btn, res = aegisub.dialog.display {
-    {
-      class: "label", label: "Shaking Targets:",
-      x: 0, y: 0, width: 6, height: 1
-    },
-    {
-      class: "label", label: "Tag:",
-      x: 0, y: 1, width: 1, height: 1
-    },
-    {
-      class: "dropdown", name: "tag",
-      items: table.pluck table.filter(ASS.tagMap, (tag) -> tag.type == ASS.Number and not tag.props.global), "overrideName"
-      value: "\\frz",
-      x: 1, y: 1, width: 1, height: 1
-    },
-    {
-      class: "checkbox", name: 'LineBegin', label: tagShakeTargets.LineBegin,
-      value: true,
-      x: 0, y: 2, width: 6, height: 1
-    },
-    {
-      class: "checkbox", name: 'ExistingTags', label: tagShakeTargets.ExistingTags,
-      value: false,
-      x: 0, y: 3, width: 6, height: 1
-    },
-    {
-      class: "checkbox", name: 'TagSections', label: tagShakeTargets.TagSections,
-      value: false,
-      x: 0, y: 4, width: 6, height: 1
-    },
-    {
-      class: "label", label: "",
-      x: 0, y: 5, width: 6, height: 1
-    },
-    {
-      class: "label", label: "Shake offset limits (relative to original tag value): ",
-      x: 0, y: 6, width: 6, height: 1,
-    },
-    {
-      class: "floatedit", name: "absoluteOffsetMin",
-      value: 0, min: 0, step:1,
-      x: 0, y: 7, width: 2, height: 1
-    },
-    {
-      class: "label", label: "<  value  <",
-      x: 2, y: 7, width: 1, height: 1
-    },
-    {
-      class: "floatedit", name: "absoluteOffsetMax",
-      value: 10, min: 0, step: 1,
-      x: 3, y: 7, width: 2, height: 1,
-    },
-    {
-      class: "label", label: "",
-      x: 0, y: 8, width: 6, height: 1
-    },
-    {
-      class: "checkbox", name: "groupLines", label: "Group lines by:",
-      value: true,
-      x: 0, y: 9, width: 1, height: 1
-    },
-    {
-      class: "dropdown", name: "groupLinesField",
-      items: {"start_time", "end_time", "layer", "effect", "actor"}, value: 'start_time',
-      x: 1, y: 9, width: 1, height: 1
-    },
-    {
-      class: "label", label: "Offset difference range between subsequent line groups:",
-      x: 0, y: 10, width: 6, height: 1
-    },
-    {
-      class: "label", label: "Min:",
-      x: 0, y: 11, width: 1, height: 1
-    },
-    {
-      class: "floatedit", name: "groupOffsetMin",
-      value: 0, min: 0, step: 1,
-      x: 1, y: 11, width: 2, height: 1
-    },
-    {
-      class: "label", label: "    Max:",
-      x: 3, y: 11, width: 1, height: 1
-    },
-    {
-      class: "floatedit", name: "groupOffsetMax",
-      value: 10, min: 0, step: 1,
-      x: 4, y: 11, width: 2, height: 1,
-    },
-    {
-      class: "label", label: "",
-      x: 0, y: 12, width: 6, height: 1
-    },
-    {
-      class: "label", label: "Shake offset constraints between subsequent line groups:",
-      x: 0, y: 13, width: 6, height: 1
-    },
-    {
-      class: "dropdown", name: "signChg",
-      items: table.values(signChgModesSingle), value: signChgModesSingle.Any,
-      x: 0, y: 14, width: 2, height: 1
-    },
-    {
-      class: "label", label: "sign change for tag offsets of subsequent lines.",
-      x: 2, y: 14, width: 4, height: 1
-    },
-    {
-      class: "label", label: "",
-      x: 0, y: 15, width: 6, height: 1
-    },
-    {
-      class: "label", label: "",
-      x: 0, y: 16, width: 6, height: 1
-    },
-    {
-      class: "label", label: "Shake interval: every",
-      x: 0, y: 17, width: 1, height: 1
-    },
-    {
-      class:"intedit", name: "interval",
-      value: 1, min: 1,
-      x: 1, y: 17, width: 2, height: 1
-    },
-    {
-      class: "label", label: "line group(s)",
-      x: 3, y: 17, width: 1, height: 1
-    },
-    {
-      class: "label", label: "RNG Seed:",
-      x: 0, y: 18, width: 1, height: 1
-    },
-    {
-      class:"intedit", name: "seed",
-      value: os.time!,
-      x: 1, y: 18, width: 2, height: 1
-    }
-  }
-  aegisub.cancel! unless btn
+shakeScalarTag = (sub, sel) ->
+  res = showDialog "shakeScalarTag"
+  return aegisub.cancel! unless res
 
   -- fix up some user errors
   if res.absoluteOffsetMax < res.absoluteOffsetMin
@@ -553,8 +571,7 @@ shakeTag = (sub, sel) ->
 
   lines\replaceLines!
 
-
 depCtrl\registerMacros {
   {"Shake Position", "Applies randomized offsets to line positioning.", shakePosition},
-  {"Shake Tag", "Applies randomized offsets to a specified override tag.", shakeTag},
+  {"Shake Scalar Tag", "Applies randomized offsets to a specified scalar override tag.", shakeScalarTag},
 }

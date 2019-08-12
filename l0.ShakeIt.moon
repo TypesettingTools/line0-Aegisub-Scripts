@@ -1,6 +1,6 @@
 export script_name = "Shake It"
 export script_description = "Lets you add a shaking effect to fbf typesets with configurable constraints."
-export script_version = "0.1.1"
+export script_version = "0.2.0"
 export script_author = "line0"
 export script_namespace = "l0.ShakeIt"
 
@@ -10,7 +10,7 @@ depCtrl = DependencyControl {
   {
     {"a-mo.LineCollection", version: "1.3.0", url: "https://github.com/TypesettingTools/Aegisub-Motion",
       feed: "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"},
-    {"l0.ASSFoundation", version:"0.4.0", url: "https://github.com/TypesettingTools/ASSFoundation",
+    {"l0.ASSFoundation", version:"0.4.3", url: "https://github.com/TypesettingTools/ASSFoundation",
       feed: "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"},
     {"l0.Functional", version: "0.5.0", url: "https://github.com/TypesettingTools/Functional",
       feed: "https://raw.githubusercontent.com/TypesettingTools/Functional/master/DependencyControl.json"},
@@ -116,7 +116,7 @@ dialogs = {
       x: 1, y: 7, width: 2, height: 1
     },
     {
-      class: "label", label: "°    Max:",
+      class: "label", label: "ï¿½    Max:",
       x: 3, y: 7, width: 3, height: 1
     },
     angleMax: {
@@ -125,7 +125,7 @@ dialogs = {
       x: 6, y: 7, width: 2, height: 1,
     },
     {
-      class: "label", label: "°",
+      class: "label", label: "ï¿½",
       x: 8, y: 7, width: 2, height: 1
     },
     {
@@ -490,7 +490,7 @@ makePositionOffsetGenerator = (res)  ->
 
     -- give up after so many rolls, because we're to lazy to actually do our maths
     -- and factor the constraints in when pulling our random numbers
-    logger\error "Couldn't find offset that satifies chosen angle constraints (Min: #{res.angleMin}°, Max: #{res.angleMax}° for group #{i}. Aborting."
+    logger\error "Couldn't find offset that satifies chosen angle constraints (Min: #{res.angleMin}ï¿½, Max: #{res.angleMax}ï¿½ for group #{i}. Aborting."
 
 makeSimpleOffset = (prev, min, max, signChangeMode = signChangeModes1D.Any, minDiff = 0, maxDiff = math.huge, rollLimit = 5000) ->
   for i = 1, rollLimit
@@ -561,13 +561,13 @@ shakePosition = (sub, sel) ->
   err = {"You have provided conflicting constraints: "}
   if res.signChangeX == signChangeModes1D.Force and res.signChangeY == signChangeModes1D.Force
     if res.angleMax < 90
-      err[#err+1] = "Forced sign inversion for X and Y offsets require a maxium angle of at least 90°."
+      err[#err+1] = "Forced sign inversion for X and Y offsets require a maxium angle of at least 90ï¿½."
     if res.signChangeCmb == signChangeModes2D.One
       err[#err+1] = "Can't limit signs to only one of the X and Y offsets because sign changes are separately enforced for both."
 
   elseif res.signChangeX == signChangeModes1D.Prevent and res.signChangeY == signChangeModes1D.Prevent
     if res.angleMin > 90
-      err[#err+1] = "Can't prevent sign inversion for X and Y offsets when the minimum angle is larger than 90°."
+      err[#err+1] = "Can't prevent sign inversion for X and Y offsets when the minimum angle is larger than 90ï¿½."
     if res.signChangeCmb == signChangeModes2D.Either
       err[#err+1] = "Can't change signs of either X or Y offsets because they are prevented for both."
 

@@ -821,14 +821,14 @@
       "description": "Lets you add a shaking effect to fbf typesets with configurable constraints.",
       "channels": {
         "master": {
-          "version": "0.1.1",
+          "version": "0.2.0",
           "default": false,
-          "released": "2019-02-17",
+          "released": "2019-08-12",
           "files": [
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "6804DD52F15754F0E0725CFE982A250EE9B0B29C"
+              "sha1": "8951E21B9B58011BA3BB0BA5BA0F60796808CBD4"
             }
           ],
           "requiredModules": [
@@ -843,7 +843,7 @@
               "moduleName": "l0.ASSFoundation",
               "name": "ASSFoundation",
               "url": "https://github.com/TypesettingTools/ASSFoundation",
-              "version": "0.4.0",
+              "version": "0.4.3",
               "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             },
             {
@@ -852,19 +852,26 @@
               "url": "https://github.com/TypesettingTools/Functional",
               "version": "0.5.0",
               "feed": "https://raw.githubusercontent.com/TypesettingTools/Functional/master/DependencyControl.json"
+            },
+            {
+              "moduleName": "a-mo.ConfigHandler",
+              "name": "Aegisub-Motion (ConfigHandler)",
+              "url": "https://github.com/TypesettingTools/Aegisub-Motion",
+              "version": "1.1.4",
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"
             }
           ],
           "fileBaseUrl": "@{fileBaseUrl}/@{namespace}-v@{version}/@{namespace}"
         },
         "release": {
-          "version": "0.1.1",
+          "version": "0.2.0",
           "default": true,
-          "released": "2019-02-17",
+          "released": "2019-08-12",
           "files": [
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "6804DD52F15754F0E0725CFE982A250EE9B0B29C"
+              "sha1": "8951E21B9B58011BA3BB0BA5BA0F60796808CBD4"
             }
           ],
           "requiredModules": [
@@ -879,7 +886,7 @@
               "moduleName": "l0.ASSFoundation",
               "name": "ASSFoundation",
               "url": "https://github.com/TypesettingTools/ASSFoundation",
-              "version": "0.4.0",
+              "version": "0.4.3",
               "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             },
             {
@@ -888,6 +895,13 @@
               "url": "https://github.com/TypesettingTools/Functional",
               "version": "0.5.0",
               "feed": "https://raw.githubusercontent.com/TypesettingTools/Functional/master/DependencyControl.json"
+            },
+            {
+              "moduleName": "a-mo.ConfigHandler",
+              "name": "Aegisub-Motion (ConfigHandler)",
+              "url": "https://github.com/TypesettingTools/Aegisub-Motion",
+              "version": "1.1.4",
+              "feed": "https://raw.githubusercontent.com/TypesettingTools/Aegisub-Motion/DepCtrl/DependencyControl.json"
             }
           ],
           "fileBaseUrl": "@{fileBaseUrl}/@{namespace}-v@{version}/@{namespace}"
@@ -897,7 +911,13 @@
         "0.1.0": [
           "Ported from old Lua version to use DependencyControl, ASSFoundation, Aegisub-Motion and Functional."
         ],
-        "0.1.1": ["Cosmetic improvements to the source code"]
+        "0.1.1": ["Cosmetic improvements to the source code"],
+        "0.2.0": [
+          "Added a separate macro for shaking scalar-type tags.",
+          "Line grouping can now be guided by a configurable line field or be turned off altogether.",
+          "The last dialog choice are now automatically saved and recalled.",
+          "Random offset patterns can now be configured to repeat every n line groups."
+        ]
       }
     },
     "l0.SplitLines": {

@@ -90,92 +90,110 @@ dialogs = {
       x: 1, y: 4, width: 1, height: 1
     },
     {
+      class: "label", label: "Shake interval: every",
+      x: 0, y: 5, width: 1, height: 1
+    },
+    interval: {
+      class:"intedit",
+      value: 1, min: 1, config: true
+      x: 1, y: 5, width: 1, height: 1
+    },
+    {
+      class: "label", label: "line group(s)",
+      x: 2, y: 5, width: 1, height: 1
+    },
+    {
       class: "label", label: "Angle between subsequent line group offsets:",
-      x: 0, y: 5, width: 10, height: 1
+      x: 0, y: 6, width: 10, height: 1
     },
     {
       class: "label", label: "Min:",
-      x: 0, y: 6, width: 1, height: 1
+      x: 0, y: 7, width: 1, height: 1
     },
     angleMin: {
       class: "floatedit",
       value: 0, min: 0, max: 180, step: 1, config: true
-      x: 1, y: 6, width: 2, height: 1
+      x: 1, y: 7, width: 2, height: 1
     },
     {
       class: "label", label: "°    Max:",
-      x: 3, y: 6, width: 3, height: 1
+      x: 3, y: 7, width: 3, height: 1
     },
     angleMax: {
       class: "floatedit",
       value: 180, min: 0, max: 180, step: 1, config: true
-      x: 6, y: 6, width: 2, height: 1,
+      x: 6, y: 7, width: 2, height: 1,
     },
     {
       class: "label", label: "°",
-      x: 8, y: 6, width: 2, height: 1
+      x: 8, y: 7, width: 2, height: 1
     },
     {
       class: "label", label: "",
-      x: 0, y: 7, width: 10, height: 1
+      x: 0, y: 8, width: 10, height: 1
     },
     {
       class: "label", label: "Constraints:",
-      x: 0, y: 8, width: 10, height: 1
+      x: 0, y: 9, width: 10, height: 1
     },
     signChangeX: {
-      class: "dropdown",
-      items: table.values(signChangeModes1D), value: signChangeModes1D.Any, config: true
-      x: 0, y: 9, width: 2, height: 1
-    },
-    {
-      class: "label", label: "sign change for X offsets of subsequent line groups.",
-      x: 2, y: 9, width: 5, height: 1
-    },
-    signChangeY: {
       class: "dropdown",
       items: table.values(signChangeModes1D), value: signChangeModes1D.Any, config: true
       x: 0, y: 10, width: 2, height: 1
     },
     {
-      class: "label", label: "sign change for Y offsets of subsequent line groups.",
+      class: "label", label: "sign change for X offsets of subsequent line groups.",
       x: 2, y: 10, width: 5, height: 1
+    },
+    signChangeY: {
+      class: "dropdown",
+      items: table.values(signChangeModes1D), value: signChangeModes1D.Any, config: true
+      x: 0, y: 11, width: 2, height: 1
+    },
+    {
+      class: "label", label: "sign change for Y offsets of subsequent line groups.",
+      x: 2, y: 11, width: 5, height: 1
     },
     signChangeCmb: {
       class: "dropdown",
       items: table.values(signChangeModes2D), value: signChangeModes2D.Any, config: true
-      x: 0, y: 11, width: 2, height: 1
+      x: 0, y: 12, width: 2, height: 1
     },
     {
-      class: "label", x: 2, y: 11, width: 5, height: 1
+      class: "label", x: 2, y: 12, width: 5, height: 1
       label: "of the X and Y offsets must change sign between subsequent line groups.",
     },
     {
       class: "label", label: "",
-      x: 0, y: 12, width: 10, height: 1
+      x: 0, y: 13, width: 10, height: 1
     },
     {
-      class: "label", label: "Shake interval: every",
-      x: 0, y: 13, width: 2, height: 1
-    },
-    interval: {
-      class:"intedit",
-      value: 1, min: 1, config: true
-      x: 2, y: 13, width: 1, height: 1
+      class: "label", label: "Random Number Generation",
+      x: 0, y: 14, width: 10, height: 1
     },
     {
-      class: "label", label: "line group(s)",
-      x: 3, y: 13, width: 1, height: 1
-    },
-    {
-      class: "label", label: "RNG Seed:",
-      x: 0, y: 14, width: 1, height: 1
+      class: "label", label: "Seed:",
+      x: 0, y: 15, width: 1, height: 1
     },
     seed: {
       class:"intedit",
       value: os.time!,
-      x: 1, y: 14, width: 2, height: 1
-    }
+      x: 1, y: 15, width: 2, height: 1
+    },
+    repeatPattern: {
+      class: "checkbox", label: "Repeat pattern every",
+      value: false, config: true,
+      x: 0, y: 16, width: 1, height: 1
+    },
+    repeatInterval: {
+      class:"intedit",
+      value: 12, config: true,
+      x: 1, y: 16, width: 1, height: 1
+    },
+    {
+      class: "label", label: "line group(s)",
+      x: 2, y: 16, width: 1, height: 1
+    },
   },
   shakeScalarTag: {
     {
@@ -244,74 +262,92 @@ dialogs = {
       x: 1, y: 9, width: 1, height: 1
     },
     {
+      class: "label", label: "Shake interval: every",
+      x: 0, y: 10, width: 1, height: 1
+    },
+    interval: {
+      class: "intedit",
+      value: 1, min: 1, config: true,
+      x: 1, y: 10, width: 1, height: 1
+    },
+    {
+      class: "label", label: "line group(s)",
+      x: 2, y: 10, width: 1, height: 1
+    },
+    {
       class: "label", label: "Offset difference range between subsequent line groups:",
-      x: 0, y: 10, width: 6, height: 1
+      x: 0, y: 11, width: 6, height: 1
     },
     {
       class: "label", label: "Min:",
-      x: 0, y: 11, width: 1, height: 1
+      x: 0, y: 12, width: 1, height: 1
     },
     groupOffsetMin: {
       class: "floatedit",
       value: 0, min: 0, step: 1, config: true,
-      x: 1, y: 11, width: 2, height: 1
+      x: 1, y: 12, width: 2, height: 1
     },
     {
       class: "label", label: "    Max:",
-      x: 3, y: 11, width: 1, height: 1
+      x: 3, y: 12, width: 1, height: 1
     },
     groupOffsetMax: {
       class: "floatedit",
       value: 10, min: 0, step: 1, config: true
-      x: 4, y: 11, width: 2, height: 1,
+      x: 4, y: 12, width: 2, height: 1,
     },
     {
       class: "label", label: "",
-      x: 0, y: 12, width: 6, height: 1
+      x: 0, y: 13, width: 6, height: 1
     },
     {
       class: "label", label: "Shake offset constraints between subsequent line groups:",
-      x: 0, y: 13, width: 6, height: 1
+      x: 0, y: 14, width: 6, height: 1
     },
     signChange: {
       class: "dropdown",
       items: table.values(signChangeModes1D), value: signChangeModes1D.Any, config: true,
-      x: 0, y: 14, width: 2, height: 1
+      x: 0, y: 15, width: 2, height: 1
     },
     {
       class: "label", label: "sign change for tag offsets of subsequent lines.",
-      x: 2, y: 14, width: 4, height: 1
-    },
-    {
-      class: "label", label: "",
-      x: 0, y: 15, width: 6, height: 1
+      x: 2, y: 15, width: 4, height: 1
     },
     {
       class: "label", label: "",
       x: 0, y: 16, width: 6, height: 1
     },
     {
-      class: "label", label: "Shake interval: every",
-      x: 0, y: 17, width: 1, height: 1
-    },
-    interval: {
-      class: "intedit",
-      value: 1, min: 1, config: true,
-      x: 1, y: 17, width: 2, height: 1
+      class: "label", label: "",
+      x: 0, y: 17, width: 6, height: 1
     },
     {
-      class: "label", label: "line group(s)",
-      x: 3, y: 17, width: 1, height: 1
+      class: "label", label: "Random Number Generation",
+      x: 0, y: 18, width: 10, height: 1
     },
     {
-      class: "label", label: "RNG Seed:",
-      x: 0, y: 18, width: 1, height: 1
+      class: "label", label: "Seed:",
+      x: 0, y: 19, width: 1, height: 1
     },
     seed: {
       class:"intedit",
       value: os.time!,
-      x: 1, y: 18, width: 2, height: 1
-    }
+      x: 1, y: 19, width: 2, height: 1
+    },
+    repeatPattern: {
+      class: "checkbox", label: "Repeat pattern every",
+      value: false, config: true,
+      x: 0, y: 20, width: 1, height: 1
+    },
+    repeatInterval: {
+      class:"intedit",
+      value: 12, config: true,
+      x: 1, y: 20, width: 1, height: 1
+    },
+    {
+      class: "label", label: "line group(s)",
+      x: 2, y: 20, width: 1, height: 1
+    },
   }
 }
 
@@ -485,12 +521,17 @@ makeMultiOffsetGenerator = (res, count) ->
     return offPrev
 
 
-calculateOffsets = (seriesCount, generator, startProgress, endProgress) ->
-  return for i = 1, seriesCount
-    aegisub.progress.set startProgress + (endProgress-startProgress) * (i-1) / seriesCount
-    aegsiub.cancel! if aegisub.progress.is_cancelled!
-    generator i != 1
+calculateOffsets = (seriesCount, generator, seed, repeatInterval = math.huge, startProgress = 0, endProgress = 100) ->
+  offsets = {}
 
+  for i = 0, seriesCount - 1
+    aegisub.progress.set startProgress + (endProgress-startProgress) * i / seriesCount
+    aegsiub.cancel! if aegisub.progress.is_cancelled!
+    offsets[1 + i] = if i < repeatInterval
+      generator i != 0
+    else offsets[1 + i%repeatInterval]
+
+  return offsets
 
 showDialog = (macro) ->
   options = ConfigHandler dialogs, depCtrl.configFile, false, script_version, depCtrl.configDir
@@ -541,7 +582,8 @@ shakePosition = (sub, sel) ->
 
   aegisub.progress.task "Rolling dice..."
   -- generate offsets for every line group, but don't apply them immediately in case the generator fails
-  offsets = calculateOffsets #groups, makePositionOffsetGenerator(res), 10, 20
+  offsets = calculateOffsets #groups, makePositionOffsetGenerator(res),
+    res.seed, res.repeatPattern and res.repeatInterval or math.huge, 10, 20
 
   -- apply the position offsets to all line groups
   aegisub.progress.task "Applying shake..."
@@ -569,7 +611,8 @@ shakeScalarTag = (sub, sel) ->
   tagsByGroupAndLine, offsetCount = collectTags lines, groups, ASS.tagNames[res.tag][1], res
 
   aegisub.progress.task "Rolling dice..."
-  offsets = calculateOffsets #groups, makeMultiOffsetGenerator(res, offsetCount), 60, 70
+  offsets = calculateOffsets #groups, makeMultiOffsetGenerator(res, offsetCount),
+    res.seed, res.repeatPattern and res.repeatInterval or math.huge, 60, 70
 
   aegisub.progress.task "Applying shake..."
 

@@ -14,14 +14,14 @@
       "description": "Performs script cleanup, removes unnecessary tags and lines.",
       "channels": {
         "master": {
-          "version": "0.4.0",
-          "released": "2019-02-17",
+          "version": "0.5.0",
+          "released": "2019-10-24",
           "default": false,
           "files": [
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "49FCD502F90CF3152B09EF76EF18194D16D739E3"
+              "sha1": "0A05260E0358EF23897C3CFDCAEFC888AABC6A5B"
             },
             { "name": ".lua", "delete": true }
           ],
@@ -44,7 +44,7 @@
               "moduleName": "l0.ASSFoundation",
               "name": "ASSFoundation",
               "url": "https://github.com/TypesettingTools/ASSFoundation",
-              "version": "0.4.0",
+              "version": "0.5.0",
               "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             },
             {
@@ -65,14 +65,14 @@
           "fileBaseUrl": "@{fileBaseUrl}/@{namespace}-v@{version}/@{namespace}"
         },
         "release": {
-          "version": "0.4.0",
-          "released": "2019-02-17",
+          "version": "0.5.0",
+          "released": "2019-10-24",
           "default": true,
           "files": [
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "49FCD502F90CF3152B09EF76EF18194D16D739E3"
+              "sha1": "0A05260E0358EF23897C3CFDCAEFC888AABC6A5B"
             },
             { "name": ".lua", "delete": true }
           ],
@@ -95,7 +95,7 @@
               "moduleName": "l0.ASSFoundation",
               "name": "ASSFoundation",
               "url": "https://github.com/TypesettingTools/ASSFoundation",
-              "version": "0.4.0",
+              "version": "0.5.0",
               "feed": "https://raw.githubusercontent.com/TypesettingTools/ASSFoundation/master/DependencyControl.json"
             },
             {
@@ -162,6 +162,9 @@
           "After cleaning contours of a drawing, a dedicated hash check is performed to ensure the process didn't visually change the lines. When it detects the change, it automatically reverts to the original contours and resumes the cleaning process. The amount of affected contours is reported in the final report.",
           "Added an option to ignore hash changes caused by contour cleaning. This may visually affect drawings, so don't use this unsupervised!",
           "Logging/error reporting was improved and logs are no written to a log file."
+        ],
+        "0.5.0": [
+          "The 'Merge consecutive tag sections' feature now skips sections that contain any tag from a customizable exception list. Defaults to karaoke tags to avoid breaking poorly written karaoke templater scripts."
         ]
       }
     },

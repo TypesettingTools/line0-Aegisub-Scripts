@@ -65,6 +65,7 @@ defaultSortOrder = [[
 \shad, \xshad, \yshad, \1c, \2c, \3c, \4c, \alpha, \1a, \2a, \3a, \4a, \blur, \be, \fad, \fade, clip_rect, iclip_rect,
 clip_vect, iclip_vect, \q, \p, \k, \kf, \K, \ko, junk, unknown
 ]]
+karaokeTags = table.concat table.pluck(table.filter(ASS.tagMap, (tag) -> tag.props.karaoke), "overrideName"), ", "
 
 -- to be moved into ASSFoundation.Functional
 sortWithKeys = (tbl, comparator) ->
@@ -200,6 +201,7 @@ process = (sub, sel, res) ->
   -- create proper tag name lists from user input which may be override tag names or mixed
   res.tagsToKeep = ASS\getTagNames string.split res.tagsToKeep, ",%s", nil, false
   res.tagSortOrder = ASS\getTagNames string.split res.tagSortOrder, ",%s", nil, false
+  res.mergeConsecutiveExcept = ASS\getTagNames string.split res.mergeConsecutiveExcept, ",%s", nil, false
   res.extraDataFilter = string.split res.extraDataFilter, ",%s", nil, false
 
   callback = (lines, line, i) ->
@@ -297,8 +299,17 @@ process = (sub, sel, res) ->
           ltc.n += 1
         else linesToCombine[oldBounds.firstHash] = {line, n: 1}
 
+    mergeConsecutiveTagSections = if not res.mergeConsecutive
+      false
+    elseif #res.mergeConsecutiveExcept == 0
+      true
+    else
+      exceptions = list.makeSet res.mergeConsecutiveExcept
+      (sourceSection, targetSection) ->
+        predicate = (tag) -> exceptions[tag.__tag.name]
+        not table.find(sourceSection.tags, predicate) and not table.find targetSection.tags, predicate
     -- clean tags
-    data\cleanTags res.cleanLevel, true, res.tagsToKeep, res.tagSortOrder
+    data\cleanTags res.cleanLevel, mergeConsecutiveTagSections, res.tagsToKeep, res.tagSortOrder
     newBounds = data\getLineBounds!
 
     if res.stripComments
@@ -391,28 +402,32 @@ process = (sub, sel, res) ->
 showDialog = (sub, sel, res) ->
   dlg = {
     main: {
-      cleanLevelLabel:    class: "label",    x: 0, y: 0, width: 1,  height: 1, label: "Tag cleanup level: "
-      cleanLevel:         class: "intedit",  x: 1, y: 0, width: 1,  height: 1, min: 0, max: 4, value: 4, config: true, hint: hints.cleanLevel
-      tagsToKeepLabel:    class: "label",    x: 4, y: 0, width: 1,  height: 1, label: "Keep default tags: "
-      tagsToKeep:         class: "textbox",  x: 4, y: 1, width: 10, height: 2, value: "\\pos", config:true, hint: hints.tagsToKeep
-      removeInvisible:    class: "checkbox", x: 0, y: 1, width: 2,  height: 1, value: true, config: true, label: "Remove invisible lines", hint: hints.removeInvisible
-      combineLines:       class: "checkbox", x: 0, y: 2, width: 2,  height: 1, value: true, config: true, label: "Combine consecutive identical lines", hint: hints.combineLines
-      tagSortOrderLabel:  class: "label",    x: 4, y: 3, width: 1,  height: 1, label: "Tag sort order: "
-      stripComments:      class: "checkbox", x: 0, y: 3, width: 2,  height: 1, value: true, config: true, label: "Strip comments", hint: hints.stripComments
-      removeJunk:         class: "checkbox", x: 0, y: 4, width: 2,  height: 1, value: true, config: true, label: "Remove junk from tag sections", hint: hints.removeJunk
-      tagSortOrder:       class: "textbox",  x: 4, y: 4, width: 10, height: 3, value: defaultSortOrder, config: true, hint: hints.tagSortOrder
-      filterClips:        class: "checkbox", x: 0, y: 8, width: 2,  height: 1, value: true, config: true, label: "Filter clips", hint: hints.filterClips
-      scale2float:        class: "checkbox", x: 0, y: 9, width: 2,  height: 1, value: true, config: true, label: "Un-scale drawings and clips", hint: hints.scale2float
-      fixDrawings:        class: "checkbox", x: 0, y: 10, width: 2,  height: 1, value: false, config: true, label: "Try to fix broken drawings", hint: hints.fixDrawings
-      purgeContoursLabel: class: "label",    x: 0, y: 11, width: 2,  height: 1, label: "Purge invisible contours: "
-      purgeContoursDraw:  class: "checkbox", x: 4, y: 11, width: 3,  height: 1, value: false, config: true, label: "from drawings", hint: hints.purgeContoursDraw
-      purgeContoursClip:  class: "checkbox", x: 7, y: 11, width: 6,  height: 1, value: false, config: true, label: "from clips", hint: hints.purgeContoursClip
-      purgeContoursIgnoreHashMismatch: class: "checkbox", x: 4, y: 12, width: 9, height: 1, value: false, config: true, label: "ignore rendering inconsistencies", hint: hints.purgeContoursIgnoreHashMismatch
-      extraDataLabel:     class: "label",    x: 0, y: 14, width: 1,  height: 1, label: "Filter extra data: "
-      extraDataMode:      class: "dropdown", x: 1, y: 14, width: 1,  height: 1, value: "Keep All", config: true, items: {"Keep all", "Remove all", "Keep all except", "Remove all except"}, hint: hints.extraData
-      extraDataFilter:    class: "textbox",  x: 4, y: 14, width: 10, height: 3, value: "", config: true, hint: hints.extraData
-      quirksModeLabel:    class: "label",    x: 0, y: 18, width: 2,  height: 1, label: "Quirks mode: "
-      quirksMode:         class: "dropdown", x: 4, y: 18, width: 2,  height: 1, value: "VSFilter", config: true, items: [k for k, v in pairs ASS.Quirks], hint: hints.quirksMode
+      removeInvisible:    class: "checkbox", x: 0, y: 0, width: 2,  height: 1, value: true, config: true, label: "Remove invisible lines", hint: hints.removeInvisible
+      combineLines:       class: "checkbox", x: 0, y: 1, width: 2,  height: 1, value: true, config: true, label: "Combine consecutive identical lines", hint: hints.combineLines
+      mergeConsecutive:   class: "checkbox", x: 2, y: 0, width: 12,  height: 1, value: true, config: true, label: "Merge consecutive tag sections unless it contains any of:", hint: hints.mergeConsecutive
+      mergeConsecutiveExcept: class: "textbox", x: 2, y: 1, width: 12, height: 2, value: karaokeTags, config: true, hint: hints.mergeConsecutiveExcept
+
+      cleanLevelLabel:    class: "label",    x: 0, y: 4, width: 1,  height: 1, label: "Tag cleanup level: "
+      cleanLevel:         class: "intedit",  x: 1, y: 4, width: 1,  height: 1, min: 0, max: 4, value: 4, config: true, hint: hints.cleanLevel
+      tagsToKeepLabel:    class: "label",    x: 4, y: 4, width: 1,  height: 1, label: "Keep default tags: "
+      tagsToKeep:         class: "textbox",  x: 4, y: 5, width: 10, height: 2, value: "\\pos", config:true, hint: hints.tagsToKeep
+      tagSortOrderLabel:  class: "label",    x: 4, y: 7, width: 1,  height: 1, label: "Tag sort order: "
+      stripComments:      class: "checkbox", x: 0, y: 5, width: 2,  height: 1, value: true, config: true, label: "Strip comments", hint: hints.stripComments
+      removeJunk:         class: "checkbox", x: 0, y: 6, width: 2,  height: 1, value: true, config: true, label: "Remove junk from tag sections", hint: hints.removeJunk
+      tagSortOrder:       class: "textbox",  x: 4, y: 8, width: 10, height: 3, value: defaultSortOrder, config: true, hint: hints.tagSortOrder
+
+      filterClips:        class: "checkbox", x: 0, y: 11, width: 2,  height: 1, value: true, config: true, label: "Filter clips", hint: hints.filterClips
+      scale2float:        class: "checkbox", x: 0, y: 12, width: 2,  height: 1, value: true, config: true, label: "Un-scale drawings and clips", hint: hints.scale2float
+      fixDrawings:        class: "checkbox", x: 0, y: 13, width: 2,  height: 1, value: false, config: true, label: "Try to fix broken drawings", hint: hints.fixDrawings
+      purgeContoursLabel: class: "label",    x: 0, y: 14, width: 2,  height: 1, label: "Purge invisible contours: "
+      purgeContoursDraw:  class: "checkbox", x: 4, y: 14, width: 3,  height: 1, value: false, config: true, label: "from drawings", hint: hints.purgeContoursDraw
+      purgeContoursClip:  class: "checkbox", x: 7, y: 14, width: 6,  height: 1, value: false, config: true, label: "from clips", hint: hints.purgeContoursClip
+      purgeContoursIgnoreHashMismatch: class: "checkbox", x: 4, y: 15, width: 9, height: 1, value: false, config: true, label: "ignore rendering inconsistencies", hint: hints.purgeContoursIgnoreHashMismatch
+      extraDataLabel:     class: "label",    x: 0, y: 17, width: 1,  height: 1, label: "Filter extra data: "
+      extraDataMode:      class: "dropdown", x: 1, y: 17, width: 1,  height: 1, value: "Keep All", config: true, items: {"Keep all", "Remove all", "Keep all except", "Remove all except"}, hint: hints.extraData
+      extraDataFilter:    class: "textbox",  x: 4, y: 17, width: 10, height: 3, value: "", config: true, hint: hints.extraData
+      quirksModeLabel:    class: "label",    x: 0, y: 21, width: 2,  height: 1, label: "Quirks mode: "
+      quirksMode:         class: "dropdown", x: 4, y: 21, width: 2,  height: 1, value: "VSFilter", config: true, items: [k for k, v in pairs ASS.Quirks], hint: hints.quirksMode
     }
   }
   options = ConfigHandler dlg, version.configFile, false, script_version, version.configDir

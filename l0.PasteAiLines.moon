@@ -1,8 +1,8 @@
 export script_name = "Paste AI Lines"
 export script_description = "Convenience macro for pasting full lines exported by AI2ASS."
-export script_version = "0.2.0"
+export script_version = "0.2.1"
 export script_author = "line0"
-export script_namespace = "l0.PasteAILines"
+export script_namespace = "l0.PasteAiLines"
 
 DependencyControl = require "l0.DependencyControl"
 depCtrl = DependencyControl {

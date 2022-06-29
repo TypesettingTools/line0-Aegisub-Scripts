@@ -809,15 +809,15 @@
       "description": "Convenience macro for pasting full lines exported by AI2ASS.",
       "channels": {
         "master": {
-          "version": "0.2.0",
+          "version": "0.2.1",
           "default": false,
-          "released": "2019-02-17",
+          "released": "2022-06-30",
           "files": [
             { "name": ".lua", "delete": true },
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "CE50E1E290EB75D7B25419D4333A758405641C7E"
+              "sha1": "F8A382D26729AB6402BEA09C76707E239C6A50A6"
             }
           ],
           "requiredModules": [
@@ -855,15 +855,15 @@
           "fileBaseUrl": "@{fileBaseUrl}/@{namespace}-v@{version}/@{namespace}"
         },
         "release": {
-          "version": "0.2.0",
+          "version": "0.2.1",
           "default": true,
-          "released": "2019-02-17",
+          "released": "2022-06-30",
           "files": [
             { "name": ".lua", "delete": true },
             {
               "name": ".moon",
               "url": "@{fileBaseUrl}@{fileName}",
-              "sha1": "CE50E1E290EB75D7B25419D4333A758405641C7E"
+              "sha1": "F8A382D26729AB6402BEA09C76707E239C6A50A6"
             }
           ],
           "requiredModules": [
@@ -913,6 +913,9 @@
         ],
         "0.2.0": [
           "The script was ported to MoonScript and dependencies have been updated to their latest versions."
+        ],
+        "0.2.1": [
+          "Fix script_namespace capitalization"
         ]
       }
     },
